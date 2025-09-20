@@ -2,40 +2,35 @@ import { ISigningKey, IVerifier } from '../interfaces/crypto'
 
 interface Signable {
   composePayload(): string
-  sign(signer: ISigningKey): void
-}
-
-interface Verifiable {
-  verify(verifier: IVerifier, publicKey: string): boolean
 }
 
 interface Serializable {
-  serialize(signer?: ISigningKey): string
+  serialize(): string
 }
 
 export abstract class SerializableMessage implements Serializable {
-  abstract serialize(signer?: ISigningKey): string
+  abstract serialize(): string
 }
 
-export abstract class SignableMessage extends SerializableMessage implements Signable, Verifiable {
+export abstract class SignableMessage extends SerializableMessage implements Signable {
   signature?: string
 
   abstract composePayload(): string
 
   serialize(): string {
-    if (this.signature == null) {
+    if (this.signature === undefined) {
       throw 'null signature'
     }
 
     return `{"payload":${this.composePayload()},"signature":"${this.signature}"}`
   }
 
-  sign(signer: ISigningKey) {
+  sign(signer: ISigningKey): void {
     this.signature = signer.sign(this.composePayload())
   }
 
   verify(verifier: IVerifier, publicKey: string): boolean {
-    if (this.signature == null) {
+    if (this.signature === undefined) {
       throw 'null signature'
     }
 

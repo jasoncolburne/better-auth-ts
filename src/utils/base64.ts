@@ -1,6 +1,6 @@
 export class Base64 {
-  private static encoder = new TextEncoder()
-  private static decoder = new TextDecoder()
+  private static readonly encoder = new TextEncoder()
+  private static readonly decoder = new TextDecoder()
 
   static encode(data: Uint8Array): string {
     if (typeof Buffer !== 'undefined') {

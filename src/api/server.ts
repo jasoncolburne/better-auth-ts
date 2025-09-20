@@ -38,7 +38,7 @@ import {
 
 export class BetterAuthServer {
   constructor(
-    private stores: {
+    private readonly stores: {
       registrationToken: {
         key: IRegistrationTokenStore
         passphrase: IPassphraseRegistrationTokenStore
@@ -54,7 +54,7 @@ export class BetterAuthServer {
         access: IAccessNonceStore
       }
     },
-    private crypto: {
+    private readonly crypto: {
       keyPairs: {
         response: ISigningKey
         access: ISigningKey
@@ -368,10 +368,10 @@ export class BetterAuthServer {
 
 export class AccessVerifier {
   constructor(
-    private stores: {
+    private readonly stores: {
       accessNonce: IAccessNonceStore
     },
-    private crypto: {
+    private readonly crypto: {
       publicKeys: {
         access: IVerificationKey
       }

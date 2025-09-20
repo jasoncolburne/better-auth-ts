@@ -25,7 +25,7 @@ export class AccessToken extends SignableMessage implements IAccessToken {
 
   static parse(message: string): AccessToken {
     const signature = message.substring(0, 88)
-    var rest = message.substring(88)
+    let rest = message.substring(88)
 
     while (rest.length % 4 != 0) {
       rest += '='
