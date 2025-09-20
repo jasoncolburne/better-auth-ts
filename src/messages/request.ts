@@ -1,44 +1,44 @@
-import { ISigningKey, IVerifier } from "../interfaces/crypto";
+import { ISigningKey, IVerifier } from '../interfaces/crypto'
 
 interface Signable {
-    composePayload(): string
-    sign(signer: ISigningKey): void
+  composePayload(): string
+  sign(signer: ISigningKey): void
 }
 
 interface Verifiable {
-    verify(verifier: IVerifier, publicKey: string): boolean
+  verify(verifier: IVerifier, publicKey: string): boolean
 }
 
 interface Serializable {
-    serialize(signer?: ISigningKey): string;
+  serialize(signer?: ISigningKey): string
 }
 
 export abstract class SerializableMessage implements Serializable {
-    abstract serialize(signer?: ISigningKey): string;
+  abstract serialize(signer?: ISigningKey): string
 }
 
 export abstract class SignableMessage extends SerializableMessage implements Signable, Verifiable {
-    signature?: string
-    
-    abstract composePayload(): string;
+  signature?: string
 
-    serialize(): string {
-        if (this.signature == null) {
-            throw 'null signature'
-        }
+  abstract composePayload(): string
 
-        return `{"payload":${this.composePayload()},"signature":"${this.signature}"}`;
+  serialize(): string {
+    if (this.signature == null) {
+      throw 'null signature'
     }
 
-    sign(signer: ISigningKey) {
-        this.signature = signer.sign(this.composePayload())
+    return `{"payload":${this.composePayload()},"signature":"${this.signature}"}`
+  }
+
+  sign(signer: ISigningKey) {
+    this.signature = signer.sign(this.composePayload())
+  }
+
+  verify(verifier: IVerifier, publicKey: string): boolean {
+    if (this.signature == null) {
+      throw 'null signature'
     }
 
-    verify(verifier: IVerifier, publicKey: string): boolean {
-        if (this.signature == null) {
-            throw 'null signature';
-        }
-
-        return verifier.verify(this.composePayload(), this.signature, publicKey);
-    }
+    return verifier.verify(this.composePayload(), this.signature, publicKey)
+  }
 }

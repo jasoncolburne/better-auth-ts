@@ -2,6 +2,7 @@
   "name": "better-auth-ts-tmp",
   "version": "1.0.0",
   "description": "better-auth",
+  "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -20,8 +21,12 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "type-check": "tsc --noEmit",
+    "check-all": "npm run type-check && npm run lint && npm run format:check"
   },
   "keywords": [
     "authentication",
@@ -30,14 +35,18 @@
   ],
   "author": "Jason Colburne",
   "license": "MIT",
-  "dependencies": {
-    "@noble/hashes": "^2.0.0",
-    "libsodium-wrappers": "^0.7.15",
-    "pako": "^2.1.0"
-  },
   "devDependencies": {
+    "@noble/hashes": "^2.0.0",
     "@types/node": "^24.5.2",
     "@types/pako": "^2.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.44.0",
+    "@typescript-eslint/parser": "^8.44.0",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "libsodium-wrappers": "^0.7.15",
+    "pako": "^2.1.0",
+    "prettier": "^3.6.2",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
