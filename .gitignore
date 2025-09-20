@@ -2,8 +2,6 @@
 /dist
 /build
 /out
-*.js
-*.js.map
 *.d.ts
 *.d.ts.map
 
@@ -98,6 +96,5 @@ temp/
 ehthumbs.db
 Thumbs.db
 
-# Test files (optional - remove if you want to commit tests)
 *.test.js
 *.spec.js
