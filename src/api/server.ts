@@ -1,14 +1,14 @@
 import {
-  IAccessNonceStore,
-  IAuthenticationKeyStore,
-  IAuthenticationNonceStore,
   IDigester,
-  IPassphraseAuthenticationKeyStore,
-  IPassphraseRegistrationTokenStore,
-  IRefreshKeyStore,
-  IRefreshNonceStore,
-  IRegistrationTokenStore,
   ISalter,
+  IServerAccessNonceStore,
+  IServerAuthenticationKeyStore,
+  IServerAuthenticationNonceStore,
+  IServerPassphraseAuthenticationKeyStore,
+  IServerPassphraseRegistrationTokenStore,
+  IServerRefreshKeyStore,
+  IServerRefreshNonceStore,
+  IServerRegistrationTokenStore,
   ISigningKey,
   IVerificationKey,
   IVerifier,
@@ -35,23 +35,24 @@ import {
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
 } from '../messages'
+import { rfc3339Nano } from '../utils/time'
 
 export class BetterAuthServer {
   constructor(
     private readonly stores: {
       registrationToken: {
-        key: IRegistrationTokenStore
-        passphrase: IPassphraseRegistrationTokenStore
+        key: IServerRegistrationTokenStore
+        passphrase: IServerPassphraseRegistrationTokenStore
       }
       key: {
-        authentication: IAuthenticationKeyStore
-        passphrase: IPassphraseAuthenticationKeyStore
-        refresh: IRefreshKeyStore
+        authentication: IServerAuthenticationKeyStore
+        passphrase: IServerPassphraseAuthenticationKeyStore
+        refresh: IServerRefreshKeyStore
       }
       nonce: {
-        authentication: IAuthenticationNonceStore
-        refresh: IRefreshNonceStore
-        access: IAccessNonceStore
+        authentication: IServerAuthenticationNonceStore
+        refresh: IServerRefreshNonceStore
+        access: IServerAccessNonceStore
       }
     },
     private readonly crypto: {
@@ -323,7 +324,7 @@ export class BetterAuthServer {
 
   // refresh
 
-  refreshAccessToken(message: string, attributes: Map<string, any>): string {
+  refreshAccessToken<T>(message: string, attributes: T): string {
     const request = RefreshAccessTokenRequest.parse(message)
 
     const [accountId, refreshKey] = this.stores.key.refresh.get(request.payload.refresh.sessionId)
@@ -342,7 +343,7 @@ export class BetterAuthServer {
     const issuedAt = rfc3339Nano(now)
     const expiry = rfc3339Nano(later)
 
-    const accessToken = new AccessToken(
+    const accessToken = new AccessToken<T>(
       accountId,
       request.payload.access.publicKey,
       issuedAt,
@@ -369,7 +370,7 @@ export class BetterAuthServer {
 export class AccessVerifier {
   constructor(
     private readonly stores: {
-      accessNonce: IAccessNonceStore
+      accessNonce: IServerAccessNonceStore
     },
     private readonly crypto: {
       publicKeys: {

@@ -1,5 +1,6 @@
 export interface IVerificationKey {
   public(): string
+  verifier(): IVerifier
   verify(message: string, signature: string): boolean
 }
 
@@ -17,4 +18,8 @@ export interface IDigester {
 
 export interface ISalter {
   generate128(): string
+}
+
+export interface IKeyDeriver {
+  derive(passphrase: string, salt: string, parameters: string): ISigningKey
 }

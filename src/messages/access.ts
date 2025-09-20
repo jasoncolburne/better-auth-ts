@@ -2,32 +2,32 @@ import Pako from 'pako'
 import { IVerifier } from '../interfaces/crypto'
 import { Base64 } from '../utils/base64'
 import { SignableMessage } from './request'
-import { IAccessNonceStore } from '../interfaces/storage'
+import { IServerAccessNonceStore } from '../interfaces/storage'
 
-export interface IAccessToken {
+export interface IAccessToken<T> {
   accountId: string
   publicKey: string
   issuedAt: string
   expiry: string
-  attributes: Map<string, any>
+  attributes: T
 }
 
-export class AccessToken extends SignableMessage implements IAccessToken {
+export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
     public accountId: string,
     public publicKey: string,
     public issuedAt: string,
     public expiry: string,
-    public attributes: Map<string, any>
+    public attributes: T
   ) {
     super()
   }
 
-  static parse(message: string): AccessToken {
+  static parse<T>(message: string): AccessToken<T> {
     const signature = message.substring(0, 88)
     let rest = message.substring(88)
 
-    while (rest.length % 4 != 0) {
+    while (rest.length % 4 !== 0) {
       rest += '='
     }
 
@@ -46,7 +46,7 @@ export class AccessToken extends SignableMessage implements IAccessToken {
       json.attributes
     )
 
-    result.signature = json.signature
+    result.signature = signature
 
     return result
   }
@@ -136,7 +136,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   }
 
   verifyRequest(
-    nonceStore: IAccessNonceStore,
+    nonceStore: IServerAccessNonceStore,
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
@@ -176,4 +176,20 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
 
     return result
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isAccessRequest<T>(obj: any): obj is AccessRequest<T> {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof obj.token === 'string' &&
+    obj.payload !== null &&
+    typeof obj.payload === 'object' &&
+    obj.payload.access !== null &&
+    typeof obj.payload.access === 'object' &&
+    typeof obj.payload.access.timestamp === 'string' &&
+    typeof obj.payload.access.nonce === 'string' &&
+    typeof obj.signature === 'string'
+  )
 }
