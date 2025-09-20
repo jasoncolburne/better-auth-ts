@@ -4,6 +4,8 @@ import { Base64 } from '../utils/base64'
 import { SignableMessage } from './request'
 import { IServerAccessNonceStore } from '../interfaces/storage'
 
+import { TextDecoder, TextEncoder } from 'util'
+
 export interface IAccessToken<T> {
   accountId: string
   publicKey: string
