@@ -40,9 +40,11 @@ import { rfc3339Nano } from '../utils/time'
 export class BetterAuthServer {
   constructor(
     private readonly stores: {
-      registrationToken: {
-        key: IServerRegistrationTokenStore
-        passphrase: IServerPassphraseRegistrationTokenStore
+      token: {
+        registration: {
+          key: IServerRegistrationTokenStore
+          passphrase: IServerPassphraseRegistrationTokenStore
+        }
       }
       key: {
         authentication: IServerAuthenticationKeyStore
@@ -77,7 +79,7 @@ export class BetterAuthServer {
   // registration
 
   async generateRegistrationMaterials(): Promise<string> {
-    const token = await this.stores.registrationToken.key.generate()
+    const token = await this.stores.token.registration.key.generate()
 
     const response = new RegistrationMaterials({
       registration: {
@@ -95,7 +97,7 @@ export class BetterAuthServer {
     const params = '$argon2id$v=19$m=262144,t=3,p=4$' // TODO remove magic
     const salt = await this.crypto.salt.generate128()
 
-    const token = await this.stores.registrationToken.passphrase.generate(salt, params)
+    const token = await this.stores.token.registration.passphrase.generate(salt, params)
 
     const response = new PassphraseRegistrationMaterials({
       registration: {
@@ -125,7 +127,7 @@ export class BetterAuthServer {
     }
 
     const token = request.payload.registration.token
-    const accountId = await this.stores.registrationToken.key.validate(token)
+    const accountId = await this.stores.token.registration.key.validate(token)
 
     await this.stores.key.authentication.register(
       accountId,
@@ -134,7 +136,7 @@ export class BetterAuthServer {
       request.payload.authentication.publicKeys.nextDigest
     )
 
-    await this.stores.registrationToken.key.invalidate(token)
+    await this.stores.token.registration.key.invalidate(token)
 
     const response = new RegisterAuthenticationKeyResponse({
       identification: {
@@ -161,14 +163,14 @@ export class BetterAuthServer {
 
     const token = request.payload.registration.token
     const [accountId, salt, parameters] =
-      await this.stores.registrationToken.passphrase.validate(token)
+      await this.stores.token.registration.passphrase.validate(token)
     const passphraseKeyDigest = await this.crypto.digest.sum(
       request.payload.passphraseAuthentication.publicKey
     )
 
     await this.stores.key.passphrase.register(accountId, passphraseKeyDigest, salt, parameters)
 
-    await this.stores.registrationToken.passphrase.invalidate(token)
+    await this.stores.token.registration.passphrase.invalidate(token)
 
     const response = new RegisterPassphraseAuthenticationKeyResponse({
       identification: {

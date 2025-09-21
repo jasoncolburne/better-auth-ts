@@ -1,0 +1,118 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { BetterAuthClient, BetterAuthServer } from '../api'
+import { INetwork } from '../interfaces'
+
+interface IMockAccessAttributes {
+  permissionsByRole: object
+}
+
+class MockAccessAttributes implements IMockAccessAttributes {
+  constructor(public permissionsByRole: object) {}
+}
+
+class MockNetworkServer implements INetwork {
+  constructor(
+    private readonly betterAuthServer: BetterAuthServer,
+    private readonly attributes: IMockAccessAttributes
+  ) {}
+
+  async sendRequest(path: string, message: string): Promise<string> {
+    switch (path) {
+      case '/auth/key/register':
+        return await this.betterAuthServer.registerAuthenticationKey(message)
+      case '/auth/key/rotate':
+        return await this.betterAuthServer.rotateAuthenticationKey(message)
+      case '/auth/key/begin':
+        return await this.betterAuthServer.beginAuthentication(message)
+      case '/auth/key/complete':
+        return await this.betterAuthServer.completeAuthentication(message)
+      case '/auth/passphrase/register':
+        return await this.betterAuthServer.registerPassphraseAuthenticationKey(message)
+      case '/auth/passphrase/begin':
+        return await this.betterAuthServer.beginPassphraseAuthentication(message)
+      case '/auth/passphrase/complete':
+        return await this.betterAuthServer.completePassphraseAuthentication(message)
+      case '/auth/refresh':
+        return await this.betterAuthServer.refreshAccessToken<MockAccessAttributes>(
+          message,
+          this.attributes
+        )
+      default:
+        throw 'unexpected message'
+    }
+  }
+}
+
+describe('api', () => {
+  const betterAuthServer = new BetterAuthServer(
+    {
+      token: {
+        registration: {
+          key: authenticationRegistrationTokenStore,
+          passphrase: passphraseRegistrationTokenStore,
+        },
+      },
+      key: {
+        authentication: serverAuthenticationKeyStore,
+        passphrase: serverPassphraseAuthenticationKeyStore,
+        refresh: serverRefreshKeyStore,
+      },
+      nonce: {
+        authentication: serverAuthenticationNonceStore,
+        refresh: serverRefreshNonceStore,
+        access: serverAccessNonceStore,
+      },
+    },
+    {
+      keyPairs: {
+        response: responseSigner,
+        access: accessSigner,
+      },
+      verification: {
+        key: keyVerifier,
+        passphrase: passphraseVerifier,
+      },
+      salt: salter,
+      digest: digester,
+    }
+  )
+
+  const map = {
+    admin: ['read', 'write'],
+  }
+  const attributes = new MockAccessAttributes(map)
+  const mockNetworkServer = new MockNetworkServer(betterAuthServer, attributes)
+
+  const betterAuthClient = new BetterAuthClient(
+    {
+      identifier: {
+        account: accountIdentifierStore,
+        device: deviceIdentifierStore,
+        session: sessionIdentifierStore,
+      },
+      nonce: {
+        refresh: refreshNonceStore,
+      },
+      token: {
+        refresh: refreshTokenStore,
+        access: accessTokenStore,
+      },
+      key: {
+        authentication: authenticationKeyStore,
+        refresh: refreshKeyStore,
+        access: accessKeyStore,
+      },
+    },
+    {
+      digest: hasher,
+      publicKeys: {
+        response: responseKey,
+      },
+      keyDerivation: keyDeriver,
+      nonce: noncer,
+    },
+    {
+      network: mockNetworkServer,
+    }
+  )
+})

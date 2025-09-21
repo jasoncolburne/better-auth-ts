@@ -54,7 +54,12 @@ export interface IServerAuthenticationKeyStore {
 }
 
 export interface IServerPassphraseAuthenticationKeyStore {
-  register(accountId: string, publicKeyDigest: string, salt: string, parameters: string): Promise<void>
+  register(
+    accountId: string,
+    publicKeyDigest: string,
+    salt: string,
+    parameters: string
+  ): Promise<void>
   getDerivationMaterials(accountId: string): Promise<[string, string]>
   verifyPublicKeyDigest(accountId: string, publicKeyDigest: string): Promise<boolean>
 }
