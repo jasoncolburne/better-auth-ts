@@ -72,7 +72,12 @@ export class Secp256r1 implements ISigningKey {
 
     return `0I${base64.substring(2)}`
   }
+
   async public(): Promise<string> {
+    if (typeof this.keyPair === 'undefined') {
+      throw 'keypair not generated'
+    }
+
     const bytes = await webcrypto.subtle.exportKey('raw', this.keyPair!.publicKey)
     const publicKeyBytes = new Uint8Array(bytes)
     const padded = new Uint8Array([0, 0, 0, ...publicKeyBytes])

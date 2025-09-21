@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { beforeAll, describe, it } from 'vitest'
 import { BetterAuthClient, BetterAuthServer } from '../api'
 import { INetwork } from '../interfaces'
 import {
@@ -65,80 +65,94 @@ class MockNetworkServer implements INetwork {
 }
 
 describe('api', () => {
-  const responseSigner = new Secp256r1()
-  const accessSigner = new Secp256r1()
+  let betterAuthServer: BetterAuthServer
+  let betterAuthClient: BetterAuthClient
 
-  const passphrase = 'testPassphrase'
+  beforeAll(() => {
+    const responseSigner = new Secp256r1()
+    const accessSigner = new Secp256r1()
 
-  const betterAuthServer = new BetterAuthServer(
-    {
-      token: {
-        registration: {
-          key: new ServerAuthenticationRegistrationTokenStore(),
-          passphrase: new ServerPassphraseRegistrationTokenStore(),
+    betterAuthServer = new BetterAuthServer(
+      {
+        token: {
+          registration: {
+            key: new ServerAuthenticationRegistrationTokenStore(),
+            passphrase: new ServerPassphraseRegistrationTokenStore(),
+          },
+        },
+        key: {
+          authentication: new ServerAuthenticationKeyStore(),
+          passphrase: new ServerPassphraseAuthenticationKeyStore(),
+          refresh: new ServerRefreshKeyStore(),
+        },
+        nonce: {
+          authentication: new ServerAuthenticationNonceStore(),
+          refresh: new ServerRefreshNonceStore(),
+          access: new ServerAccessNonceStore(),
         },
       },
-      key: {
-        authentication: new ServerAuthenticationKeyStore(),
-        passphrase: new ServerPassphraseAuthenticationKeyStore(),
-        refresh: new ServerRefreshKeyStore(),
-      },
-      nonce: {
-        authentication: new ServerAuthenticationNonceStore(),
-        refresh: new ServerRefreshNonceStore(),
-        access: new ServerAccessNonceStore(),
-      },
-    },
-    {
-      keyPairs: {
-        response: responseSigner,
-        access: accessSigner,
-      },
-      verification: {
-        key: new Secp256r1Verifier(),
-        passphrase: new Ed25519Verifier(),
-      },
-      nonce: new Noncer(),
-      digest: new Digester(),
-    }
-  )
+      {
+        keyPairs: {
+          response: responseSigner,
+          access: accessSigner,
+        },
+        verification: {
+          key: new Secp256r1Verifier(),
+          passphrase: new Ed25519Verifier(),
+        },
+        nonce: new Noncer(),
+        digest: new Digester(),
+      }
+    )
 
-  const map = {
-    admin: ['read', 'write'],
-  }
-  const attributes = new MockAccessAttributes(map)
-  const mockNetworkServer = new MockNetworkServer(betterAuthServer, attributes)
-
-  const betterAuthClient = new BetterAuthClient(
-    {
-      identifier: {
-        account: new ClientValueStore(),
-        device: new ClientValueStore(),
-        session: new ClientValueStore(),
-      },
-      nonce: {
-        refresh: new ClientRefreshNonceStore(),
-      },
-      token: {
-        refresh: new ClientValueStore(),
-        access: new ClientValueStore(),
-      },
-      key: {
-        authentication: new ClientRotatingKeyStore(),
-        refresh: new ClientSingleKeyStore(),
-        access: new ClientSingleKeyStore(),
-      },
-    },
-    {
-      digest: new Digester(),
-      publicKeys: {
-        response: responseSigner, // this would only be a public key in production
-      },
-      keyDerivation: new KeyDeriver(),
-      nonce: new Noncer(),
-    },
-    {
-      network: mockNetworkServer,
+    const map = {
+      admin: ['read', 'write'],
     }
-  )
+    const attributes = new MockAccessAttributes(map)
+    const mockNetworkServer = new MockNetworkServer(betterAuthServer, attributes)
+
+    betterAuthClient = new BetterAuthClient(
+      {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+          session: new ClientValueStore(),
+        },
+        nonce: {
+          refresh: new ClientRefreshNonceStore(),
+        },
+        token: {
+          refresh: new ClientValueStore(),
+          access: new ClientValueStore(),
+        },
+        key: {
+          authentication: new ClientRotatingKeyStore(),
+          refresh: new ClientSingleKeyStore(),
+          access: new ClientSingleKeyStore(),
+        },
+      },
+      {
+        digest: new Digester(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+        keyDerivation: new KeyDeriver(),
+        nonce: new Noncer(),
+      },
+      {
+        network: mockNetworkServer,
+      }
+    )
+  })
+
+  it('completes passphrase flow', async () => {
+    const passphrase = 'testPassphrase'
+    const passphraseRegistrationMaterials =
+      await betterAuthServer.generatePassphraseRegistrationMaterials()
+
+    await betterAuthClient.registerPassphraseAuthenticationKey(
+      passphraseRegistrationMaterials,
+      passphrase
+    )
+  }, 5000)
 })
