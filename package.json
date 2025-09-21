@@ -39,6 +39,7 @@
   "license": "MIT",
   "devDependencies": {
     "@noble/hashes": "^2.0.0",
+    "@types/libsodium-wrappers": "^0.7.14",
     "@types/node": "^24.5.2",
     "@types/pako": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^8.44.0",

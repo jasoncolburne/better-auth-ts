@@ -13,6 +13,8 @@ import {
 } from './storage.mock.test'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
+import { Ed25519Verifier } from './crypto/ed25519'
+import { KeyDeriver } from './crypto/keyDerivation'
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -56,6 +58,11 @@ class MockNetworkServer implements INetwork {
 }
 
 describe('api', () => {
+  const responseSigner = new Secp256r1()
+  const accessSigner = new Secp256r1()
+
+  const passphrase = 'testPassphrase'
+
   const betterAuthServer = new BetterAuthServer(
     {
       token: {
@@ -82,7 +89,7 @@ describe('api', () => {
       },
       verification: {
         key: keyVerifier,
-        passphrase: passphraseVerifier,
+        passphrase: new Ed25519Verifier(),
       },
       nonce: new Noncer(),
       digest: new Digester(),
@@ -118,7 +125,7 @@ describe('api', () => {
     {
       digest: new Digester(),
       publicKeys: {
-        response: responseKey,
+        response: responseSigner, // this would only be a public key in production
       },
       keyDerivation: new KeyDeriver(),
       nonce: new Noncer(),
