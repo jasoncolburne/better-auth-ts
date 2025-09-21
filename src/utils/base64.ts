@@ -5,16 +5,16 @@ export class Base64 {
   private static readonly decoder = new TextDecoder()
 
   static encode(data: Uint8Array): string {
-    let b64: string
+    let base64: string
 
     if (typeof Buffer !== 'undefined') {
-      b64 = Buffer.from(data).toString('base64')
+      base64 = Buffer.from(data).toString('base64')
     } else {
       const binary = String.fromCharCode(...data)
-      b64 = globalThis.btoa(binary).replaceAll('/', '_').replaceAll('+', '-')
+      base64 = globalThis.btoa(binary)
     }
 
-    return b64
+    return base64.replaceAll('/', '_').replaceAll('+', '-')
   }
 
   static decode(base64: string): Uint8Array {

@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { BetterAuthClient, BetterAuthServer } from '../api'
 import { INetwork } from '../interfaces'
+import {
+    ServerAuthenticationKeyStore,
+  ServerAuthenticationRegistrationTokenStore,
+  ServerPassphraseAuthenticationKeyStore,
+  ServerPassphraseRegistrationTokenStore,
+} from './storage.mock.test'
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -48,14 +54,14 @@ describe('api', () => {
     {
       token: {
         registration: {
-          key: authenticationRegistrationTokenStore,
-          passphrase: passphraseRegistrationTokenStore,
+          key: new ServerAuthenticationRegistrationTokenStore(),
+          passphrase: new ServerPassphraseRegistrationTokenStore(),
         },
       },
       key: {
-        authentication: serverAuthenticationKeyStore,
-        passphrase: serverPassphraseAuthenticationKeyStore,
-        refresh: serverRefreshKeyStore,
+        authentication: new ServerAuthenticationKeyStore(),
+        passphrase: new ServerPassphraseAuthenticationKeyStore(),
+        refresh: new ServerRefreshKeyStore(),
       },
       nonce: {
         authentication: serverAuthenticationNonceStore,

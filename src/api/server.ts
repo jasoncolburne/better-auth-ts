@@ -8,7 +8,7 @@ import {
   IServerPassphraseRegistrationTokenStore,
   IServerRefreshKeyStore,
   IServerRefreshNonceStore,
-  IServerRegistrationTokenStore,
+  IServerAuthenticationRegistrationTokenStore,
   ISigningKey,
   IVerificationKey,
   IVerifier,
@@ -42,7 +42,7 @@ export class BetterAuthServer {
     private readonly stores: {
       token: {
         registration: {
-          key: IServerRegistrationTokenStore
+          key: IServerAuthenticationRegistrationTokenStore
           passphrase: IServerPassphraseRegistrationTokenStore
         }
       }

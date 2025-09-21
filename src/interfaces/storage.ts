@@ -24,7 +24,7 @@ export interface IServerAuthenticationNonceStore {
   validate(nonce: string): Promise<string>
 }
 
-export interface IServerRegistrationTokenStore {
+export interface IServerAuthenticationRegistrationTokenStore {
   generate(): Promise<string>
   validate(token: string): Promise<string>
   invalidate(token: string): Promise<void>
