@@ -149,16 +149,25 @@ describe('api', () => {
   })
 
   it('completes passphrase flow', async () => {
-    const passphrase = 'testPassphrase'
     const passphraseRegistrationMaterials =
       await betterAuthServer.generatePassphraseRegistrationMaterials()
 
+    const passphrase = 'testPassphrase'
     await betterAuthClient.registerPassphraseAuthenticationKey(
       passphraseRegistrationMaterials,
       passphrase
     )
-
     await betterAuthClient.authenticateWithPassphrase(passphrase)
+    await betterAuthClient.refreshAccessToken()
+  }, 5000)
+
+  it('completes key auth flow', async () => {
+    const registrationMaterials = await betterAuthServer.generateRegistrationMaterials()
+
+    await betterAuthClient.registerAuthenticationKey(registrationMaterials)
+    await betterAuthClient.rotateAuthenticationKey()
+    await betterAuthClient.authenticate()
+    console.error(4)
     await betterAuthClient.refreshAccessToken()
   }, 5000)
 })

@@ -94,13 +94,14 @@ export class BetterAuthClient {
 
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
       await this.stores.key.authentication.initialize()
+    const deviceId = await this.crypto.digest.sum(currentAuthenticationPublicKey)
 
     const request = new RegisterAuthenticationKeyRequest({
       registration: {
         token: materials.payload.registration.token,
       },
       identification: {
-        deviceId: await this.stores.identifier.device.get(),
+        deviceId: deviceId,
       },
       authentication: {
         publicKeys: {
@@ -120,6 +121,7 @@ export class BetterAuthClient {
     }
 
     await this.stores.identifier.account.store(response.payload.identification.accountId)
+    await this.stores.identifier.device.store(deviceId)
   }
 
   async registerPassphraseAuthenticationKey(
@@ -196,6 +198,7 @@ export class BetterAuthClient {
       },
     })
 
+
     const beginMessage = await beginRequest.serialize()
     const beginReply = await this.io.network.sendRequest('/auth/key/begin', beginMessage)
 
@@ -222,7 +225,7 @@ export class BetterAuthClient {
       },
     })
 
-    await completeRequest.sign(this.stores.key.refresh.signer())
+    await completeRequest.sign(this.stores.key.authentication.signer())
     const completeMessage = await completeRequest.serialize()
     const completeReply = await this.io.network.sendRequest('/auth/key/complete', completeMessage)
 

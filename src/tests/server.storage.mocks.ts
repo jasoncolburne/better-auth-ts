@@ -92,11 +92,11 @@ export class ServerPassphraseRegistrationTokenStore
 }
 
 export class ServerAuthenticationKeyStore implements IServerAuthenticationKeyStore {
-  private readonly dataByToken: Map<[string, string], [string, string]>
+  private readonly dataByToken: Map<string, [string, string]>
   private readonly digester: IDigester
 
   constructor() {
-    this.dataByToken = new Map<[string, string], [string, string]>()
+    this.dataByToken = new Map<string, [string, string]>()
     this.digester = new Digester()
   }
 
@@ -106,7 +106,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     current: string,
     nextDigest: string
   ): Promise<void> {
-    this.dataByToken.set([accountId, deviceId], [current, nextDigest])
+    this.dataByToken.set(accountId + deviceId, [current, nextDigest])
   }
 
   async rotate(
@@ -115,7 +115,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     current: string,
     nextDigest: string
   ): Promise<void> {
-    const bundle = this.dataByToken.get([accountId, deviceId])
+    const bundle = this.dataByToken.get(accountId + deviceId)
 
     if (typeof bundle === 'undefined') {
       throw 'not found'
@@ -127,11 +127,11 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'invalid forward secret'
     }
 
-    this.dataByToken.set([accountId, deviceId], [current, nextDigest])
+    this.dataByToken.set(accountId + deviceId, [current, nextDigest])
   }
 
   public(accountId: string, deviceId: string): string {
-    const bundle = this.dataByToken.get([accountId, deviceId])
+    const bundle = this.dataByToken.get(accountId + deviceId)
 
     if (typeof bundle === 'undefined') {
       throw 'not found'

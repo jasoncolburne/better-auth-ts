@@ -43,7 +43,7 @@ export class RotateAuthenticationKeyRequest
         accountId: this.payload.identification.accountId,
         deviceId: this.payload.identification.deviceId,
       },
-      authenticaiton: {
+      authentication: {
         publicKeys: {
           current: this.payload.authentication.publicKeys.current,
           nextDigest: this.payload.authentication.publicKeys.nextDigest,
