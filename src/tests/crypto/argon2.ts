@@ -8,8 +8,6 @@ export class Argon2 {
           .substring(1, parameters.length - 1)
           .split('$')
 
-        console.error(parameters)
-
         if (algorithm !== 'argon2id') {
           throw 'incorrect algorithm'
         }
@@ -32,7 +30,7 @@ export class Argon2 {
         }
 
         const opsLimit = parseInt(t)
-        const memLimit = parseInt(m)
+        const memLimit = parseInt(m) * 1024
 
         const keyBytes = sodium.crypto_pwhash(
           32,

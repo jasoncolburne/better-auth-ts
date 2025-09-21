@@ -157,5 +157,8 @@ describe('api', () => {
       passphraseRegistrationMaterials,
       passphrase
     )
+
+    await betterAuthClient.authenticateWithPassphrase(passphrase)
+    await betterAuthClient.refreshAccessToken()
   }, 5000)
 })

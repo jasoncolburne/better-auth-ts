@@ -154,6 +154,8 @@ export class BetterAuthClient {
     if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
+
+    await this.stores.identifier.account.store(response.payload.identification.accountId)
   }
 
   async rotateAuthenticationKey(): Promise<void> {
