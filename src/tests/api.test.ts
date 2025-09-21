@@ -68,9 +68,12 @@ describe('api', () => {
   let betterAuthServer: BetterAuthServer
   let betterAuthClient: BetterAuthClient
 
-  beforeAll(() => {
+  beforeAll(async () => {
     const responseSigner = new Secp256r1()
     const accessSigner = new Secp256r1()
+
+    await responseSigner.generate()
+    await accessSigner.generate()
 
     betterAuthServer = new BetterAuthServer(
       {

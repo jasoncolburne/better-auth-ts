@@ -4,13 +4,17 @@ export class Argon2 {
   async derive(passphrase: string, salt: Uint8Array, parameters: string): Promise<Uint8Array> {
     return Promise.resolve(
       (() => {
-        const [algorithm, version, params] = parameters.split('$')
+        const [algorithm, version, params] = parameters
+          .substring(1, parameters.length - 1)
+          .split('$')
+
+        console.error(parameters)
 
         if (algorithm !== 'argon2id') {
           throw 'incorrect algorithm'
         }
 
-        if (version !== '19') {
+        if (version !== 'v=19') {
           throw 'incorrect version'
         }
 

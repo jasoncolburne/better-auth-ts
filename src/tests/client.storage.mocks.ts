@@ -69,7 +69,7 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
 
     const nextDigest = await this.digester.sum(await next.public())
 
-    return [await this.current!.public(), nextDigest]
+    return [await this.current.public(), nextDigest]
   }
 
   signer(): ISigningKey {

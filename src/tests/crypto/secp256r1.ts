@@ -5,9 +5,9 @@ import { Base64 } from '../../utils/base64'
 
 export class Secp256r1Verifier implements IVerifier {
   async verify(message: string, signature: string, publicKey: string): Promise<boolean> {
-    const params = {
+    const params: webcrypto.EcKeyImportParams = {
       name: 'ECDSA',
-      hash: 'SHA-256',
+      namedCurve: 'P-256',
     }
 
     const publicKeyBytes = Base64.decode(publicKey).subarray(3)
@@ -20,7 +20,17 @@ export class Secp256r1Verifier implements IVerifier {
     const encoder = new TextEncoder()
     const messageBytes = encoder.encode(message)
 
-    return await webcrypto.subtle.verify(params, publicCryptoKey, signatureBytes, messageBytes)
+    const verifyParams: webcrypto.EcdsaParams = {
+      name: 'ECDSA',
+      hash: 'SHA-256',
+    }
+
+    return await webcrypto.subtle.verify(
+      verifyParams,
+      publicCryptoKey,
+      signatureBytes,
+      messageBytes
+    )
   }
 }
 
@@ -39,9 +49,9 @@ export class Secp256r1 implements ISigningKey {
   }
 
   async generate() {
-    const params = {
+    const params: webcrypto.EcKeyGenParams = {
       name: 'ECDSA',
-      hash: 'SHA-256',
+      namedCurve: 'P-256',
     }
 
     const keyPair = await webcrypto.subtle.generateKey(params, true, ['sign', 'verify'])
@@ -54,7 +64,7 @@ export class Secp256r1 implements ISigningKey {
   }
 
   async sign(message: string): Promise<string> {
-    const params = {
+    const params: webcrypto.EcdsaParams = {
       name: 'ECDSA',
       hash: 'SHA-256',
     }
