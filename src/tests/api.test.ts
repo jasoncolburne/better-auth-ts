@@ -15,6 +15,7 @@ import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
 import { Ed25519Verifier } from './crypto/ed25519'
 import { KeyDeriver } from './crypto/keyDerivation'
+import { Secp256r1, Secp256r1Verifier } from './crypto/secp256r1'
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -88,7 +89,7 @@ describe('api', () => {
         access: accessSigner,
       },
       verification: {
-        key: keyVerifier,
+        key: new Secp256r1Verifier(),
         passphrase: new Ed25519Verifier(),
       },
       nonce: new Noncer(),
@@ -105,21 +106,21 @@ describe('api', () => {
   const betterAuthClient = new BetterAuthClient(
     {
       identifier: {
-        account: accountIdentifierStore,
-        device: deviceIdentifierStore,
-        session: sessionIdentifierStore,
+        account: new ClientAccountIdentifierStore(),
+        device: new ClientDeviceIdentifierStore(),
+        session: new ClientSessionIdentifierStore(),
       },
       nonce: {
-        refresh: refreshNonceStore,
+        refresh: new ClientRefreshNonceStore(),
       },
       token: {
-        refresh: refreshTokenStore,
-        access: accessTokenStore,
+        refresh: new ClientRefreshTokenStore(),
+        access: new ClientAccessTokenStore(),
       },
       key: {
-        authentication: authenticationKeyStore,
-        refresh: refreshKeyStore,
-        access: accessKeyStore,
+        authentication: new ClientAuthenticationKeyStore(),
+        refresh: new ClientRefreshKeyStore(),
+        access: new ClientAccessKeyStore(),
       },
     },
     {

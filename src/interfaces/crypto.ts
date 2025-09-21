@@ -1,5 +1,5 @@
 export interface IVerificationKey {
-  public(): string
+  public(): Promise<string>
   verifier(): IVerifier
   verify(message: string, signature: string): Promise<boolean>
 }

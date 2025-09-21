@@ -48,7 +48,7 @@ export class Ed25519 implements ISigningKey {
     })
   }
 
-  public(): string {
+  async public(): Promise<string> {
     const padded = new Uint8Array([0, ...this.keyPair.publicKey])
     const base64 = Base64.encode(padded)
 
@@ -59,7 +59,7 @@ export class Ed25519 implements ISigningKey {
     return this._verifier
   }
 
-  verify(message: string, signature: string): Promise<boolean> {
-    return this._verifier.verify(message, signature, this.public())
+  async verify(message: string, signature: string): Promise<boolean> {
+    return await this._verifier.verify(message, signature, await this.public())
   }
 }

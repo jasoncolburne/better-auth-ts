@@ -74,7 +74,7 @@ export class BetterAuthClient {
     response: SignableMessage,
     publicKeyDigest: string
   ): Promise<boolean> {
-    const publicKey = this.crypto.publicKeys.response.public()
+    const publicKey = await this.crypto.publicKeys.response.public()
     const digest = await this.crypto.digest.sum(publicKey)
 
     if (digest !== publicKeyDigest) {
@@ -142,7 +142,7 @@ export class BetterAuthClient {
         token: materials.payload.registration.token,
       },
       passphraseAuthentication: {
-        publicKey: keyPair.public(),
+        publicKey: await keyPair.public(),
       },
     })
 
@@ -259,7 +259,7 @@ export class BetterAuthClient {
     const completeRequest = new CompletePassphraseAuthenticationRequest({
       passphraseAuthentication: {
         nonce: beginResponse.payload.passphraseAuthentication.nonce,
-        publicKey: keyPair.public(),
+        publicKey: await keyPair.public(),
       },
       refresh: {
         publicKey: refreshPublicKey,

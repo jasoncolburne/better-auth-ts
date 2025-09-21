@@ -72,7 +72,7 @@ export class BetterAuthServer {
   ) {}
 
   private async responsePublicKeyDigest(): Promise<string> {
-    const responsePublicKey = this.crypto.keyPairs.response.public()
+    const responsePublicKey = await this.crypto.keyPairs.response.public()
     return await this.crypto.digest.sum(responsePublicKey)
   }
 
@@ -400,7 +400,7 @@ export class AccessVerifier {
       this.stores.accessNonce,
       this.crypto.verification.key,
       this.crypto.verification.key,
-      this.crypto.publicKeys.access.public()
+      await this.crypto.publicKeys.access.public()
     )
   }
 }
