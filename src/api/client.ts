@@ -70,9 +70,12 @@ export class BetterAuthClient {
     }
   }
 
-  verifyResponse(response: SignableMessage, publicKeyDigest: string): boolean {
+  private async verifyResponse(
+    response: SignableMessage,
+    publicKeyDigest: string
+  ): Promise<boolean> {
     const publicKey = this.crypto.publicKeys.response.public()
-    const digest = this.crypto.digest.sum(publicKey)
+    const digest = await this.crypto.digest.sum(publicKey)
 
     if (digest !== publicKeyDigest) {
       throw 'digest mismatch'
@@ -80,24 +83,24 @@ export class BetterAuthClient {
 
     const verifier = this.crypto.publicKeys.response.verifier()
 
-    return response.verify(verifier, publicKey)
+    return await response.verify(verifier, publicKey)
   }
 
-  registerAuthenticationKey(registrationMaterials: string): void {
+  async registerAuthenticationKey(registrationMaterials: string): Promise<void> {
     const materials = RegistrationMaterials.parse(registrationMaterials)
-    if (!this.verifyResponse(materials, materials.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(materials, materials.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
-      this.stores.key.authentication.initialize()
+      await this.stores.key.authentication.initialize()
 
     const request = new RegisterAuthenticationKeyRequest({
       registration: {
         token: materials.payload.registration.token,
       },
       identification: {
-        deviceId: this.stores.identifier.device.get(),
+        deviceId: await this.stores.identifier.device.get(),
       },
       authentication: {
         publicKeys: {
@@ -107,28 +110,28 @@ export class BetterAuthClient {
       },
     })
 
-    request.sign(this.stores.key.authentication.signer())
-    const message = request.serialize()
-    const reply = this.io.network.sendRequest('/auth/key/register', message)
+    await request.sign(this.stores.key.authentication.signer())
+    const message = await request.serialize()
+    const reply = await this.io.network.sendRequest('/auth/key/register', message)
 
     const response = RegisterAuthenticationKeyResponse.parse(reply)
-    if (!this.verifyResponse(response, response.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    this.stores.identifier.account.store(response.payload.identification.accountId)
+    await this.stores.identifier.account.store(response.payload.identification.accountId)
   }
 
-  registerPassphraseAuthenticationKey(
+  async registerPassphraseAuthenticationKey(
     passphraseRegistrationMaterials: string,
     passphrase: string
-  ): void {
+  ): Promise<void> {
     const materials = PassphraseRegistrationMaterials.parse(passphraseRegistrationMaterials)
-    if (!this.verifyResponse(materials, materials.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(materials, materials.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    const keyPair = this.crypto.keyDerivation.derive(
+    const keyPair = await this.crypto.keyDerivation.derive(
       passphrase,
       materials.payload.passphraseAuthentication.salt,
       materials.payload.passphraseAuthentication.parameters
@@ -143,24 +146,24 @@ export class BetterAuthClient {
       },
     })
 
-    request.sign(keyPair)
-    const message = request.serialize()
-    const reply = this.io.network.sendRequest('/auth/passphrase/register', message)
+    await request.sign(keyPair)
+    const message = await request.serialize()
+    const reply = await this.io.network.sendRequest('/auth/passphrase/register', message)
 
     const response = RegisterPassphraseAuthenticationKeyResponse.parse(reply)
-    if (!this.verifyResponse(response, response.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
   }
 
-  rotateAuthenticationKey(): void {
+  async rotateAuthenticationKey(): Promise<void> {
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
-      this.stores.key.authentication.rotate()
+      await this.stores.key.authentication.rotate()
 
     const request = new RotateAuthenticationKeyRequest({
       identification: {
-        accountId: this.stores.identifier.account.get(),
-        deviceId: this.stores.identifier.device.get(),
+        accountId: await this.stores.identifier.account.get(),
+        deviceId: await this.stores.identifier.device.get(),
       },
       authentication: {
         publicKeys: {
@@ -170,12 +173,12 @@ export class BetterAuthClient {
       },
     })
 
-    request.sign(this.stores.key.authentication.signer())
-    const message = request.serialize()
-    const reply = this.io.network.sendRequest('/auth/key/rotate', message)
+    await request.sign(this.stores.key.authentication.signer())
+    const message = await request.serialize()
+    const reply = await this.io.network.sendRequest('/auth/key/rotate', message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
-    if (!this.verifyResponse(response, response.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -184,27 +187,27 @@ export class BetterAuthClient {
     }
   }
 
-  authenticate(): void {
+  async authenticate(): Promise<void> {
     const beginRequest = new BeginAuthenticationRequest({
       identification: {
-        accountId: this.stores.identifier.account.get(),
+        accountId: await this.stores.identifier.account.get(),
       },
     })
 
-    const beginMessage = beginRequest.serialize()
-    const beginReply = this.io.network.sendRequest('/auth/key/begin', beginMessage)
+    const beginMessage = await beginRequest.serialize()
+    const beginReply = await this.io.network.sendRequest('/auth/key/begin', beginMessage)
 
     const beginResponse = BeginAuthenticationResponse.parse(beginReply)
-    if (!this.verifyResponse(beginResponse, beginResponse.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    const refreshPublicKey = this.stores.key.refresh.generate()
-    const nextNonceDigest = this.stores.nonce.refresh.initialize()
+    const refreshPublicKey = await this.stores.key.refresh.generate()
+    const nextNonceDigest = await this.stores.nonce.refresh.initialize()
 
     const completeRequest = new CompleteAuthenticationRequest({
       identification: {
-        deviceId: this.stores.identifier.device.get(),
+        deviceId: await this.stores.identifier.device.get(),
       },
       authentication: {
         nonce: beginResponse.payload.authentication.nonce,
@@ -217,41 +220,41 @@ export class BetterAuthClient {
       },
     })
 
-    completeRequest.sign(this.stores.key.refresh.signer())
-    const completeMessage = completeRequest.serialize()
-    const completeReply = this.io.network.sendRequest('/auth/key/complete', completeMessage)
+    await completeRequest.sign(this.stores.key.refresh.signer())
+    const completeMessage = await completeRequest.serialize()
+    const completeReply = await this.io.network.sendRequest('/auth/key/complete', completeMessage)
 
     const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
-    if (!this.verifyResponse(completeResponse, completeResponse.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(completeResponse, completeResponse.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    this.stores.identifier.session.store(completeResponse.payload.refresh.sessionId)
+    await this.stores.identifier.session.store(completeResponse.payload.refresh.sessionId)
   }
 
-  authenticateWithPassphrase(passphrase: string): void {
+  async authenticateWithPassphrase(passphrase: string): Promise<void> {
     const beginRequest = new BeginPassphraseAuthenticationRequest({
       identification: {
-        accountId: this.stores.identifier.account.get(),
+        accountId: await this.stores.identifier.account.get(),
       },
     })
 
-    const beginMessage = beginRequest.serialize()
-    const beginReply = this.io.network.sendRequest('/auth/passphrase/begin', beginMessage)
+    const beginMessage = await beginRequest.serialize()
+    const beginReply = await this.io.network.sendRequest('/auth/passphrase/begin', beginMessage)
 
     const beginResponse = BeginPassphraseAuthenticationResponse.parse(beginReply)
-    if (!this.verifyResponse(beginResponse, beginResponse.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    const keyPair = this.crypto.keyDerivation.derive(
+    const keyPair = await this.crypto.keyDerivation.derive(
       passphrase,
       beginResponse.payload.passphraseAuthentication.salt,
       beginResponse.payload.passphraseAuthentication.parameters
     )
 
-    const refreshPublicKey = this.stores.key.refresh.generate()
-    const nextNonceDigest = this.stores.nonce.refresh.initialize()
+    const refreshPublicKey = await this.stores.key.refresh.generate()
+    const nextNonceDigest = await this.stores.nonce.refresh.initialize()
 
     const completeRequest = new CompletePassphraseAuthenticationRequest({
       passphraseAuthentication: {
@@ -266,25 +269,28 @@ export class BetterAuthClient {
       },
     })
 
-    completeRequest.sign(keyPair)
-    const completeMessage = completeRequest.serialize()
-    const completeReply = this.io.network.sendRequest('/auth/passphrase/complete', completeMessage)
+    await completeRequest.sign(keyPair)
+    const completeMessage = await completeRequest.serialize()
+    const completeReply = await this.io.network.sendRequest(
+      '/auth/passphrase/complete',
+      completeMessage
+    )
 
     const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
-    if (!this.verifyResponse(completeResponse, completeResponse.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(completeResponse, completeResponse.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    this.stores.identifier.session.store(completeResponse.payload.refresh.sessionId)
+    await this.stores.identifier.session.store(completeResponse.payload.refresh.sessionId)
   }
 
-  refreshAccessToken(): void {
-    const accessPublicKey = this.stores.key.access.generate()
-    const [current, nextDigest] = this.stores.nonce.refresh.evolve()
+  async refreshAccessToken(): Promise<void> {
+    const accessPublicKey = await this.stores.key.access.generate()
+    const [current, nextDigest] = await this.stores.nonce.refresh.evolve()
 
     const request = new RefreshAccessTokenRequest({
       refresh: {
-        sessionId: this.stores.identifier.session.get(),
+        sessionId: await this.stores.identifier.session.get(),
         nonces: {
           current: current,
           nextDigest: nextDigest,
@@ -295,29 +301,29 @@ export class BetterAuthClient {
       },
     })
 
-    request.sign(this.stores.key.refresh.signer())
-    const message = request.serialize()
-    const reply = this.io.network.sendRequest('/auth/refresh', message)
+    await request.sign(this.stores.key.refresh.signer())
+    const message = await request.serialize()
+    const reply = await this.io.network.sendRequest('/auth/refresh', message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
-    if (!this.verifyResponse(response, response.payload.publicKeyDigest)) {
+    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
-    this.stores.token.access.store(response.payload.access.token)
+    await this.stores.token.access.store(response.payload.access.token)
   }
 
-  makeAccessRequest<T>(path: string, request: T): string {
-    const accessRequest = new AccessRequest<T>(this.stores.token.access.get(), {
+  async makeAccessRequest<T>(path: string, request: T): Promise<string> {
+    const accessRequest = new AccessRequest<T>(await this.stores.token.access.get(), {
       access: {
         timestamp: rfc3339Nano(new Date()),
-        nonce: this.crypto.nonce.generate128(),
+        nonce: await this.crypto.nonce.generate128(),
       },
       request: request,
     })
 
-    accessRequest.sign(this.stores.key.access.signer())
-    const message = accessRequest.serialize()
-    return this.io.network.sendRequest(path, message)
+    await accessRequest.sign(this.stores.key.access.signer())
+    const message = await accessRequest.serialize()
+    return await this.io.network.sendRequest(path, message)
   }
 }

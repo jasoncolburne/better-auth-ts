@@ -35,13 +35,13 @@ export default [
       'prettier/prettier': 'error',
       
       // TypeScript specific rules
-      '@typescript-eslint/no-unused-vars': ['error', { args: 'after-used' }],
+      '@typescript-eslint/no-unused-vars': ['error'],
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       // '@typescript-eslint/prefer-const': 'error',
       '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/prefer-readonly': 'error',
-      '@typescript-eslint/require-await': 'error',
+      // '@typescript-eslint/require-await': 'error',
       '@typescript-eslint/no-var-requires': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',

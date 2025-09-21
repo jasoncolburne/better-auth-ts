@@ -5,11 +5,11 @@ interface Signable {
 }
 
 interface Serializable {
-  serialize(): string
+  serialize(): Promise<string>
 }
 
 export abstract class SerializableMessage implements Serializable {
-  abstract serialize(): string
+  abstract serialize(): Promise<string>
 }
 
 export abstract class SignableMessage extends SerializableMessage implements Signable {
@@ -17,7 +17,7 @@ export abstract class SignableMessage extends SerializableMessage implements Sig
 
   abstract composePayload(): string
 
-  serialize(): string {
+  async serialize(): Promise<string> {
     if (this.signature === undefined) {
       throw 'null signature'
     }
@@ -25,15 +25,15 @@ export abstract class SignableMessage extends SerializableMessage implements Sig
     return `{"payload":${this.composePayload()},"signature":"${this.signature}"}`
   }
 
-  sign(signer: ISigningKey): void {
-    this.signature = signer.sign(this.composePayload())
+  async sign(signer: ISigningKey): Promise<void> {
+    this.signature = await signer.sign(this.composePayload())
   }
 
-  verify(verifier: IVerifier, publicKey: string): boolean {
+  async verify(verifier: IVerifier, publicKey: string): Promise<boolean> {
     if (this.signature === undefined) {
       throw 'null signature'
     }
 
-    return verifier.verify(this.composePayload(), this.signature, publicKey)
+    return await verifier.verify(this.composePayload(), this.signature, publicKey)
   }
 }

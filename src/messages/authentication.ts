@@ -22,7 +22,7 @@ export class BeginAuthenticationRequest
     super()
   }
 
-  serialize(): string {
+  async serialize(): Promise<string> {
     return JSON.stringify({
       payload: {
         identification: {
@@ -213,7 +213,7 @@ export class BeginPassphraseAuthenticationRequest
     super()
   }
 
-  serialize(): string {
+  async serialize(): Promise<string> {
     return JSON.stringify({
       payload: {
         identification: {

@@ -1,10 +1,10 @@
-import Pako from 'pako'
 import { IVerifier } from '../interfaces/crypto'
 import { Base64 } from '../utils/base64'
 import { SignableMessage } from './request'
 import { IServerAccessNonceStore } from '../interfaces/storage'
 
 import { TextDecoder, TextEncoder } from 'util'
+import { Gzip } from '../utils/gzip'
 
 export interface IAccessToken<T> {
   accountId: string
@@ -25,7 +25,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     super()
   }
 
-  static parse<T>(message: string): AccessToken<T> {
+  static async parse<T>(message: string): Promise<AccessToken<T>> {
     const signature = message.substring(0, 88)
     let rest = message.substring(88)
 
@@ -34,7 +34,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     }
 
     const compressedToken = Base64.decode(message)
-    const tokenBytes = Pako.inflate(compressedToken)
+    const tokenBytes = await Gzip.inflate(compressedToken)
 
     const decoder = new TextDecoder('utf-8')
     const tokenString = decoder.decode(tokenBytes)
@@ -63,10 +63,10 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     })
   }
 
-  serialize(): string {
+  async serialize(): Promise<string> {
     const encoder = new TextEncoder()
     const tokenBytes = encoder.encode(this.composePayload())
-    const compressedToken = Pako.deflate(tokenBytes)
+    const compressedToken = await Gzip.deflate(tokenBytes)
     const token = Base64.encode(compressedToken)
       .replaceAll('+', '-')
       .replaceAll('/', '_')
@@ -75,8 +75,8 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     return this.signature + token
   }
 
-  verify(verifier: IVerifier, publicKey: string): boolean {
-    if (!super.verify(verifier, publicKey)) {
+  async verify(verifier: IVerifier, publicKey: string): Promise<boolean> {
+    if (!(await super.verify(verifier, publicKey))) {
       return false
     }
 
@@ -135,19 +135,19 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     })
   }
 
-  verifyRequest(
+  async verifyRequest(
     nonceStore: IServerAccessNonceStore,
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
-  ): boolean {
-    const accessToken = AccessToken.parse(this.token)
+  ): Promise<boolean> {
+    const accessToken = await AccessToken.parse(this.token)
 
-    if (!accessToken.verify(tokenVerifier, serverAccessPublicKey)) {
+    if (!(await accessToken.verify(tokenVerifier, serverAccessPublicKey))) {
       return false
     }
 
-    if (!super.verify(verifier, accessToken.publicKey)) {
+    if (!(await super.verify(verifier, accessToken.publicKey))) {
       return false
     }
 
@@ -162,7 +162,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
       return false
     }
 
-    if (!nonceStore.reserve(this.payload.access.nonce)) {
+    if (!(await nonceStore.reserve(this.payload.access.nonce))) {
       return false
     }
 

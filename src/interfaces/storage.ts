@@ -1,65 +1,65 @@
 import { ISigningKey } from './crypto'
 
 export interface IClientValueStore {
-  store(accountId: string): void
-  get(): string
+  store(accountId: string): Promise<void>
+  get(): Promise<string>
 }
 
 export interface IServerAccessNonceStore {
-  reserve(nonce: string): boolean
+  reserve(nonce: string): Promise<boolean>
 }
 
 export interface IServerRefreshNonceStore {
-  create(sessionId: string, nextDigest: string): void
-  evolve(current: string, nextDigest: string): void
+  create(sessionId: string, nextDigest: string): Promise<void>
+  evolve(current: string, nextDigest: string): Promise<void>
 }
 
 export interface IClientRefreshNonceStore {
-  initialize(): string
-  evolve(): [string, string]
+  initialize(): Promise<string>
+  evolve(): Promise<[string, string]>
 }
 
 export interface IServerAuthenticationNonceStore {
-  generate(accountId: string): string
-  validate(nonce: string): string
+  generate(accountId: string): Promise<string>
+  validate(nonce: string): Promise<string>
 }
 
 export interface IServerRegistrationTokenStore {
-  generate(): string
-  validate(token: string): string
-  invalidate(token: string): void
+  generate(): Promise<string>
+  validate(token: string): Promise<string>
+  invalidate(token: string): Promise<void>
 }
 
 export interface IServerPassphraseRegistrationTokenStore {
-  generate(salt: string, parameters: string): string
-  validate(token: string): [string, string, string]
-  invalidate(token: string): void
+  generate(salt: string, parameters: string): Promise<string>
+  validate(token: string): Promise<[string, string, string]>
+  invalidate(token: string): Promise<void>
 }
 
 export interface IClientRotatingKeyStore {
-  initialize(): [string, string]
-  rotate(): [string, string]
+  initialize(): Promise<[string, string]>
+  rotate(): Promise<[string, string]>
   signer(): ISigningKey
 }
 
 export interface IClientSingleKeyStore {
-  generate(): string
+  generate(): Promise<string>
   signer(): ISigningKey
 }
 
 export interface IServerAuthenticationKeyStore {
-  register(accountId: string, deviceId: string, current: string, nextDigest: string): void
-  rotate(accountId: string, deviceId: string, current: string, nextDigest: string): void
+  register(accountId: string, deviceId: string, current: string, nextDigest: string): Promise<void>
+  rotate(accountId: string, deviceId: string, current: string, nextDigest: string): Promise<void>
   public(accountId: string, deviceId: string): string
 }
 
 export interface IServerPassphraseAuthenticationKeyStore {
-  register(accountId: string, publicKeyDigest: string, salt: string, parameters: string): void
-  getDerivationMaterials(accountId: string): [string, string]
-  verifyPublicKeyDigest(accountId: string, publicKeyDigest: string): boolean
+  register(accountId: string, publicKeyDigest: string, salt: string, parameters: string): Promise<void>
+  getDerivationMaterials(accountId: string): Promise<[string, string]>
+  verifyPublicKeyDigest(accountId: string, publicKeyDigest: string): Promise<boolean>
 }
 
 export interface IServerRefreshKeyStore {
-  create(accountId: string, publicKey: string): string
-  get(sessionId: string): [string, string]
+  create(accountId: string, publicKey: string): Promise<string>
+  get(sessionId: string): Promise<[string, string]>
 }

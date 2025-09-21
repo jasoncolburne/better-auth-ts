@@ -8,9 +8,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -20,7 +20,9 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
@@ -41,9 +43,11 @@
     "@types/pako": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^8.44.0",
     "@typescript-eslint/parser": "^8.44.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "jiti": "^2.5.1",
     "libsodium-wrappers": "^0.7.15",
     "pako": "^2.1.0",
     "prettier": "^3.6.2",

@@ -1,3 +1,3 @@
 export interface INetwork {
-  sendRequest(path: string, message: string): string
+  sendRequest(path: string, message: string): Promise<string>
 }
