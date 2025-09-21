@@ -10,6 +10,7 @@ import {
   IVerificationKey,
 } from '../interfaces'
 import {
+  AccessRequest,
   BeginAuthenticationRequest,
   BeginAuthenticationResponse,
   BeginPassphraseAuthenticationRequest,
@@ -29,6 +30,7 @@ import {
   RotateAuthenticationKeyResponse,
 } from '../messages'
 import { SignableMessage } from '../messages/request'
+import { rfc3339Nano } from '../utils/time'
 
 export class BetterAuthClient {
   constructor(
@@ -43,6 +45,7 @@ export class BetterAuthClient {
       }
       token: {
         refresh: IClientValueStore
+        access: IClientValueStore
       }
       key: {
         authentication: IClientRotatingKeyStore
@@ -301,10 +304,20 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
-    this.stores.token.refresh.store(response.payload.access.token)
+    this.stores.token.access.store(response.payload.access.token)
   }
 
-  // makeRequest<T, R>(message: string): R {
+  makeAccessRequest<T>(path: string, request: T): string {
+    const accessRequest = new AccessRequest<T>(this.stores.token.access.get(), {
+      access: {
+        timestamp: rfc3339Nano(new Date()),
+        nonce: this.crypto.nonce.generate128(),
+      },
+      request: request,
+    })
 
-  // }
+    accessRequest.sign(this.stores.key.access.signer())
+    const message = accessRequest.serialize()
+    return this.io.network.sendRequest(path, message)
+  }
 }
