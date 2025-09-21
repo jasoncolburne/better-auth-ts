@@ -1,7 +1,7 @@
 import { ISigningKey } from './crypto'
 
 export interface IClientValueStore {
-  store(accountId: string): Promise<void>
+  store(value: string): Promise<void>
   get(): Promise<string>
 }
 
