@@ -162,9 +162,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
       return false
     }
 
-    if (!(await nonceStore.reserve(this.payload.access.nonce))) {
-      return false
-    }
+    await nonceStore.reserve(accessToken.accountId, this.payload.access.nonce)
 
     return true
   }

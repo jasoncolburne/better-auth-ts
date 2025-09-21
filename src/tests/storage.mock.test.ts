@@ -1,31 +1,36 @@
 import {
+  IDigester,
   ISalter,
+  IServerAccessNonceStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerAuthenticationRegistrationTokenStore,
   IServerPassphraseAuthenticationKeyStore,
   IServerPassphraseRegistrationTokenStore,
   IServerRefreshKeyStore,
+  IServerRefreshNonceStore,
 } from '../interfaces'
-import { Blake3 } from './crypto/blake3'
-import { getEntropy } from './crypto/entropy'
-import { TextEncoder } from 'util'
 import { Noncer } from './crypto/nonce'
+import { Digester } from './crypto/digest'
 
 export class ServerAuthenticationRegistrationTokenStore
   implements IServerAuthenticationRegistrationTokenStore
 {
   private readonly dataByToken: Map<string, string>
+  private readonly digester: IDigester
+  private readonly noncer: ISalter
 
   constructor() {
     this.dataByToken = new Map<string, string>()
+    this.digester = new Digester()
+    this.noncer = new Noncer()
   }
 
   async generate(): Promise<string> {
-    let entropy = await getEntropy(32)
-    const accountId = await Blake3.cesrDigest(entropy)
-    entropy = await getEntropy(32)
-    const token = await Blake3.cesrDigest(entropy)
+    let saltyNonce = await this.noncer.generate128()
+    const accountId = await this.digester.sum(saltyNonce)
+    saltyNonce = await this.noncer.generate128()
+    const token = await this.digester.sum(saltyNonce)
 
     this.dataByToken.set(token, accountId)
 
@@ -51,16 +56,20 @@ export class ServerPassphraseRegistrationTokenStore
   implements IServerPassphraseRegistrationTokenStore
 {
   private readonly dataByToken: Map<string, [string, string, string]>
+  private readonly digester: IDigester
+  private readonly noncer: ISalter
 
   constructor() {
     this.dataByToken = new Map<string, [string, string, string]>()
+    this.digester = new Digester()
+    this.noncer = new Noncer()
   }
 
   async generate(salt: string, parameters: string): Promise<string> {
-    const e1 = await getEntropy(32)
-    const accountId = await Blake3.cesrDigest(e1)
-    const e2 = await getEntropy(32)
-    const token = await Blake3.cesrDigest(e2)
+    let saltyNonce = await this.noncer.generate128()
+    const accountId = await this.digester.sum(saltyNonce)
+    saltyNonce = await this.noncer.generate128()
+    const token = await this.digester.sum(saltyNonce)
 
     this.dataByToken.set(token, [accountId, salt, parameters])
 
@@ -84,9 +93,11 @@ export class ServerPassphraseRegistrationTokenStore
 
 export class ServerAuthenticationKeyStore implements IServerAuthenticationKeyStore {
   private readonly dataByToken: Map<[string, string], [string, string]>
+  private readonly digester: IDigester
 
   constructor() {
     this.dataByToken = new Map<[string, string], [string, string]>()
+    this.digester = new Digester()
   }
 
   async register(
@@ -110,9 +121,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'not found'
     }
 
-    const encoder = new TextEncoder()
-    const bytes = encoder.encode(current)
-    const cesrDigest = await Blake3.cesrDigest(bytes)
+    const cesrDigest = await this.digester.sum(current)
 
     if (bundle[1] !== cesrDigest) {
       throw 'invalid forward secret'
@@ -179,14 +188,18 @@ export class ServerPassphraseAuthenticationKeyStore
 
 export class ServerRefreshKeyStore implements IServerRefreshKeyStore {
   private readonly dataBySessionId: Map<string, [string, string]>
+  private readonly digester: IDigester
+  private readonly noncer: ISalter
 
   constructor() {
     this.dataBySessionId = new Map<string, [string, string]>()
+    this.digester = new Digester()
+    this.noncer = new Noncer()
   }
 
   async create(accountId: string, publicKey: string): Promise<string> {
-    const entropy = await getEntropy(32)
-    const sessionId = await Blake3.cesrDigest(entropy)
+    const nonce = await this.noncer.generate128()
+    const sessionId = await this.digester.sum(nonce)
 
     this.dataBySessionId.set(sessionId, [accountId, publicKey])
 
@@ -228,5 +241,58 @@ export class ServerAuthenticationNonceStore implements IServerAuthenticationNonc
     }
 
     return accountId
+  }
+}
+
+export class ServerRefreshNonceStore implements IServerRefreshNonceStore {
+  private readonly dataBySessionId: Map<string, string>
+  private readonly digester: IDigester
+
+  constructor() {
+    this.dataBySessionId = new Map<string, string>()
+    this.digester = new Digester()
+  }
+
+  async create(sessionId: string, nextDigest: string): Promise<void> {
+    const stored = this.dataBySessionId.get(sessionId)
+
+    if (typeof stored !== 'undefined') {
+      throw 'already exists'
+    }
+
+    this.dataBySessionId.set(sessionId, nextDigest)
+  }
+
+  async evolve(sessionId: string, current: string, nextDigest: string): Promise<void> {
+    const stored = this.dataBySessionId.get(sessionId)
+
+    if (typeof stored === 'undefined') {
+      throw 'not found'
+    }
+
+    const digest = await this.digester.sum(current)
+    if (digest !== stored) {
+      throw 'digest mismatch'
+    }
+
+    this.dataBySessionId.set(sessionId, nextDigest)
+  }
+}
+
+export class ServerAccessNonceStore implements IServerAccessNonceStore {
+  private readonly accountIdsByNonce: Map<string, string>
+
+  constructor() {
+    this.accountIdsByNonce = new Map<string, string>()
+  }
+
+  async reserve(accountId: string, nonce: string): Promise<void> {
+    const stored = this.accountIdsByNonce.get(nonce)
+
+    if (typeof stored !== 'undefined') {
+      throw 'already used'
+    }
+
+    this.accountIdsByNonce.set(nonce, accountId)
   }
 }

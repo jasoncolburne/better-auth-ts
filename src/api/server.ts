@@ -344,6 +344,7 @@ export class BetterAuthServer {
     }
 
     await this.stores.nonce.refresh.evolve(
+      request.payload.refresh.sessionId,
       request.payload.refresh.nonces.current,
       request.payload.refresh.nonces.nextDigest
     )

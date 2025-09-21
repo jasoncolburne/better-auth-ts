@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { BetterAuthClient, BetterAuthServer } from '../api'
 import { INetwork } from '../interfaces'
 import {
+  ServerAccessNonceStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerAuthenticationRegistrationTokenStore,
   ServerPassphraseAuthenticationKeyStore,
   ServerPassphraseRegistrationTokenStore,
   ServerRefreshKeyStore,
+  ServerRefreshNonceStore,
 } from './storage.mock.test'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
@@ -70,7 +72,7 @@ describe('api', () => {
       nonce: {
         authentication: new ServerAuthenticationNonceStore(),
         refresh: new ServerRefreshNonceStore(),
-        access: new ServerAccessNoneStore(),
+        access: new ServerAccessNonceStore(),
       },
     },
     {

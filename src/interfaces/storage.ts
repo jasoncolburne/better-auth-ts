@@ -6,12 +6,12 @@ export interface IClientValueStore {
 }
 
 export interface IServerAccessNonceStore {
-  reserve(nonce: string): Promise<boolean>
+  reserve(accountId: string, nonce: string): Promise<void>
 }
 
 export interface IServerRefreshNonceStore {
   create(sessionId: string, nextDigest: string): Promise<void>
-  evolve(current: string, nextDigest: string): Promise<void>
+  evolve(sessionId: string, current: string, nextDigest: string): Promise<void>
 }
 
 export interface IClientRefreshNonceStore {
