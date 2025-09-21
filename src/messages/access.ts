@@ -96,15 +96,13 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   }
 }
 
-export interface IAccess {
-  timestamp: string
-  nonce: string
-}
-
 export interface IAccessRequest<T> {
   token: string
   payload: {
-    access: IAccess
+    access: {
+      timestamp: string
+      nonce: string
+    }
     request: T
   }
   signature?: string
