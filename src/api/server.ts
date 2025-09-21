@@ -66,7 +66,7 @@ export class BetterAuthServer {
         key: IVerifier
         passphrase: IVerifier
       }
-      salt: ISalter
+      nonce: ISalter
       digest: IDigester
     }
   ) {}
@@ -95,7 +95,7 @@ export class BetterAuthServer {
 
   async generatePassphraseRegistrationMaterials(): Promise<string> {
     const params = '$argon2id$v=19$m=262144,t=3,p=4$' // TODO remove magic
-    const salt = await this.crypto.salt.generate128()
+    const salt = await this.crypto.nonce.generate128()
 
     const token = await this.stores.token.registration.passphrase.generate(salt, params)
 

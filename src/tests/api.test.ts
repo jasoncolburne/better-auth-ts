@@ -3,10 +3,14 @@ import { BetterAuthClient, BetterAuthServer } from '../api'
 import { INetwork } from '../interfaces'
 import {
   ServerAuthenticationKeyStore,
+  ServerAuthenticationNonceStore,
   ServerAuthenticationRegistrationTokenStore,
   ServerPassphraseAuthenticationKeyStore,
   ServerPassphraseRegistrationTokenStore,
+  ServerRefreshKeyStore,
 } from './storage.mock.test'
+import { Noncer } from './crypto/nonce'
+import { Digester } from './crypto/digest'
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -64,9 +68,9 @@ describe('api', () => {
         refresh: new ServerRefreshKeyStore(),
       },
       nonce: {
-        authentication: serverAuthenticationNonceStore,
-        refresh: serverRefreshNonceStore,
-        access: serverAccessNonceStore,
+        authentication: new ServerAuthenticationNonceStore(),
+        refresh: new ServerRefreshNonceStore(),
+        access: new ServerAccessNoneStore(),
       },
     },
     {
@@ -78,8 +82,8 @@ describe('api', () => {
         key: keyVerifier,
         passphrase: passphraseVerifier,
       },
-      salt: salter,
-      digest: digester,
+      nonce: new Noncer(),
+      digest: new Digester(),
     }
   )
 
@@ -110,12 +114,12 @@ describe('api', () => {
       },
     },
     {
-      digest: hasher,
+      digest: new Digester(),
       publicKeys: {
         response: responseKey,
       },
-      keyDerivation: keyDeriver,
-      nonce: noncer,
+      keyDerivation: new KeyDeriver(),
+      nonce: new Noncer(),
     },
     {
       network: mockNetworkServer,

@@ -1,12 +1,16 @@
 import {
+  ISalter,
   IServerAuthenticationKeyStore,
+  IServerAuthenticationNonceStore,
   IServerAuthenticationRegistrationTokenStore,
   IServerPassphraseAuthenticationKeyStore,
   IServerPassphraseRegistrationTokenStore,
+  IServerRefreshKeyStore,
 } from '../interfaces'
 import { Blake3 } from './crypto/blake3'
 import { getEntropy } from './crypto/entropy'
 import { TextEncoder } from 'util'
+import { Noncer } from './crypto/nonce'
 
 export class ServerAuthenticationRegistrationTokenStore
   implements IServerAuthenticationRegistrationTokenStore
@@ -18,10 +22,10 @@ export class ServerAuthenticationRegistrationTokenStore
   }
 
   async generate(): Promise<string> {
-    const e1 = await getEntropy(32)
-    const accountId = await Blake3.cesrDigest(e1)
-    const e2 = await getEntropy(32)
-    const token = await Blake3.cesrDigest(e2)
+    let entropy = await getEntropy(32)
+    const accountId = await Blake3.cesrDigest(entropy)
+    entropy = await getEntropy(32)
+    const token = await Blake3.cesrDigest(entropy)
 
     this.dataByToken.set(token, accountId)
 
@@ -170,5 +174,59 @@ export class ServerPassphraseAuthenticationKeyStore
     }
 
     return bundle[0] === publicKeyDigest
+  }
+}
+
+export class ServerRefreshKeyStore implements IServerRefreshKeyStore {
+  private readonly dataBySessionId: Map<string, [string, string]>
+
+  constructor() {
+    this.dataBySessionId = new Map<string, [string, string]>()
+  }
+
+  async create(accountId: string, publicKey: string): Promise<string> {
+    const entropy = await getEntropy(32)
+    const sessionId = await Blake3.cesrDigest(entropy)
+
+    this.dataBySessionId.set(sessionId, [accountId, publicKey])
+
+    return sessionId
+  }
+
+  async get(sessionId: string): Promise<[string, string]> {
+    const bundle = this.dataBySessionId.get(sessionId)
+
+    if (typeof bundle === 'undefined') {
+      throw 'invalid sessionId'
+    }
+
+    return bundle
+  }
+}
+
+export class ServerAuthenticationNonceStore implements IServerAuthenticationNonceStore {
+  private readonly dataByNonce: Map<string, string>
+  private readonly noncer: ISalter
+
+  constructor() {
+    this.dataByNonce = new Map<string, string>()
+    this.noncer = new Noncer()
+  }
+
+  async generate(accountId: string): Promise<string> {
+    const nonce = await this.noncer.generate128()
+    this.dataByNonce.set(nonce, accountId)
+
+    return nonce
+  }
+
+  async validate(nonce: string): Promise<string> {
+    const accountId = this.dataByNonce.get(nonce)
+
+    if (typeof accountId === 'undefined') {
+      throw 'not found'
+    }
+
+    return accountId
   }
 }
