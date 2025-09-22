@@ -16,7 +16,7 @@ export default defineConfig({
         '**/types.*'
       ]
     },
-    setupFiles: ['./src/test-setup.ts'],
+    setupFiles: [],
   },
   resolve: {
     alias: {
