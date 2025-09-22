@@ -83,9 +83,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
       return false
     }
 
-    const now = Date.now()
-    const issuedAt = new Date(this.issuedAt!).getTime()
-    const expiry = new Date(this.expiry!).getTime()
+    const now = new Date()
+    const issuedAt = new Date(this.issuedAt)
+    const expiry = new Date(this.expiry)
 
     if (now < issuedAt) {
       return false
@@ -145,10 +145,12 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
       return false
     }
 
-    const now = Date.now()
-    const accessTime = new Date(this.payload.access.timestamp).getTime()
+    const now = new Date()
+    const accessTime = new Date(this.payload.access.timestamp)
+    const expiry = new Date(accessTime)
+    expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds * 2)
 
-    if (now > accessTime + 30000) {
+    if (now > expiry) {
       return false
     }
 
