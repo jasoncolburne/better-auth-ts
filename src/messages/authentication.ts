@@ -1,4 +1,5 @@
-import { SerializableMessage, SignableMessage } from './request'
+import { SerializableMessage, SignableMessage } from './message'
+import { ServerResponse } from './response'
 
 interface IBeginAuthenticationRequest {
   payload: {
@@ -24,11 +25,7 @@ export class BeginAuthenticationRequest
 
   async serialize(): Promise<string> {
     return JSON.stringify({
-      payload: {
-        identification: {
-          accountId: this.payload.identification.accountId,
-        },
-      },
+      payload: this.payload,
     })
   }
 
@@ -39,45 +36,14 @@ export class BeginAuthenticationRequest
 }
 
 interface IBeginAuthenticationResponse {
-  payload: {
-    authentication: {
-      nonce: string
-    }
-    publicKeyDigest: string
+  authentication: {
+    nonce: string
   }
-  signature?: string
 }
 
-export class BeginAuthenticationResponse
-  extends SignableMessage
-  implements IBeginAuthenticationResponse
-{
-  constructor(
-    public payload: {
-      authentication: {
-        nonce: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      authentication: {
-        nonce: this.payload.authentication.nonce,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class BeginAuthenticationResponse extends ServerResponse<IBeginAuthenticationResponse> {
   static parse(message: string): BeginAuthenticationResponse {
-    const json = JSON.parse(message)
-    const result = new BeginAuthenticationResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, BeginAuthenticationResponse)
   }
 }
 
@@ -123,20 +89,7 @@ export class CompleteAuthenticationRequest
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      identification: {
-        deviceId: this.payload.identification.deviceId,
-      },
-      authentication: {
-        nonce: this.payload.authentication.nonce,
-      },
-      refresh: {
-        publicKey: this.payload.refresh.publicKey,
-        nonces: {
-          nextDigest: this.payload.refresh.nonces.nextDigest,
-        },
-      },
-    })
+    return JSON.stringify(this.payload)
   }
 
   static parse(message: string): CompleteAuthenticationRequest {
@@ -149,45 +102,14 @@ export class CompleteAuthenticationRequest
 }
 
 interface ICompleteAuthenticationResponse {
-  payload: {
-    refresh: {
-      sessionId: string
-    }
-    publicKeyDigest: string
+  refresh: {
+    sessionId: string
   }
-  signature?: string
 }
 
-export class CompleteAuthenticationResponse
-  extends SignableMessage
-  implements ICompleteAuthenticationResponse
-{
-  constructor(
-    public payload: {
-      refresh: {
-        sessionId: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      refresh: {
-        sessionId: this.payload.refresh.sessionId,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class CompleteAuthenticationResponse extends ServerResponse<ICompleteAuthenticationResponse> {
   static parse(message: string): CompleteAuthenticationResponse {
-    const json = JSON.parse(message)
-    const result = new CompleteAuthenticationResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, CompleteAuthenticationResponse)
   }
 }
 
@@ -215,11 +137,7 @@ export class BeginPassphraseAuthenticationRequest
 
   async serialize(): Promise<string> {
     return JSON.stringify({
-      payload: {
-        identification: {
-          accountId: this.payload.identification.accountId,
-        },
-      },
+      payload: this.payload,
     })
   }
 
@@ -230,51 +148,16 @@ export class BeginPassphraseAuthenticationRequest
 }
 
 interface IBeginPassphraseAuthenticationResponse {
-  payload: {
-    passphraseAuthentication: {
-      nonce: string
-      parameters: string
-      salt: string
-    }
-    publicKeyDigest: string
+  passphraseAuthentication: {
+    nonce: string
+    parameters: string
+    salt: string
   }
-  signature?: string
 }
 
-export class BeginPassphraseAuthenticationResponse
-  extends SignableMessage
-  implements IBeginPassphraseAuthenticationResponse
-{
-  constructor(
-    public payload: {
-      passphraseAuthentication: {
-        nonce: string
-        parameters: string
-        salt: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      passphraseAuthentication: {
-        nonce: this.payload.passphraseAuthentication.nonce,
-        parameters: this.payload.passphraseAuthentication.parameters,
-        salt: this.payload.passphraseAuthentication.salt,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class BeginPassphraseAuthenticationResponse extends ServerResponse<IBeginPassphraseAuthenticationResponse> {
   static parse(message: string): BeginPassphraseAuthenticationResponse {
-    const json = JSON.parse(message)
-    const result = new BeginPassphraseAuthenticationResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, BeginPassphraseAuthenticationResponse)
   }
 }
 
@@ -340,44 +223,13 @@ export class CompletePassphraseAuthenticationRequest
 }
 
 interface ICompletePassphraseAuthenticationResponse {
-  payload: {
-    refresh: {
-      sessionId: string
-    }
-    publicKeyDigest: string
+  refresh: {
+    sessionId: string
   }
-  signature?: string
 }
 
-export class CompletePassphraseAuthenticationResponse
-  extends SignableMessage
-  implements ICompletePassphraseAuthenticationResponse
-{
-  constructor(
-    public payload: {
-      refresh: {
-        sessionId: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      refresh: {
-        sessionId: this.payload.refresh.sessionId,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class CompletePassphraseAuthenticationResponse extends ServerResponse<ICompletePassphraseAuthenticationResponse> {
   static parse(message: string): CompletePassphraseAuthenticationResponse {
-    const json = JSON.parse(message)
-    const result = new CompletePassphraseAuthenticationResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, CompletePassphraseAuthenticationResponse)
   }
 }

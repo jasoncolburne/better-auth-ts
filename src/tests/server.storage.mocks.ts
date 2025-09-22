@@ -272,7 +272,7 @@ export class ServerRefreshNonceStore implements IServerRefreshNonceStore {
 
     const digest = await this.digester.sum(current)
     if (digest !== stored) {
-      throw 'digest mismatch'
+      throw 'digest mismatch server'
     }
 
     this.dataBySessionId.set(sessionId, nextDigest)

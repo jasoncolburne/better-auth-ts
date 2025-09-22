@@ -29,7 +29,7 @@ import {
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
 } from '../messages'
-import { SignableMessage } from '../messages/request'
+import { SignableMessage } from '../messages/message'
 import { rfc3339Nano } from '../utils/time'
 
 export class BetterAuthClient {
@@ -98,7 +98,7 @@ export class BetterAuthClient {
 
     const request = new RegisterAuthenticationKeyRequest({
       registration: {
-        token: materials.payload.registration.token,
+        token: materials.payload.response.registration.token,
       },
       identification: {
         deviceId: deviceId,
@@ -120,7 +120,7 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
-    await this.stores.identifier.account.store(response.payload.identification.accountId)
+    await this.stores.identifier.account.store(response.payload.response.identification.accountId)
     await this.stores.identifier.device.store(deviceId)
   }
 
@@ -135,13 +135,13 @@ export class BetterAuthClient {
 
     const keyPair = await this.crypto.keyDerivation.derive(
       passphrase,
-      materials.payload.passphraseAuthentication.salt,
-      materials.payload.passphraseAuthentication.parameters
+      materials.payload.response.passphraseAuthentication.salt,
+      materials.payload.response.passphraseAuthentication.parameters
     )
 
     const request = new RegisterPassphraseAuthenticationKeyRequest({
       registration: {
-        token: materials.payload.registration.token,
+        token: materials.payload.response.registration.token,
       },
       passphraseAuthentication: {
         publicKey: await keyPair.public(),
@@ -157,7 +157,7 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
-    await this.stores.identifier.account.store(response.payload.identification.accountId)
+    await this.stores.identifier.account.store(response.payload.response.identification.accountId)
   }
 
   async rotateAuthenticationKey(): Promise<void> {
@@ -185,10 +185,6 @@ export class BetterAuthClient {
     if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
       throw 'invalid signature'
     }
-
-    if (!response.payload.success) {
-      throw 'response not marked successful'
-    }
   }
 
   async authenticate(): Promise<void> {
@@ -214,7 +210,7 @@ export class BetterAuthClient {
         deviceId: await this.stores.identifier.device.get(),
       },
       authentication: {
-        nonce: beginResponse.payload.authentication.nonce,
+        nonce: beginResponse.payload.response.authentication.nonce,
       },
       refresh: {
         publicKey: refreshPublicKey,
@@ -233,7 +229,7 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
-    await this.stores.identifier.session.store(completeResponse.payload.refresh.sessionId)
+    await this.stores.identifier.session.store(completeResponse.payload.response.refresh.sessionId)
   }
 
   async authenticateWithPassphrase(passphrase: string): Promise<void> {
@@ -253,8 +249,8 @@ export class BetterAuthClient {
 
     const keyPair = await this.crypto.keyDerivation.derive(
       passphrase,
-      beginResponse.payload.passphraseAuthentication.salt,
-      beginResponse.payload.passphraseAuthentication.parameters
+      beginResponse.payload.response.passphraseAuthentication.salt,
+      beginResponse.payload.response.passphraseAuthentication.parameters
     )
 
     const refreshPublicKey = await this.stores.key.refresh.generate()
@@ -262,7 +258,7 @@ export class BetterAuthClient {
 
     const completeRequest = new CompletePassphraseAuthenticationRequest({
       passphraseAuthentication: {
-        nonce: beginResponse.payload.passphraseAuthentication.nonce,
+        nonce: beginResponse.payload.response.passphraseAuthentication.nonce,
         publicKey: await keyPair.public(),
       },
       refresh: {
@@ -285,7 +281,7 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
-    await this.stores.identifier.session.store(completeResponse.payload.refresh.sessionId)
+    await this.stores.identifier.session.store(completeResponse.payload.response.refresh.sessionId)
   }
 
   async refreshAccessToken(): Promise<void> {
@@ -314,7 +310,7 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
-    await this.stores.token.access.store(response.payload.access.token)
+    await this.stores.token.access.store(response.payload.response.access.token)
   }
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {

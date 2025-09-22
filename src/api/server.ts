@@ -81,12 +81,14 @@ export class BetterAuthServer {
   async generateRegistrationMaterials(): Promise<string> {
     const token = await this.stores.token.registration.key.generate()
 
-    const response = new RegistrationMaterials({
-      registration: {
-        token: token,
+    const response = new RegistrationMaterials(
+      {
+        registration: {
+          token: token,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -99,16 +101,18 @@ export class BetterAuthServer {
 
     const token = await this.stores.token.registration.passphrase.generate(salt, params)
 
-    const response = new PassphraseRegistrationMaterials({
-      registration: {
-        token: token,
+    const response = new PassphraseRegistrationMaterials(
+      {
+        registration: {
+          token: token,
+        },
+        passphraseAuthentication: {
+          parameters: params,
+          salt: salt,
+        },
       },
-      passphraseAuthentication: {
-        parameters: params,
-        salt: salt,
-      },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -138,12 +142,14 @@ export class BetterAuthServer {
 
     await this.stores.token.registration.key.invalidate(token)
 
-    const response = new RegisterAuthenticationKeyResponse({
-      identification: {
-        accountId: accountId,
+    const response = new RegisterAuthenticationKeyResponse(
+      {
+        identification: {
+          accountId: accountId,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -172,12 +178,14 @@ export class BetterAuthServer {
 
     await this.stores.token.registration.passphrase.invalidate(token)
 
-    const response = new RegisterPassphraseAuthenticationKeyResponse({
-      identification: {
-        accountId: accountId,
+    const response = new RegisterPassphraseAuthenticationKeyResponse(
+      {
+        identification: {
+          accountId: accountId,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -205,10 +213,12 @@ export class BetterAuthServer {
     )
 
     // this is replayable, and should be fixed but making it not fixed
-    const response = new RotateAuthenticationKeyResponse({
-      success: true,
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+    const response = new RotateAuthenticationKeyResponse(
+      {
+        nonce: await this.crypto.nonce.generate128(),
+      },
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -224,12 +234,14 @@ export class BetterAuthServer {
       request.payload.identification.accountId
     )
 
-    const response = new BeginAuthenticationResponse({
-      authentication: {
-        nonce: nonce,
+    const response = new BeginAuthenticationResponse(
+      {
+        authentication: {
+          nonce: nonce,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -256,12 +268,14 @@ export class BetterAuthServer {
     )
     await this.stores.nonce.refresh.create(sessionId, request.payload.refresh.nonces.nextDigest)
 
-    const response = new CompleteAuthenticationResponse({
-      refresh: {
-        sessionId: sessionId,
+    const response = new CompleteAuthenticationResponse(
+      {
+        refresh: {
+          sessionId: sessionId,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -278,14 +292,16 @@ export class BetterAuthServer {
       request.payload.identification.accountId
     )
 
-    const response = new BeginPassphraseAuthenticationResponse({
-      passphraseAuthentication: {
-        nonce: nonce,
-        salt: salt,
-        parameters: parameters,
+    const response = new BeginPassphraseAuthenticationResponse(
+      {
+        passphraseAuthentication: {
+          nonce: nonce,
+          salt: salt,
+          parameters: parameters,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -319,12 +335,14 @@ export class BetterAuthServer {
     )
     await this.stores.nonce.refresh.create(sessionId, request.payload.refresh.nonces.nextDigest)
 
-    const response = new CompletePassphraseAuthenticationResponse({
-      refresh: {
-        sessionId: sessionId,
+    const response = new CompletePassphraseAuthenticationResponse(
+      {
+        refresh: {
+          sessionId: sessionId,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 
@@ -366,12 +384,14 @@ export class BetterAuthServer {
     await accessToken.sign(this.crypto.keyPairs.access)
     const token = await accessToken.serialize()
 
-    const response = new RefreshAccessTokenResponse({
-      access: {
-        token: token,
+    const response = new RefreshAccessTokenResponse(
+      {
+        access: {
+          token: token,
+        },
       },
-      publicKeyDigest: await this.responsePublicKeyDigest(),
-    })
+      await this.responsePublicKeyDigest()
+    )
 
     await response.sign(this.crypto.keyPairs.response)
 

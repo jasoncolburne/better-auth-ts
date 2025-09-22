@@ -1,97 +1,31 @@
-import { SignableMessage } from './request'
+import { SignableMessage } from './message'
+import { ServerResponse } from './response'
 
 interface IRegistrationMaterials {
-  payload: {
-    registration: {
-      token: string
-    }
-    publicKeyDigest: string
+  registration: {
+    token: string
   }
-  signature?: string
 }
 
-export class RegistrationMaterials extends SignableMessage implements IRegistrationMaterials {
-  constructor(
-    public payload: {
-      registration: {
-        token: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      registration: {
-        token: this.payload.registration.token,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class RegistrationMaterials extends ServerResponse<IRegistrationMaterials> {
   static parse(message: string): RegistrationMaterials {
-    const json = JSON.parse(message)
-    const result = new RegistrationMaterials(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, RegistrationMaterials)
   }
 }
 
 export interface IPassphraseRegistrationMaterials {
-  payload: {
-    registration: {
-      token: string
-    }
-    passphraseAuthentication: {
-      parameters: string
-      salt: string
-    }
-    publicKeyDigest: string
+  registration: {
+    token: string
   }
-  signature?: string
+  passphraseAuthentication: {
+    parameters: string
+    salt: string
+  }
 }
 
-export class PassphraseRegistrationMaterials
-  extends SignableMessage
-  implements IPassphraseRegistrationMaterials
-{
-  constructor(
-    public payload: {
-      registration: {
-        token: string
-      }
-      passphraseAuthentication: {
-        parameters: string
-        salt: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      registration: {
-        token: this.payload.registration.token,
-      },
-      passphraseAuthentication: {
-        parameters: this.payload.passphraseAuthentication.parameters,
-        salt: this.payload.passphraseAuthentication.salt,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class PassphraseRegistrationMaterials extends ServerResponse<IPassphraseRegistrationMaterials> {
   static parse(message: string): PassphraseRegistrationMaterials {
-    const json = JSON.parse(message)
-    const result = new PassphraseRegistrationMaterials(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, PassphraseRegistrationMaterials)
   }
 }
 
@@ -137,20 +71,7 @@ export class RegisterAuthenticationKeyRequest
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      registration: {
-        token: this.payload.registration.token,
-      },
-      identification: {
-        deviceId: this.payload.identification.deviceId,
-      },
-      authentication: {
-        publicKeys: {
-          current: this.payload.authentication.publicKeys.current,
-          nextDigest: this.payload.authentication.publicKeys.nextDigest,
-        },
-      },
-    })
+    return JSON.stringify(this.payload)
   }
 
   static parse(message: string): RegisterAuthenticationKeyRequest {
@@ -163,45 +84,14 @@ export class RegisterAuthenticationKeyRequest
 }
 
 interface IRegisterAuthenticationKeyResponse {
-  payload: {
-    identification: {
-      accountId: string
-    }
-    publicKeyDigest: string
+  identification: {
+    accountId: string
   }
-  signature?: string
 }
 
-export class RegisterAuthenticationKeyResponse
-  extends SignableMessage
-  implements IRegisterAuthenticationKeyResponse
-{
-  constructor(
-    public payload: {
-      identification: {
-        accountId: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      identification: {
-        accountId: this.payload.identification.accountId,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class RegisterAuthenticationKeyResponse extends ServerResponse<IRegisterAuthenticationKeyResponse> {
   static parse(message: string): RegisterAuthenticationKeyResponse {
-    const json = JSON.parse(message)
-    const result = new RegisterAuthenticationKeyResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, RegisterAuthenticationKeyResponse)
   }
 }
 
@@ -235,14 +125,7 @@ export class RegisterPassphraseAuthenticationKeyRequest
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      registration: {
-        token: this.payload.registration.token,
-      },
-      passphraseAuthentication: {
-        publicKey: this.payload.passphraseAuthentication.publicKey,
-      },
-    })
+    return JSON.stringify(this.payload)
   }
 
   static parse(message: string): RegisterPassphraseAuthenticationKeyRequest {
@@ -255,44 +138,13 @@ export class RegisterPassphraseAuthenticationKeyRequest
 }
 
 interface IRegisterPassphraseAuthenticationKeyResponse {
-  payload: {
-    identification: {
-      accountId: string
-    }
-    publicKeyDigest: string
+  identification: {
+    accountId: string
   }
-  signature?: string
 }
 
-export class RegisterPassphraseAuthenticationKeyResponse
-  extends SignableMessage
-  implements IRegisterPassphraseAuthenticationKeyResponse
-{
-  constructor(
-    public payload: {
-      identification: {
-        accountId: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      identification: {
-        accountId: this.payload.identification.accountId,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class RegisterPassphraseAuthenticationKeyResponse extends ServerResponse<IRegisterPassphraseAuthenticationKeyResponse> {
   static parse(message: string): RegisterPassphraseAuthenticationKeyResponse {
-    const json = JSON.parse(message)
-    const result = new RegisterPassphraseAuthenticationKeyResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, RegisterPassphraseAuthenticationKeyResponse)
   }
 }

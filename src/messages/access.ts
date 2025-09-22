@@ -1,6 +1,6 @@
 import { IVerifier } from '../interfaces/crypto'
 import { Base64 } from '../utils/base64'
-import { SignableMessage } from './request'
+import { SignableMessage } from './message'
 import { IServerAccessNonceStore } from '../interfaces/storage'
 
 import { TextDecoder, TextEncoder } from 'util'
@@ -170,8 +170,3 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     return result
   }
 }
-
-/*
-0IAWUXJn6DVRPZGTqw-Mmjm8hkbfGjwHChtGba7hOtP7fViwumKPV-HNNMVTMnJk4jY9ftm0-VABA2xkIiYrN3zw
-eJxljVtPgzAARv9Ln8V0jGZC4kMxGBEDchlEjDFcCivj0rSUQRb--9DXfY9fzsm5gqwoBtmPdgkMYOHZ0vrwEAinYPjkHvUiyushFqUbM1JdMKWxxbvP6WXqwQNgMm9p4ZBlU3cY26anECdB9J15VlLDDysUbfoaa78JylE7c5_Zb0FzymShdXowVOfwGDYiq9G58pWo4W5v2UlqytbZw1iqE3ryQuJ_PW8pKoQkJR63kgpVpEBdUdUIQmOvGgg97jQN_i_dWDIzypc7Ujvckdk4cprLkQhgXAEjvNs6dOiFuQRDS_7OrOxoD4xvwElWbsqF05GAn3Vdbw86Yk4=
-*/

@@ -1,4 +1,5 @@
-import { SignableMessage } from './request'
+import { SignableMessage } from './message'
+import { ServerResponse } from './response'
 
 interface IRotateAuthenticationKeyRequest {
   payload: {
@@ -38,18 +39,7 @@ export class RotateAuthenticationKeyRequest
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      identification: {
-        accountId: this.payload.identification.accountId,
-        deviceId: this.payload.identification.deviceId,
-      },
-      authentication: {
-        publicKeys: {
-          current: this.payload.authentication.publicKeys.current,
-          nextDigest: this.payload.authentication.publicKeys.nextDigest,
-        },
-      },
-    })
+    return JSON.stringify(this.payload)
   }
 
   static parse(message: string): RotateAuthenticationKeyRequest {
@@ -62,38 +52,11 @@ export class RotateAuthenticationKeyRequest
 }
 
 interface IRotateAuthenticationKeyResponse {
-  payload: {
-    success: boolean
-    publicKeyDigest: string
-  }
-  signature?: string
+  nonce: string
 }
 
-export class RotateAuthenticationKeyResponse
-  extends SignableMessage
-  implements IRotateAuthenticationKeyResponse
-{
-  constructor(
-    public payload: {
-      success: boolean
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      success: this.payload.success,
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class RotateAuthenticationKeyResponse extends ServerResponse<IRotateAuthenticationKeyResponse> {
   static parse(message: string): RotateAuthenticationKeyResponse {
-    const json = JSON.parse(message)
-    const result = new RotateAuthenticationKeyResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, RotateAuthenticationKeyResponse)
   }
 }

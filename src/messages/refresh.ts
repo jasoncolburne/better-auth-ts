@@ -1,4 +1,5 @@
-import { SignableMessage } from './request'
+import { SignableMessage } from './message'
+import { ServerResponse } from './response'
 
 interface IRefreshAccessTokenRequest {
   payload: {
@@ -38,18 +39,7 @@ export class RefreshAccessTokenRequest
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      refresh: {
-        sessionId: this.payload.refresh.sessionId,
-        nonces: {
-          current: this.payload.refresh.nonces.current,
-          nextDigest: this.payload.refresh.nonces.nextDigest,
-        },
-      },
-      access: {
-        publicKey: this.payload.access.publicKey,
-      },
-    })
+    return JSON.stringify(this.payload)
   }
 
   static parse(message: string): RefreshAccessTokenRequest {
@@ -62,44 +52,13 @@ export class RefreshAccessTokenRequest
 }
 
 interface IRefreshAccessTokenResponse {
-  payload: {
-    access: {
-      token: string
-    }
-    publicKeyDigest: string
+  access: {
+    token: string
   }
-  signature?: string
 }
 
-export class RefreshAccessTokenResponse
-  extends SignableMessage
-  implements IRefreshAccessTokenResponse
-{
-  constructor(
-    public payload: {
-      access: {
-        token: string
-      }
-      publicKeyDigest: string
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify({
-      access: {
-        token: this.payload.access.token,
-      },
-      publicKeyDigest: this.payload.publicKeyDigest,
-    })
-  }
-
+export class RefreshAccessTokenResponse extends ServerResponse<IRefreshAccessTokenResponse> {
   static parse(message: string): RefreshAccessTokenResponse {
-    const json = JSON.parse(message)
-    const result = new RefreshAccessTokenResponse(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ServerResponse._parse(message, RefreshAccessTokenResponse)
   }
 }
