@@ -1,10 +1,10 @@
 import {
   IDigester,
   INoncer,
-  IServerAccessNonceStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerRegistrationTokenStore,
+  IServerTimeLockStore,
   ISigningKey,
   IVerificationKey,
   IVerifier,
@@ -29,15 +29,15 @@ import { rfc3339Nano } from '../utils'
 export class BetterAuthServer {
   constructor(
     private readonly stores: {
-      token: {
-        registration: IServerRegistrationTokenStore
+      registration: {
+        token: IServerRegistrationTokenStore
       }
-      key: {
-        authentication: IServerAuthenticationKeyStore
+      authentication: {
+        key: IServerAuthenticationKeyStore
+        nonce: IServerAuthenticationNonceStore
       }
-      nonce: {
-        authentication: IServerAuthenticationNonceStore
-        access: IServerAccessNonceStore
+      access: {
+        keyDigest: IServerTimeLockStore
       }
     },
     private readonly crypto: {
@@ -59,7 +59,7 @@ export class BetterAuthServer {
   // registration
 
   async generateCreationContainer(): Promise<string> {
-    const token = await this.stores.token.registration.generate()
+    const token = await this.stores.registration.token.generate()
 
     const response = new CreationContainer(
       {
@@ -88,16 +88,16 @@ export class BetterAuthServer {
     }
 
     const token = request.payload.registration.token
-    const accountId = await this.stores.token.registration.validate(token)
+    const accountId = await this.stores.registration.token.validate(token)
 
-    await this.stores.key.authentication.register(
+    await this.stores.authentication.key.register(
       accountId,
       request.payload.identification.deviceId,
       request.payload.authentication.publicKeys.current,
       request.payload.authentication.publicKeys.nextDigest
     )
 
-    await this.stores.token.registration.invalidate(token)
+    await this.stores.registration.token.invalidate(token)
 
     const response = new CreationResponse(
       {
@@ -127,7 +127,7 @@ export class BetterAuthServer {
       throw 'invalid signature'
     }
 
-    await this.stores.key.authentication.rotate(
+    await this.stores.authentication.key.rotate(
       request.payload.identification.accountId,
       request.payload.identification.deviceId,
       request.payload.authentication.publicKeys.current,
@@ -151,7 +151,7 @@ export class BetterAuthServer {
   async beginAuthentication(message: string): Promise<string> {
     const request = BeginAuthenticationRequest.parse(message)
 
-    const nonce = await this.stores.nonce.authentication.generate(
+    const nonce = await this.stores.authentication.nonce.generate(
       request.payload.identification.accountId
     )
 
@@ -172,11 +172,11 @@ export class BetterAuthServer {
 
   async completeAuthentication<T>(message: string, attributes: T): Promise<string> {
     const request = CompleteAuthenticationRequest.parse(message)
-    const accountId = await this.stores.nonce.authentication.validate(
+    const accountId = await this.stores.authentication.nonce.validate(
       request.payload.authentication.nonce
     )
 
-    const authenticationPublicKey = this.stores.key.authentication.public(
+    const authenticationPublicKey = await this.stores.authentication.key.public(
       accountId,
       request.payload.identification.deviceId
     )
@@ -240,10 +240,12 @@ export class BetterAuthServer {
       throw 'digest mismatch'
     }
 
-    const now = new Date()
-    const when = new Date(token.refreshExpiry)
+    await this.stores.access.keyDigest.reserve(digest)
 
-    if (now > when) {
+    const now = new Date()
+    const refreshExpiry = new Date(token.refreshExpiry)
+
+    if (now > refreshExpiry) {
       throw 'refresh has expired'
     }
 
@@ -284,24 +286,24 @@ export class BetterAuthServer {
 export class AccessVerifier {
   constructor(
     private readonly stores: {
-      accessNonce: IServerAccessNonceStore
+      access: {
+        nonce: IServerTimeLockStore
+      }
     },
     private readonly crypto: {
       publicKeys: {
         access: IVerificationKey
       }
-      verification: {
-        key: IVerifier
-      }
+      verifier: IVerifier
     }
   ) {}
 
   async verify<T>(message: string): Promise<boolean> {
     const request = AccessRequest.parse<T>(message)
     return await request._verify<T>(
-      this.stores.accessNonce,
-      this.crypto.verification.key,
-      this.crypto.verification.key,
+      this.stores.access.nonce,
+      this.crypto.verifier,
+      this.crypto.verifier,
       await this.crypto.publicKeys.access.public()
     )
   }

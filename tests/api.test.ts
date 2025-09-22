@@ -2,7 +2,7 @@ import { beforeAll, describe, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
 import { INetwork, INoncer, ISigningKey, IVerifier } from '../src/interfaces'
 import {
-  ServerAccessNonceStore,
+  ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerAuthenticationRegistrationTokenStore,
@@ -110,16 +110,16 @@ describe('api', () => {
 
     betterAuthServer = new BetterAuthServer(
       {
-        token: {
-          registration: new ServerAuthenticationRegistrationTokenStore(),
+        registration: {
+          token: new ServerAuthenticationRegistrationTokenStore(30), // minutes
         },
-        key: {
-          authentication: new ServerAuthenticationKeyStore(),
+        authentication: {
+          key: new ServerAuthenticationKeyStore(),
+          nonce: new ServerAuthenticationNonceStore(60), // seconds
         },
-        nonce: {
-          authentication: new ServerAuthenticationNonceStore(),
-          access: new ServerAccessNonceStore(),
-        },
+        access: {
+          keyDigest: new ServerTimeLockStore(60 * 60 * 12)
+        }
       },
       {
         keyPairs: {
@@ -138,15 +138,15 @@ describe('api', () => {
     const attributes = new MockAccessAttributes(map)
     const accessVerifier = new AccessVerifier(
       {
-        accessNonce: new ServerAccessNonceStore(),
+        access: {
+          nonce: new ServerTimeLockStore(30), // seconds
+        }
       },
       {
         publicKeys: {
           access: accessSigner,
         },
-        verification: {
-          key: eccVerifier,
-        },
+        verifier: eccVerifier,
       }
     )
     const mockNetworkServer = new MockNetworkServer(

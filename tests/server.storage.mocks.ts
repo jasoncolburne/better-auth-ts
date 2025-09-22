@@ -1,14 +1,10 @@
 import {
   IDigester,
   INoncer,
-  IServerAccessNonceStore,
+  IServerTimeLockStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerRegistrationTokenStore,
-  IServerPassphraseAuthenticationKeyStore,
-  IServerPassphraseRegistrationTokenStore,
-  IServerRefreshKeyStore,
-  IServerRefreshNonceStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
@@ -17,11 +13,13 @@ export class ServerAuthenticationRegistrationTokenStore
   implements IServerRegistrationTokenStore
 {
   private readonly dataByToken: Map<string, string>
+  private readonly tokenExpirations: Map<string, Date>
   private readonly digester: IDigester
   private readonly noncer: INoncer
 
-  constructor() {
+  constructor(public readonly lifetimeInMinutes: number) {
     this.dataByToken = new Map<string, string>()
+    this.tokenExpirations = new Map<string, Date>()
     this.digester = new Digester()
     this.noncer = new Noncer()
   }
@@ -32,16 +30,25 @@ export class ServerAuthenticationRegistrationTokenStore
     saltyNonce = await this.noncer.generate128()
     const token = await this.digester.sum(saltyNonce)
 
+    const expiration = new Date()
+    expiration.setMinutes(expiration.getMinutes() + this.lifetimeInMinutes)
     this.dataByToken.set(token, accountId)
+    this.tokenExpirations.set(token, expiration)
 
     return token
   }
 
   async validate(token: string): Promise<string> {
+    const expiration = this.tokenExpirations.get(token)
     const accountId = this.dataByToken.get(token)
 
-    if (typeof accountId === 'undefined') {
+    if (typeof accountId === 'undefined' || typeof expiration === 'undefined') {
       throw 'invalid token'
+    }
+
+    const now = new Date()
+    if (now > expiration) {
+      throw 'expired token'
     }
 
     return accountId
@@ -49,6 +56,7 @@ export class ServerAuthenticationRegistrationTokenStore
 
   async invalidate(token: string): Promise<void> {
     this.dataByToken.delete(token)
+    this.tokenExpirations.delete(token)
   }
 }
 
@@ -91,7 +99,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     this.dataByToken.set(accountId + deviceId, [current, nextDigest])
   }
 
-  public(accountId: string, deviceId: string): string {
+  async public(accountId: string, deviceId: string): Promise<string> {
     const bundle = this.dataByToken.get(accountId + deviceId)
 
     if (typeof bundle === 'undefined') {
@@ -104,45 +112,64 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
 
 export class ServerAuthenticationNonceStore implements IServerAuthenticationNonceStore {
   private readonly dataByNonce: Map<string, string>
+  private readonly nonceExpirations: Map<string, Date>
   private readonly noncer: INoncer
 
-  constructor() {
+  constructor(public readonly lifetimeInSeconds: number) {
     this.dataByNonce = new Map<string, string>()
+    this.nonceExpirations = new Map<string, Date>()
     this.noncer = new Noncer()
   }
 
   async generate(accountId: string): Promise<string> {
+    const expiration = new Date()
+    expiration.setSeconds(expiration.getSeconds() + this.lifetimeInSeconds)
+
     const nonce = await this.noncer.generate128()
     this.dataByNonce.set(nonce, accountId)
+    this.nonceExpirations.set(nonce, expiration)
 
     return nonce
   }
 
   async validate(nonce: string): Promise<string> {
     const accountId = this.dataByNonce.get(nonce)
+    const expiration = this.nonceExpirations.get(nonce)
 
-    if (typeof accountId === 'undefined') {
+    if (typeof accountId === 'undefined' || typeof expiration === 'undefined') {
       throw 'not found'
+    }
+
+    const now = new Date()
+
+    if (now > expiration) { 
+      throw 'expired nonce'
     }
 
     return accountId
   }
 }
 
-export class ServerAccessNonceStore implements IServerAccessNonceStore {
-  private readonly accountIdsByNonce: Map<string, string>
+export class ServerTimeLockStore implements IServerTimeLockStore {
+  private readonly nonces: Map<string, Date>
 
-  constructor() {
-    this.accountIdsByNonce = new Map<string, string>()
+  constructor(public readonly lifetimeInSeconds: number) {
+    this.nonces = new Map<string, Date>()
   }
 
-  async reserve(accountId: string, nonce: string): Promise<void> {
-    const stored = this.accountIdsByNonce.get(nonce)
+  async reserve(value: string): Promise<void> {
+    const validAt = this.nonces.get(value)
 
-    if (typeof stored !== 'undefined') {
-      throw 'already used'
+    if (typeof validAt !== 'undefined') {
+      const now = new Date()
+      if (now < validAt) {
+        throw 'value reserved too recently'
+      }
     }
 
-    this.accountIdsByNonce.set(nonce, accountId)
+    const newValidAt = new Date()
+    newValidAt.setSeconds(newValidAt.getSeconds() + this.lifetimeInSeconds)
+
+    this.nonces.set(value, newValidAt)
   }
 }

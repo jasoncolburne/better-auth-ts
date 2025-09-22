@@ -1,4 +1,4 @@
-import { IServerAccessNonceStore, IVerifier } from '../interfaces'
+import { IServerTimeLockStore, IVerifier } from '../interfaces'
 import { Base64, Gzip } from '../utils'
 import { SignableMessage } from './message'
 
@@ -130,7 +130,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   }
 
   async _verify<T>(
-    nonceStore: IServerAccessNonceStore,
+    nonceStore: IServerTimeLockStore,
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
@@ -156,7 +156,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
       return false
     }
 
-    await nonceStore.reserve(accessToken.accountId, this.payload.access.nonce)
+    await nonceStore.reserve(this.payload.access.nonce)
 
     return true
   }

@@ -1,6 +1,5 @@
 import {
   IClientRotatingKeyStore,
-  IClientSingleKeyStore,
   IClientValueStore,
   IDigester,
   ISigningKey,
@@ -48,7 +47,7 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     return [await this.current.public(), nextDigest]
   }
 
-  signer(): ISigningKey {
+  async signer(): Promise<ISigningKey> {
     if (typeof this.current === 'undefined') {
       throw 'call initialize() first'
     }

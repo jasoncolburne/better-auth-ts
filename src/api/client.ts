@@ -91,7 +91,7 @@ export class BetterAuthClient {
       },
     })
 
-    await request.sign(this.stores.key.authentication.signer())
+    await request.sign(await this.stores.key.authentication.signer())
     const message = await request.serialize()
     const reply = await this.io.network.sendRequest('/auth/key/register', message)
 
@@ -121,7 +121,7 @@ export class BetterAuthClient {
       },
     })
 
-    await request.sign(this.stores.key.authentication.signer())
+    await request.sign(await this.stores.key.authentication.signer())
     const message = await request.serialize()
     const reply = await this.io.network.sendRequest('/auth/key/rotate', message)
 
@@ -164,7 +164,7 @@ export class BetterAuthClient {
       },
     })
 
-    await completeRequest.sign(this.stores.key.authentication.signer())
+    await completeRequest.sign(await this.stores.key.authentication.signer())
     const completeMessage = await completeRequest.serialize()
     const completeReply = await this.io.network.sendRequest('/auth/key/complete', completeMessage)
 
@@ -194,7 +194,7 @@ export class BetterAuthClient {
       },
     })
 
-    await request.sign(this.stores.key.access.signer())
+    await request.sign(await this.stores.key.access.signer())
     const message = await request.serialize()
     const reply = await this.io.network.sendRequest('/auth/refresh', message)
 
@@ -216,7 +216,7 @@ export class BetterAuthClient {
       request: request,
     })
 
-    await accessRequest.sign(this.stores.key.access.signer())
+    await accessRequest.sign(await this.stores.key.access.signer())
     const message = await accessRequest.serialize()
     return await this.io.network.sendRequest(path, message)
   }
