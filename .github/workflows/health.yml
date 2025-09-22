@@ -1,4 +1,4 @@
-name: Go Tools
+name: Typescript Tools
 
 on:
   push:
