@@ -187,7 +187,7 @@ describe('api', () => {
   it('completes auth flow', async () => {
     const creationContainer = await betterAuthServer.generateCreationContainer()
 
-    await betterAuthClient.creatAccount(creationContainer)
+    await betterAuthClient.createAccount(creationContainer)
     await betterAuthClient.rotateAuthenticationKey()
     await betterAuthClient.authenticate()
     await betterAuthClient.refreshAccessToken()

@@ -4,7 +4,7 @@ export class Gzip {
   static async deflate(bytes: Uint8Array): Promise<Uint8Array> {
     return Promise.resolve(
       ((): Uint8Array => {
-        const result = Pako.deflateRaw(bytes)
+        const result = Pako.gzip(bytes, { level: 9 })
         return result
       })()
     )
@@ -13,7 +13,7 @@ export class Gzip {
   static async inflate(bytes: Uint8Array): Promise<Uint8Array> {
     return Promise.resolve(
       ((): Uint8Array => {
-        const result = Pako.inflateRaw(bytes)
+        const result = Pako.ungzip(bytes)
         return result
       })()
     )

@@ -66,7 +66,7 @@ export class BetterAuthClient {
     return await response.verify(verifier, publicKey)
   }
 
-  async creatAccount(registrationMaterials: string): Promise<void> {
+  async createAccount(registrationMaterials: string): Promise<void> {
     const materials = CreationContainer.parse(registrationMaterials)
     if (!(await this.verifyResponse(materials, materials.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
