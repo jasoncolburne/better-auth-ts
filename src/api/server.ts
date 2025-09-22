@@ -35,7 +35,7 @@ import {
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
 } from '../messages'
-import { rfc3339Nano } from '../utils/time'
+import { rfc3339Nano } from '../utils'
 
 export class BetterAuthServer {
   constructor(

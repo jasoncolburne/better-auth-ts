@@ -11,19 +11,21 @@ import {
   ServerRefreshKeyStore,
   ServerRefreshNonceStore,
 } from './server.storage.mocks'
-import { Noncer } from './crypto/nonce'
-import { Digester } from './crypto/digest'
-import { Ed25519Verifier } from './crypto/ed25519'
-import { KeyDeriver } from './crypto/keyDerivation'
-import { Secp256r1, Secp256r1Verifier } from './crypto/secp256r1'
+import {
+  Digester,
+  Ed25519Verifier,
+  KeyDeriver,
+  Noncer,
+  Secp256r1,
+  Secp256r1Verifier,
+} from './crypto'
 import {
   ClientRefreshNonceStore,
   ClientRotatingKeyStore,
   ClientSingleKeyStore,
   ClientValueStore,
 } from './client.storage.mocks'
-import { ServerResponse } from '../messages/response'
-import { AccessRequest } from '../messages'
+import { AccessRequest, ServerResponse } from '../messages'
 
 interface IMockAccessAttributes {
   permissionsByRole: object

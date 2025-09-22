@@ -1,10 +1,8 @@
-import { IVerifier } from '../interfaces/crypto'
-import { Base64 } from '../utils/base64'
+import { IServerAccessNonceStore, IVerifier } from '../interfaces'
+import { Base64, Gzip } from '../utils'
 import { SignableMessage } from './message'
-import { IServerAccessNonceStore } from '../interfaces/storage'
 
 import { TextDecoder, TextEncoder } from 'util'
-import { Gzip } from '../utils/gzip'
 
 export interface IAccessToken<T> {
   accountId: string

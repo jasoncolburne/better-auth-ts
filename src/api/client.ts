@@ -28,9 +28,9 @@ import {
   RegistrationMaterials,
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
+  SignableMessage,
 } from '../messages'
-import { SignableMessage } from '../messages/message'
-import { rfc3339Nano } from '../utils/time'
+import { rfc3339Nano } from '../utils'
 
 export class BetterAuthClient {
   constructor(

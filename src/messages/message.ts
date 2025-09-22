@@ -1,4 +1,4 @@
-import { ISigningKey, IVerifier } from '../interfaces/crypto'
+import { ISigningKey, IVerifier } from '../interfaces'
 
 interface Signable {
   composePayload(): string
