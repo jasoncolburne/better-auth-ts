@@ -98,7 +98,6 @@ describe('api', () => {
   let responseSigner: Secp256r1
   let accessSigner: Secp256r1
   let eccVerifier: IVerifier
-  let edVerifier: IVerifier
 
   beforeAll(async () => {
     responseSigner = new Secp256r1()
