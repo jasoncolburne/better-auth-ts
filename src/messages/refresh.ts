@@ -3,15 +3,12 @@ import { ServerResponse } from './response'
 
 interface IRefreshAccessTokenRequest {
   payload: {
-    refresh: {
-      sessionId: string
-      nonces: {
+    access: {
+      token: string
+      publicKeys: {
         current: string
         nextDigest: string
       }
-    }
-    access: {
-      publicKey: string
     }
   }
   signature?: string
@@ -23,15 +20,12 @@ export class RefreshAccessTokenRequest
 {
   constructor(
     public payload: {
-      refresh: {
-        sessionId: string
-        nonces: {
+      access: {
+        token: string
+        publicKeys: {
           current: string
           nextDigest: string
         }
-      }
-      access: {
-        publicKey: string
       }
     }
   ) {

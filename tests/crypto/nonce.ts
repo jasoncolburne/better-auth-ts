@@ -1,8 +1,8 @@
-import { ISalter } from '../../src/interfaces'
+import { INoncer } from '../../src/interfaces'
 import { Base64 } from '../../src/utils/base64'
 import { getEntropy } from './entropy'
 
-export class Noncer implements ISalter {
+export class Noncer implements INoncer {
   async generate128(): Promise<string> {
     const entropy = await getEntropy(16)
 

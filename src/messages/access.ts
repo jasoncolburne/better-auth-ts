@@ -7,8 +7,10 @@ import { TextDecoder, TextEncoder } from 'util'
 export interface IAccessToken<T> {
   accountId: string
   publicKey: string
+  nextDigest: string
   issuedAt: string
   expiry: string
+  refreshExpiry: string
   attributes: T
 }
 
@@ -16,8 +18,10 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
     public accountId: string,
     public publicKey: string,
+    public nextDigest: string,
     public issuedAt: string,
     public expiry: string,
+    public refreshExpiry: string,
     public attributes: T
   ) {
     super()
@@ -38,11 +42,13 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const tokenString = decoder.decode(tokenBytes)
 
     const json = JSON.parse(tokenString)
-    const result = new AccessToken(
+    const result = new AccessToken<T>(
       json.accountId,
       json.publicKey,
+      json.nextDigest,
       json.issuedAt,
       json.expiry,
+      json.refreshExpiry,
       json.attributes
     )
 
@@ -55,8 +61,10 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     return JSON.stringify({
       accountId: this.accountId,
       publicKey: this.publicKey,
+      nextDigest: this.nextDigest,
       issuedAt: this.issuedAt,
       expiry: this.expiry,
+      refreshExpiry: this.refreshExpiry,
       attributes: this.attributes,
     })
   }

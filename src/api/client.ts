@@ -1,31 +1,22 @@
 import {
-  IClientRefreshNonceStore,
   IClientRotatingKeyStore,
-  IClientSingleKeyStore,
   IClientValueStore,
   IDigester,
-  IKeyDeriver,
   INetwork,
-  ISalter,
+  INoncer,
   IVerificationKey,
 } from '../interfaces'
 import {
   AccessRequest,
   BeginAuthenticationRequest,
   BeginAuthenticationResponse,
-  BeginPassphraseAuthenticationRequest,
-  BeginPassphraseAuthenticationResponse,
   CompleteAuthenticationRequest,
   CompleteAuthenticationResponse,
-  CompletePassphraseAuthenticationRequest,
-  PassphraseRegistrationMaterials,
+  CreationContainer,
+  CreationRequest,
+  CreationResponse,
   RefreshAccessTokenRequest,
   RefreshAccessTokenResponse,
-  RegisterAuthenticationKeyRequest,
-  RegisterAuthenticationKeyResponse,
-  RegisterPassphraseAuthenticationKeyRequest,
-  RegisterPassphraseAuthenticationKeyResponse,
-  RegistrationMaterials,
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
   SignableMessage,
@@ -38,19 +29,13 @@ export class BetterAuthClient {
       identifier: {
         account: IClientValueStore
         device: IClientValueStore
-        session: IClientValueStore
-      }
-      nonce: {
-        refresh: IClientRefreshNonceStore
       }
       token: {
-        refresh: IClientValueStore
         access: IClientValueStore
       }
       key: {
         authentication: IClientRotatingKeyStore
-        refresh: IClientSingleKeyStore
-        access: IClientSingleKeyStore
+        access: IClientRotatingKeyStore
       }
     },
     private readonly crypto: {
@@ -58,8 +43,7 @@ export class BetterAuthClient {
       publicKeys: {
         response: IVerificationKey
       }
-      keyDerivation: IKeyDeriver
-      nonce: ISalter
+      nonce: INoncer
     },
     private readonly io: {
       network: INetwork
@@ -82,9 +66,9 @@ export class BetterAuthClient {
     return await response.verify(verifier, publicKey)
   }
 
-  async registerAuthenticationKey(registrationMaterials: string): Promise<void> {
-    const materials = RegistrationMaterials.parse(registrationMaterials)
-    if (!(await this.verifyResponse(materials, materials.payload.access.publicKeyDigest))) {
+  async creatAccount(registrationMaterials: string): Promise<void> {
+    const materials = CreationContainer.parse(registrationMaterials)
+    if (!(await this.verifyResponse(materials, materials.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -92,7 +76,7 @@ export class BetterAuthClient {
       await this.stores.key.authentication.initialize()
     const deviceId = await this.crypto.digest.sum(currentAuthenticationPublicKey)
 
-    const request = new RegisterAuthenticationKeyRequest({
+    const request = new CreationRequest({
       registration: {
         token: materials.payload.response.registration.token,
       },
@@ -111,49 +95,13 @@ export class BetterAuthClient {
     const message = await request.serialize()
     const reply = await this.io.network.sendRequest('/auth/key/register', message)
 
-    const response = RegisterAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
+    const response = CreationResponse.parse(reply)
+    if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
 
     await this.stores.identifier.account.store(response.payload.response.identification.accountId)
     await this.stores.identifier.device.store(deviceId)
-  }
-
-  async registerPassphraseAuthenticationKey(
-    passphraseRegistrationMaterials: string,
-    passphrase: string
-  ): Promise<void> {
-    const materials = PassphraseRegistrationMaterials.parse(passphraseRegistrationMaterials)
-    if (!(await this.verifyResponse(materials, materials.payload.access.publicKeyDigest))) {
-      throw 'invalid signature'
-    }
-
-    const keyPair = await this.crypto.keyDerivation.derive(
-      passphrase,
-      materials.payload.response.passphraseAuthentication.salt,
-      materials.payload.response.passphraseAuthentication.parameters
-    )
-
-    const request = new RegisterPassphraseAuthenticationKeyRequest({
-      registration: {
-        token: materials.payload.response.registration.token,
-      },
-      passphraseAuthentication: {
-        publicKey: await keyPair.public(),
-      },
-    })
-
-    await request.sign(keyPair)
-    const message = await request.serialize()
-    const reply = await this.io.network.sendRequest('/auth/passphrase/register', message)
-
-    const response = RegisterPassphraseAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
-      throw 'invalid signature'
-    }
-
-    await this.stores.identifier.account.store(response.payload.response.identification.accountId)
   }
 
   async rotateAuthenticationKey(): Promise<void> {
@@ -178,7 +126,7 @@ export class BetterAuthClient {
     const reply = await this.io.network.sendRequest('/auth/key/rotate', message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
+    if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
   }
@@ -194,13 +142,13 @@ export class BetterAuthClient {
     const beginReply = await this.io.network.sendRequest('/auth/key/begin', beginMessage)
 
     const beginResponse = BeginAuthenticationResponse.parse(beginReply)
-    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.access.publicKeyDigest))) {
+    if (
+      !(await this.verifyResponse(beginResponse, beginResponse.payload.access.responseKeyDigest))
+    ) {
       throw 'invalid signature'
     }
 
-    const refreshPublicKey = await this.stores.key.refresh.generate()
-    const nextNonceDigest = await this.stores.nonce.refresh.initialize()
-
+    const [currentKey, nextKeyDigest] = await this.stores.key.access.initialize()
     const completeRequest = new CompleteAuthenticationRequest({
       identification: {
         deviceId: await this.stores.identifier.device.get(),
@@ -208,10 +156,10 @@ export class BetterAuthClient {
       authentication: {
         nonce: beginResponse.payload.response.authentication.nonce,
       },
-      refresh: {
-        publicKey: refreshPublicKey,
-        nonces: {
-          nextDigest: nextNonceDigest,
+      access: {
+        publicKeys: {
+          current: currentKey,
+          nextDigest: nextKeyDigest,
         },
       },
     })
@@ -224,95 +172,34 @@ export class BetterAuthClient {
     if (
       !(await this.verifyResponse(
         completeResponse,
-        completeResponse.payload.access.publicKeyDigest
+        completeResponse.payload.access.responseKeyDigest
       ))
     ) {
       throw 'invalid signature'
     }
 
-    await this.stores.identifier.session.store(completeResponse.payload.response.refresh.sessionId)
-  }
-
-  async authenticateWithPassphrase(passphrase: string): Promise<void> {
-    const beginRequest = new BeginPassphraseAuthenticationRequest({
-      identification: {
-        accountId: await this.stores.identifier.account.get(),
-      },
-    })
-
-    const beginMessage = await beginRequest.serialize()
-    const beginReply = await this.io.network.sendRequest('/auth/passphrase/begin', beginMessage)
-
-    const beginResponse = BeginPassphraseAuthenticationResponse.parse(beginReply)
-    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.access.publicKeyDigest))) {
-      throw 'invalid signature'
-    }
-
-    const keyPair = await this.crypto.keyDerivation.derive(
-      passphrase,
-      beginResponse.payload.response.passphraseAuthentication.salt,
-      beginResponse.payload.response.passphraseAuthentication.parameters
-    )
-
-    const refreshPublicKey = await this.stores.key.refresh.generate()
-    const nextNonceDigest = await this.stores.nonce.refresh.initialize()
-
-    const completeRequest = new CompletePassphraseAuthenticationRequest({
-      passphraseAuthentication: {
-        nonce: beginResponse.payload.response.passphraseAuthentication.nonce,
-        publicKey: await keyPair.public(),
-      },
-      refresh: {
-        publicKey: refreshPublicKey,
-        nonces: {
-          nextDigest: nextNonceDigest,
-        },
-      },
-    })
-
-    await completeRequest.sign(keyPair)
-    const completeMessage = await completeRequest.serialize()
-    const completeReply = await this.io.network.sendRequest(
-      '/auth/passphrase/complete',
-      completeMessage
-    )
-
-    const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
-    if (
-      !(await this.verifyResponse(
-        completeResponse,
-        completeResponse.payload.access.publicKeyDigest
-      ))
-    ) {
-      throw 'invalid signature'
-    }
-
-    await this.stores.identifier.session.store(completeResponse.payload.response.refresh.sessionId)
+    await this.stores.token.access.store(completeResponse.payload.response.access.token)
   }
 
   async refreshAccessToken(): Promise<void> {
-    const accessPublicKey = await this.stores.key.access.generate()
-    const [current, nextDigest] = await this.stores.nonce.refresh.evolve()
+    const [currentKey, nextKeyDigest] = await this.stores.key.access.rotate()
 
     const request = new RefreshAccessTokenRequest({
-      refresh: {
-        sessionId: await this.stores.identifier.session.get(),
-        nonces: {
-          current: current,
-          nextDigest: nextDigest,
-        },
-      },
       access: {
-        publicKey: accessPublicKey,
+        token: await this.stores.token.access.get(),
+        publicKeys: {
+          current: currentKey,
+          nextDigest: nextKeyDigest,
+        },
       },
     })
 
-    await request.sign(this.stores.key.refresh.signer())
+    await request.sign(this.stores.key.access.signer())
     const message = await request.serialize()
     const reply = await this.io.network.sendRequest('/auth/refresh', message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
+    if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
 

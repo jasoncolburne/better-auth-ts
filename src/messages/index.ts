@@ -1,4 +1,4 @@
-export * from './registration'
+export * from './creation'
 export * from './authentication'
 export * from './rotation'
 export * from './refresh'
