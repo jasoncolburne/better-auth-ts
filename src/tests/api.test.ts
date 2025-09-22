@@ -167,7 +167,6 @@ describe('api', () => {
     await betterAuthClient.registerAuthenticationKey(registrationMaterials)
     await betterAuthClient.rotateAuthenticationKey()
     await betterAuthClient.authenticate()
-    console.error(4)
     await betterAuthClient.refreshAccessToken()
   }, 5000)
 })
