@@ -64,11 +64,7 @@ export class BetterAuthClient {
     private readonly io: {
       network: INetwork
     }
-  ) {
-    if (!stores || !crypto || !io) {
-      throw new Error('Invalid configuration')
-    }
-  }
+  ) {}
 
   private async verifyResponse(
     response: SignableMessage,
