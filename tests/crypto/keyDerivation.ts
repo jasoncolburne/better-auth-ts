@@ -1,5 +1,5 @@
-import { IKeyDeriver, ISigningKey } from '../../interfaces'
-import { Base64 } from '../../utils/base64'
+import { IKeyDeriver, ISigningKey } from '../../src/interfaces'
+import { Base64 } from '../../src/utils/base64'
 import { Argon2 } from './argon2'
 import { Ed25519 } from './ed25519'
 

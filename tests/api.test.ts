@@ -1,6 +1,6 @@
 import { beforeAll, describe, it } from 'vitest'
-import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
-import { INetwork, ISalter, ISigningKey, IVerifier } from '../interfaces'
+import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
+import { INetwork, ISalter, ISigningKey, IVerifier } from '../src/interfaces'
 import {
   ServerAccessNonceStore,
   ServerAuthenticationKeyStore,
@@ -25,7 +25,7 @@ import {
   ClientSingleKeyStore,
   ClientValueStore,
 } from './client.storage.mocks'
-import { AccessRequest, ServerResponse } from '../messages'
+import { AccessRequest, ServerResponse } from '../src/messages'
 
 interface IMockAccessAttributes {
   permissionsByRole: object

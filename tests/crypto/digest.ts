@@ -1,7 +1,7 @@
-import { IDigester } from '../../interfaces'
+import { IDigester } from '../../src/interfaces'
 import { TextEncoder } from 'util'
 import { Blake3 } from './blake3'
-import { Base64 } from '../../utils/base64'
+import { Base64 } from '../../src/utils/base64'
 
 export class Digester implements IDigester {
   async sum(message: string): Promise<string> {

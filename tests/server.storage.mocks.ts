@@ -9,7 +9,7 @@ import {
   IServerPassphraseRegistrationTokenStore,
   IServerRefreshKeyStore,
   IServerRefreshNonceStore,
-} from '../interfaces'
+} from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
 

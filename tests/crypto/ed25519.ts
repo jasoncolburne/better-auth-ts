@@ -1,7 +1,7 @@
 import { KeyPair } from 'libsodium-wrappers'
 import { sodium } from './sodium'
-import { ISigningKey, IVerifier } from '../../interfaces'
-import { Base64 } from '../../utils/base64'
+import { ISigningKey, IVerifier } from '../../src/interfaces'
+import { Base64 } from '../../src/utils/base64'
 
 export class Ed25519Verifier implements IVerifier {
   async verify(message: string, signature: string, publicKey: string): Promise<boolean> {

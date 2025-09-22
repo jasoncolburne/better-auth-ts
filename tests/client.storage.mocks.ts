@@ -6,7 +6,7 @@ import {
   IDigester,
   ISalter,
   ISigningKey,
-} from '../interfaces'
+} from '../src/interfaces'
 import { Digester } from './crypto/digest'
 import { Noncer } from './crypto/nonce'
 import { Secp256r1 } from './crypto/secp256r1'

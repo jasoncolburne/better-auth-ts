@@ -1,5 +1,5 @@
-import { ISalter } from '../../interfaces'
-import { Base64 } from '../../utils/base64'
+import { ISalter } from '../../src/interfaces'
+import { Base64 } from '../../src/utils/base64'
 import { getEntropy } from './entropy'
 
 export class Noncer implements ISalter {
