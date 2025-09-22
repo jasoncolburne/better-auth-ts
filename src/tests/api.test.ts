@@ -1,6 +1,6 @@
 import { beforeAll, describe, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
-import { INetwork, ISalter, ISigningKey, IVerifier, IVerifier } from '../interfaces'
+import { INetwork, ISalter, ISigningKey, IVerifier } from '../interfaces'
 import {
   ServerAccessNonceStore,
   ServerAuthenticationKeyStore,
