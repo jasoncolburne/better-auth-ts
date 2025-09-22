@@ -1,7 +1,12 @@
 import { SignableMessage } from './message'
 
-interface IServerPayload<T> {
+interface IServerAccess {
   publicKeyDigest: string
+  nonce?: string
+}
+
+interface IServerPayload<T> {
+  access: IServerAccess
   response: T
 }
 
@@ -13,11 +18,19 @@ interface IServerResponse<T> {
 export class ServerResponse<T> extends SignableMessage implements IServerResponse<T> {
   payload: IServerPayload<T>
 
-  constructor(response: T, publicKeyDigest: string) {
+  constructor(response: T, publicKeyDigest: string, nonce?: string) {
     super()
 
-    this.payload = {
+    const access: IServerAccess = {
       publicKeyDigest: publicKeyDigest,
+    }
+
+    if (typeof nonce !== 'undefined') {
+      access.nonce = nonce
+    }
+
+    this.payload = {
+      access: access,
       response: response,
     }
   }
@@ -28,10 +41,14 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
 
   static _parse<T, U extends ServerResponse<T>>(
     message: string,
-    constructor: new (response: T, publicKeyDigest: string) => U
+    constructor: new (response: T, publicKeyDigest: string, nonce?: string) => U
   ): ServerResponse<T> {
     const json = JSON.parse(message)
-    const result = new constructor(json.payload.response, json.payload.publicKeyDigest)
+    const result = new constructor(
+      json.payload.response,
+      json.payload.access.publicKeyDigest,
+      json.payload.access.nonce
+    )
     result.signature = json.signature
 
     return result

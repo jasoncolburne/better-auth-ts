@@ -148,7 +148,8 @@ export class BetterAuthServer {
           accountId: accountId,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -184,7 +185,8 @@ export class BetterAuthServer {
           accountId: accountId,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -214,10 +216,9 @@ export class BetterAuthServer {
 
     // this is replayable, and should be fixed but making it not fixed
     const response = new RotateAuthenticationKeyResponse(
-      {
-        nonce: await this.crypto.nonce.generate128(),
-      },
-      await this.responsePublicKeyDigest()
+      {},
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -240,7 +241,8 @@ export class BetterAuthServer {
           nonce: nonce,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -274,7 +276,8 @@ export class BetterAuthServer {
           sessionId: sessionId,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -300,7 +303,8 @@ export class BetterAuthServer {
           parameters: parameters,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -341,7 +345,8 @@ export class BetterAuthServer {
           sessionId: sessionId,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -390,7 +395,8 @@ export class BetterAuthServer {
           token: token,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)

@@ -88,7 +88,7 @@ export class BetterAuthClient {
 
   async registerAuthenticationKey(registrationMaterials: string): Promise<void> {
     const materials = RegistrationMaterials.parse(registrationMaterials)
-    if (!(await this.verifyResponse(materials, materials.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(materials, materials.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -116,7 +116,7 @@ export class BetterAuthClient {
     const reply = await this.io.network.sendRequest('/auth/key/register', message)
 
     const response = RegisterAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -129,7 +129,7 @@ export class BetterAuthClient {
     passphrase: string
   ): Promise<void> {
     const materials = PassphraseRegistrationMaterials.parse(passphraseRegistrationMaterials)
-    if (!(await this.verifyResponse(materials, materials.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(materials, materials.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -153,7 +153,7 @@ export class BetterAuthClient {
     const reply = await this.io.network.sendRequest('/auth/passphrase/register', message)
 
     const response = RegisterPassphraseAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -182,7 +182,7 @@ export class BetterAuthClient {
     const reply = await this.io.network.sendRequest('/auth/key/rotate', message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
   }
@@ -198,7 +198,7 @@ export class BetterAuthClient {
     const beginReply = await this.io.network.sendRequest('/auth/key/begin', beginMessage)
 
     const beginResponse = BeginAuthenticationResponse.parse(beginReply)
-    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -225,7 +225,12 @@ export class BetterAuthClient {
     const completeReply = await this.io.network.sendRequest('/auth/key/complete', completeMessage)
 
     const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
-    if (!(await this.verifyResponse(completeResponse, completeResponse.payload.publicKeyDigest))) {
+    if (
+      !(await this.verifyResponse(
+        completeResponse,
+        completeResponse.payload.access.publicKeyDigest
+      ))
+    ) {
       throw 'invalid signature'
     }
 
@@ -243,7 +248,7 @@ export class BetterAuthClient {
     const beginReply = await this.io.network.sendRequest('/auth/passphrase/begin', beginMessage)
 
     const beginResponse = BeginPassphraseAuthenticationResponse.parse(beginReply)
-    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(beginResponse, beginResponse.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 
@@ -277,7 +282,12 @@ export class BetterAuthClient {
     )
 
     const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
-    if (!(await this.verifyResponse(completeResponse, completeResponse.payload.publicKeyDigest))) {
+    if (
+      !(await this.verifyResponse(
+        completeResponse,
+        completeResponse.payload.access.publicKeyDigest
+      ))
+    ) {
       throw 'invalid signature'
     }
 
@@ -306,7 +316,7 @@ export class BetterAuthClient {
     const reply = await this.io.network.sendRequest('/auth/refresh', message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.publicKeyDigest))) {
+    if (!(await this.verifyResponse(response, response.payload.access.publicKeyDigest))) {
       throw 'invalid signature'
     }
 

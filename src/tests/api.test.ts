@@ -1,6 +1,6 @@
 import { beforeAll, describe, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
-import { INetwork } from '../interfaces'
+import { INetwork, ISalter, ISigningKey, IVerifier, IVerifier } from '../interfaces'
 import {
   ServerAccessNonceStore,
   ServerAuthenticationKeyStore,
@@ -22,6 +22,7 @@ import {
   ClientSingleKeyStore,
   ClientValueStore,
 } from './client.storage.mocks'
+import { ServerResponse } from '../messages/response'
 import { AccessRequest } from '../messages'
 
 interface IMockAccessAttributes {
@@ -36,8 +37,26 @@ class MockNetworkServer implements INetwork {
   constructor(
     private readonly betterAuthServer: BetterAuthServer,
     private readonly accessVerifier: AccessVerifier,
+    private readonly responseSigner: ISigningKey,
+    private readonly noncer: ISalter,
     private readonly attributes: IMockAccessAttributes
   ) {}
+
+  async respondToAccessRequest(message: string): Promise<string> {
+    const request = AccessRequest.parse<IFakeRequest>(message)
+
+    const response = new FakeResponse(
+      {
+        wasFoo: request.payload.request.foo,
+        wasBar: request.payload.request.bar,
+      },
+      await this.responseSigner.public(),
+      request.payload.access.nonce
+    )
+
+    await response.sign(this.responseSigner)
+    return response.serialize()
+  }
 
   async sendRequest(path: string, message: string): Promise<string> {
     switch (path) {
@@ -61,32 +80,50 @@ class MockNetworkServer implements INetwork {
           this.attributes
         )
       case '/foo/bar':
-        if (!(await this.accessVerifier.verify<FakeRequest>(message))) {
+        if (!(await this.accessVerifier.verify<IFakeRequest>(message))) {
           throw 'invalid signature'
         }
 
-        return JSON.stringify(AccessRequest.parse<FakeRequest>(message).payload.request)
+        return await this.respondToAccessRequest(message)
       default:
         throw 'unexpected message'
     }
   }
 }
 
-interface FakeRequest {
+interface IFakeRequest {
   foo: string
   bar: string
+}
+
+interface IFakeResponse {
+  wasFoo: string
+  wasBar: string
+}
+
+class FakeResponse extends ServerResponse<IFakeResponse> {
+  static parse(message: string): FakeResponse {
+    return ServerResponse._parse(message, FakeResponse)
+  }
 }
 
 describe('api', () => {
   let betterAuthServer: BetterAuthServer
   let betterAuthClient: BetterAuthClient
+  let responseSigner: Secp256r1
+  let accessSigner: Secp256r1
+  let eccVerifier: IVerifier
+  let edVerifier: IVerifier
 
   beforeAll(async () => {
-    const responseSigner = new Secp256r1()
-    const accessSigner = new Secp256r1()
+    responseSigner = new Secp256r1()
+    accessSigner = new Secp256r1()
 
     await responseSigner.generate()
     await accessSigner.generate()
+
+    eccVerifier = new Secp256r1Verifier()
+    edVerifier = new Ed25519Verifier()
 
     betterAuthServer = new BetterAuthServer(
       {
@@ -113,8 +150,8 @@ describe('api', () => {
           access: accessSigner,
         },
         verification: {
-          key: new Secp256r1Verifier(),
-          passphrase: new Ed25519Verifier(),
+          key: eccVerifier,
+          passphrase: edVerifier,
         },
         nonce: new Noncer(),
         digest: new Digester(),
@@ -134,11 +171,17 @@ describe('api', () => {
           access: accessSigner,
         },
         verification: {
-          key: new Secp256r1Verifier(),
+          key: eccVerifier,
         },
       }
     )
-    const mockNetworkServer = new MockNetworkServer(betterAuthServer, accessVerifier, attributes)
+    const mockNetworkServer = new MockNetworkServer(
+      betterAuthServer,
+      accessVerifier,
+      responseSigner,
+      new Noncer(),
+      attributes
+    )
 
     betterAuthClient = new BetterAuthClient(
       {
@@ -186,12 +229,22 @@ describe('api', () => {
     await betterAuthClient.authenticateWithPassphrase(passphrase)
     await betterAuthClient.refreshAccessToken()
 
-    const reply = await betterAuthClient.makeAccessRequest<FakeRequest>('/foo/bar', {
+    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', {
       foo: 'foo-y',
       bar: 'bar-y',
     })
-    if (reply !== '{"foo":"foo-y","bar":"bar-y"}') {
-      throw 'incorrect payload extracted'
+
+    const response = FakeResponse.parse(reply)
+
+    if (!(await response.verify(eccVerifier, await responseSigner.public()))) {
+      throw 'invalid signature'
+    }
+
+    if (
+      response.payload.response.wasFoo !== 'foo-y' ||
+      response.payload.response.wasBar !== 'bar-y'
+    ) {
+      throw 'invalid data returned'
     }
   }, 5000)
 
@@ -203,12 +256,21 @@ describe('api', () => {
     await betterAuthClient.authenticate()
     await betterAuthClient.refreshAccessToken()
 
-    const reply = await betterAuthClient.makeAccessRequest<FakeRequest>('/foo/bar', {
+    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', {
       foo: 'foo-y',
       bar: 'bar-y',
     })
-    if (reply !== '{"foo":"foo-y","bar":"bar-y"}') {
-      throw 'incorrect payload extracted'
+    const response = FakeResponse.parse(reply)
+
+    if (!(await response.verify(eccVerifier, await responseSigner.public()))) {
+      throw 'invalid signature'
+    }
+
+    if (
+      response.payload.response.wasFoo !== 'foo-y' ||
+      response.payload.response.wasBar !== 'bar-y'
+    ) {
+      throw 'invalid data returned'
     }
   }, 5000)
 })

@@ -120,14 +120,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      token: this.payload.token,
-      access: {
-        timestamp: this.payload.access.timestamp,
-        nonce: this.payload.access.nonce,
-      },
-      request: this.payload.request,
-    })
+    return JSON.stringify(this.payload)
   }
 
   async _verify<T>(

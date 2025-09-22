@@ -199,18 +199,7 @@ export class CompletePassphraseAuthenticationRequest
   }
 
   composePayload(): string {
-    return JSON.stringify({
-      passphraseAuthentication: {
-        nonce: this.payload.passphraseAuthentication.nonce,
-        publicKey: this.payload.passphraseAuthentication.publicKey,
-      },
-      refresh: {
-        publicKey: this.payload.refresh.publicKey,
-        nonces: {
-          nextDigest: this.payload.refresh.nonces.nextDigest,
-        },
-      },
-    })
+    return JSON.stringify(this.payload)
   }
 
   static parse(message: string): CompletePassphraseAuthenticationRequest {

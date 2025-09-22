@@ -51,9 +51,7 @@ export class RotateAuthenticationKeyRequest
   }
 }
 
-interface IRotateAuthenticationKeyResponse {
-  nonce: string
-}
+interface IRotateAuthenticationKeyResponse {}
 
 export class RotateAuthenticationKeyResponse extends ServerResponse<IRotateAuthenticationKeyResponse> {
   static parse(message: string): RotateAuthenticationKeyResponse {
