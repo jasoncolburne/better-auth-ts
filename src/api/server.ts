@@ -87,7 +87,8 @@ export class BetterAuthServer {
           token: token,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -111,7 +112,8 @@ export class BetterAuthServer {
           salt: salt,
         },
       },
-      await this.responsePublicKeyDigest()
+      await this.responsePublicKeyDigest(),
+      await this.crypto.nonce.generate128()
     )
 
     await response.sign(this.crypto.keyPairs.response)
