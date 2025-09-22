@@ -193,10 +193,11 @@ describe('api', () => {
     await betterAuthClient.authenticate()
     await betterAuthClient.refreshAccessToken()
 
-    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', {
+    const message = {
       foo: 'foo-y',
       bar: 'bar-y',
-    })
+    }
+    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
     const response = FakeResponse.parse(reply)
 
     if (!(await response.verify(eccVerifier, await responseSigner.public()))) {
