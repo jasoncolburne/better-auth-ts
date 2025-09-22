@@ -174,7 +174,7 @@ describe('api', () => {
     )
   })
 
-  it('completes passphrase flow', async () => {
+  it('completes passphrase auth flow', async () => {
     const passphraseRegistrationMaterials =
       await betterAuthServer.generatePassphraseRegistrationMaterials()
 
