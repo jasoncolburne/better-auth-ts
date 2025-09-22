@@ -198,7 +198,6 @@ export class BetterAuthClient {
       },
     })
 
-
     const beginMessage = await beginRequest.serialize()
     const beginReply = await this.io.network.sendRequest('/auth/key/begin', beginMessage)
 
@@ -319,7 +318,8 @@ export class BetterAuthClient {
   }
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {
-    const accessRequest = new AccessRequest<T>(await this.stores.token.access.get(), {
+    const accessRequest = new AccessRequest<T>({
+      token: await this.stores.token.access.get(),
       access: {
         timestamp: rfc3339Nano(new Date()),
         nonce: await this.crypto.nonce.generate128(),

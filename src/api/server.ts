@@ -396,7 +396,7 @@ export class AccessVerifier {
 
   async verify<T>(message: string): Promise<boolean> {
     const request = AccessRequest.parse<T>(message)
-    return await request.verifyRequest(
+    return await request._verify<T>(
       this.stores.accessNonce,
       this.crypto.verification.key,
       this.crypto.verification.key,

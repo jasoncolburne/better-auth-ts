@@ -1,5 +1,5 @@
 import { beforeAll, describe, it } from 'vitest'
-import { BetterAuthClient, BetterAuthServer } from '../api'
+import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
 import { INetwork } from '../interfaces'
 import {
   ServerAccessNonceStore,
@@ -22,6 +22,7 @@ import {
   ClientSingleKeyStore,
   ClientValueStore,
 } from './client.storage.mocks'
+import { AccessRequest } from '../messages'
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -34,6 +35,7 @@ class MockAccessAttributes implements IMockAccessAttributes {
 class MockNetworkServer implements INetwork {
   constructor(
     private readonly betterAuthServer: BetterAuthServer,
+    private readonly accessVerifier: AccessVerifier,
     private readonly attributes: IMockAccessAttributes
   ) {}
 
@@ -58,10 +60,21 @@ class MockNetworkServer implements INetwork {
           message,
           this.attributes
         )
+      case '/foo/bar':
+        if (!(await this.accessVerifier.verify<FakeRequest>(message))) {
+          throw 'invalid signature'
+        }
+
+        return JSON.stringify(AccessRequest.parse<FakeRequest>(message).payload.request)
       default:
         throw 'unexpected message'
     }
   }
+}
+
+interface FakeRequest {
+  foo: string
+  bar: string
 }
 
 describe('api', () => {
@@ -112,7 +125,20 @@ describe('api', () => {
       admin: ['read', 'write'],
     }
     const attributes = new MockAccessAttributes(map)
-    const mockNetworkServer = new MockNetworkServer(betterAuthServer, attributes)
+    const accessVerifier = new AccessVerifier(
+      {
+        accessNonce: new ServerAccessNonceStore(),
+      },
+      {
+        publicKeys: {
+          access: accessSigner,
+        },
+        verification: {
+          key: new Secp256r1Verifier(),
+        },
+      }
+    )
+    const mockNetworkServer = new MockNetworkServer(betterAuthServer, accessVerifier, attributes)
 
     betterAuthClient = new BetterAuthClient(
       {
@@ -159,6 +185,14 @@ describe('api', () => {
     )
     await betterAuthClient.authenticateWithPassphrase(passphrase)
     await betterAuthClient.refreshAccessToken()
+
+    const reply = await betterAuthClient.makeAccessRequest<FakeRequest>('/foo/bar', {
+      foo: 'foo-y',
+      bar: 'bar-y',
+    })
+    if (reply !== '{"foo":"foo-y","bar":"bar-y"}') {
+      throw 'incorrect payload extracted'
+    }
   }, 5000)
 
   it('completes key auth flow', async () => {
@@ -168,5 +202,13 @@ describe('api', () => {
     await betterAuthClient.rotateAuthenticationKey()
     await betterAuthClient.authenticate()
     await betterAuthClient.refreshAccessToken()
+
+    const reply = await betterAuthClient.makeAccessRequest<FakeRequest>('/foo/bar', {
+      foo: 'foo-y',
+      bar: 'bar-y',
+    })
+    if (reply !== '{"foo":"foo-y","bar":"bar-y"}') {
+      throw 'incorrect payload extracted'
+    }
   }, 5000)
 })

@@ -33,7 +33,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
       rest += '='
     }
 
-    const compressedToken = Base64.decode(message)
+    const compressedToken = Base64.decode(rest)
     const tokenBytes = await Gzip.inflate(compressedToken)
 
     const decoder = new TextDecoder('utf-8')
@@ -67,10 +67,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const encoder = new TextEncoder()
     const tokenBytes = encoder.encode(this.composePayload())
     const compressedToken = await Gzip.deflate(tokenBytes)
-    const token = Base64.encode(compressedToken)
-      .replaceAll('+', '-')
-      .replaceAll('/', '_')
-      .replaceAll('=', '')
+    const token = Base64.encode(compressedToken).replaceAll('=', '')
 
     return this.signature + token
   }
@@ -97,8 +94,8 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 }
 
 export interface IAccessRequest<T> {
-  token: string
   payload: {
+    token: string
     access: {
       timestamp: string
       nonce: string
@@ -110,8 +107,8 @@ export interface IAccessRequest<T> {
 
 export class AccessRequest<T> extends SignableMessage implements IAccessRequest<T> {
   constructor(
-    public token: string,
     public payload: {
+      token: string
       access: {
         timestamp: string
         nonce: string
@@ -124,24 +121,22 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
 
   composePayload(): string {
     return JSON.stringify({
-      token: this.token,
-      payload: {
-        access: {
-          timestamp: this.payload.access.timestamp,
-          nonce: this.payload.access.nonce,
-        },
-        request: this.payload.request,
+      token: this.payload.token,
+      access: {
+        timestamp: this.payload.access.timestamp,
+        nonce: this.payload.access.nonce,
       },
+      request: this.payload.request,
     })
   }
 
-  async verifyRequest(
+  async _verify<T>(
     nonceStore: IServerAccessNonceStore,
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
   ): Promise<boolean> {
-    const accessToken = await AccessToken.parse(this.token)
+    const accessToken = await AccessToken.parse<T>(this.payload.token)
 
     if (!(await accessToken.verify(tokenVerifier, serverAccessPublicKey))) {
       return false
@@ -169,25 +164,14 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
 
   static parse<T>(message: string): AccessRequest<T> {
     const json = JSON.parse(message)
-    const result = new AccessRequest<T>(json.token, json.payload)
+    const result = new AccessRequest<T>(json.payload)
     result.signature = json.signature
 
     return result
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isAccessRequest<T>(obj: any): obj is AccessRequest<T> {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    typeof obj.token === 'string' &&
-    obj.payload !== null &&
-    typeof obj.payload === 'object' &&
-    obj.payload.access !== null &&
-    typeof obj.payload.access === 'object' &&
-    typeof obj.payload.access.timestamp === 'string' &&
-    typeof obj.payload.access.nonce === 'string' &&
-    typeof obj.signature === 'string'
-  )
-}
+/*
+0IAWUXJn6DVRPZGTqw-Mmjm8hkbfGjwHChtGba7hOtP7fViwumKPV-HNNMVTMnJk4jY9ftm0-VABA2xkIiYrN3zw
+eJxljVtPgzAARv9Ln8V0jGZC4kMxGBEDchlEjDFcCivj0rSUQRb--9DXfY9fzsm5gqwoBtmPdgkMYOHZ0vrwEAinYPjkHvUiyushFqUbM1JdMKWxxbvP6WXqwQNgMm9p4ZBlU3cY26anECdB9J15VlLDDysUbfoaa78JylE7c5_Zb0FzymShdXowVOfwGDYiq9G58pWo4W5v2UlqytbZw1iqE3ryQuJ_PW8pKoQkJR63kgpVpEBdUdUIQmOvGgg97jQN_i_dWDIzypc7Ujvckdk4cprLkQhgXAEjvNs6dOiFuQRDS_7OrOxoD4xvwElWbsqF05GAn3Vdbw86Yk4=
+*/

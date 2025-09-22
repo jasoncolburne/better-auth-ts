@@ -3,6 +3,28 @@ import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
 import { Base64 } from '../../utils/base64'
 
+function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
+  if (uncompressedKey.length !== 65) {
+    throw 'invalid length'
+  }
+
+  if (uncompressedKey[0] !== 0x04) {
+    throw 'invalid byte header'
+  }
+
+  const x = uncompressedKey.slice(1, 33)
+  const y = uncompressedKey.slice(33, 65)
+
+  const yParity = y[31] & 1
+  const prefix = yParity === 0 ? 0x02 : 0x03
+
+  const compressedKey = new Uint8Array(33)
+  compressedKey[0] = prefix
+  compressedKey.set(x, 1)
+
+  return compressedKey
+}
+
 export class Secp256r1Verifier implements IVerifier {
   async verify(message: string, signature: string, publicKey: string): Promise<boolean> {
     const params: webcrypto.EcKeyImportParams = {
@@ -73,9 +95,6 @@ export class Secp256r1 implements ISigningKey {
     const bytes = encoder.encode(message)
 
     const signature = await webcrypto.subtle.sign(params, this.keyPair!.privateKey, bytes)
-
-    // todo: check encoding
-
     const signatureBytes = new Uint8Array(signature)
     const padded = new Uint8Array([0, 0, ...signatureBytes])
     const base64 = Base64.encode(padded)
@@ -88,9 +107,11 @@ export class Secp256r1 implements ISigningKey {
       throw 'keypair not generated'
     }
 
-    const bytes = await webcrypto.subtle.exportKey('raw', this.keyPair!.publicKey)
-    const publicKeyBytes = new Uint8Array(bytes)
-    const padded = new Uint8Array([0, 0, 0, ...publicKeyBytes])
+    const raw = await webcrypto.subtle.exportKey('raw', this.keyPair!.publicKey)
+    const uncompressed = new Uint8Array(raw)
+    const compressed = compressPublicKey(uncompressed)
+
+    const padded = new Uint8Array([0, 0, 0, ...compressed])
     const base64 = Base64.encode(padded)
 
     return `1AAI${base64.substring(4)}`
