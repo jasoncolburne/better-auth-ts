@@ -289,10 +289,15 @@ describe('api', () => {
       }
     )
 
-    const linkContainer = await linkedBetterAuthClient.generateLinkContainer(
-      await newBetterAuthClient.accountId()
-    )
-    await newBetterAuthClient.linkDevice(linkContainer)
+    // get account id from the existing device
+    const accountId = await betterAuthClient.accountId()
+
+    // get link container from the new device
+    const linkContainer = await linkedBetterAuthClient.generateLinkContainer(accountId)
+
+    // submit link containe with existing device
+    await betterAuthClient.linkDevice(linkContainer)
+
     await linkedBetterAuthClient.authenticate()
     await linkedBetterAuthClient.rotateAuthenticationKey()
     await linkedBetterAuthClient.refreshAccessToken()

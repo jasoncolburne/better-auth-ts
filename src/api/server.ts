@@ -153,9 +153,15 @@ export class BetterAuthServer {
       throw 'invalid signature'
     }
 
+    if (
+      linkContainer.payload.identification.accountId !== request.payload.identification.accountId
+    ) {
+      throw 'mismatched account ids'
+    }
+
     await this.stores.authentication.key.register(
-      request.payload.identification.accountId,
-      linkContainer.payload.deviceId,
+      linkContainer.payload.identification.accountId,
+      linkContainer.payload.identification.deviceId,
       linkContainer.payload.publicKeys.current,
       linkContainer.payload.publicKeys.nextDigest
     )

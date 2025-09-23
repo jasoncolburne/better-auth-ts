@@ -119,6 +119,7 @@ export class BetterAuthClient {
   }
 
   // happens on the new device
+  // send account id by qr code or network from the existing device
   async generateLinkContainer(accountId: string): Promise<string> {
     const [current, nextDigest] = await this.stores.key.authentication.initialize()
     const deviceId = await this.crypto.digester.sum(current)
@@ -127,7 +128,10 @@ export class BetterAuthClient {
     await this.stores.identifier.device.store(deviceId)
 
     const linkContainer = new LinkContainer({
-      deviceId: deviceId,
+      identification: {
+        accountId: accountId,
+        deviceId: deviceId,
+      },
       publicKeys: {
         current: current,
         nextDigest: nextDigest,
@@ -140,6 +144,8 @@ export class BetterAuthClient {
   }
 
   // happens on the existing device (share with qr code + camera)
+  // use a 61x61 module layout and a 53x53 module code, centered on the new device, at 300x300px
+  // for best results
   async linkDevice(linkContainer: string): Promise<void> {
     const container = LinkContainer.parse(linkContainer)
 

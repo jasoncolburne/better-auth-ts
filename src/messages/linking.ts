@@ -3,7 +3,10 @@ import { ServerResponse } from './response'
 
 interface ILinkContainer {
   payload: {
-    deviceId: string
+    identification: {
+      accountId: string
+      deviceId: string
+    }
     publicKeys: {
       current: string
       nextDigest: string
@@ -15,7 +18,10 @@ interface ILinkContainer {
 export class LinkContainer extends SignableMessage implements ILinkContainer {
   constructor(
     public payload: {
-      deviceId: string
+      identification: {
+        accountId: string
+        deviceId: string
+      }
       publicKeys: {
         current: string
         nextDigest: string
