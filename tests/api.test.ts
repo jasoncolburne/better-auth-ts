@@ -122,20 +122,27 @@ describe('api', () => {
     recoveryKey = new Secp256r1()
     await recoveryKey.generate()
 
+    const refreshLifetimeInHours = 12
+    const accessLifetimeInMinutes = 15
+    const authenticationChallengeLifetimeInSeconds = 60
+    const creationTimeoutInMinutes = 30
+    const accessWindowInSeconds = 30
+
     betterAuthServer = new BetterAuthServer(
       {
         registration: {
-          token: new ServerAuthenticationRegistrationTokenStore(30), // minutes
+          token: new ServerAuthenticationRegistrationTokenStore(creationTimeoutInMinutes),
         },
         recovery: {
           key: new ServerRecoveryKeyDigestStore()
         },
         authentication: {
           key: new ServerAuthenticationKeyStore(),
-          nonce: new ServerAuthenticationNonceStore(60), // seconds
+          nonce: new ServerAuthenticationNonceStore(authenticationChallengeLifetimeInSeconds),
         },
         access: {
-          keyDigest: new ServerTimeLockStore(60 * 60 * 12)
+          // the lock time is the refresh lifetime in seconds
+          keyDigest: new ServerTimeLockStore(60 * 60 * refreshLifetimeInHours)
         }
       },
       {
@@ -148,8 +155,8 @@ describe('api', () => {
         digester: digester,
       },
       {
-        accessInMinutes: 15,
-        refreshInHours: 12,
+        accessInMinutes: accessLifetimeInMinutes,
+        refreshInHours: refreshLifetimeInHours,
       }
     )
 
@@ -160,7 +167,7 @@ describe('api', () => {
     const accessVerifier = new AccessVerifier(
       {
         access: {
-          nonce: new ServerTimeLockStore(30), // seconds
+          nonce: new ServerTimeLockStore(accessWindowInSeconds),
         }
       },
       {

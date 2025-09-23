@@ -148,7 +148,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     const now = new Date()
     const accessTime = new Date(this.payload.access.timestamp)
     const expiry = new Date(accessTime)
-    expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds * 2)
+    expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds)
 
     if (now > expiry) {
       return false
