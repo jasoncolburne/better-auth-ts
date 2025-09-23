@@ -1,4 +1,5 @@
 export * from './creation'
+export * from './linking'
 export * from './authentication'
 export * from './rotation'
 export * from './refresh'

@@ -16,6 +16,9 @@ import {
   CreationContainer,
   CreationRequest,
   CreationResponse,
+  LinkContainer,
+  LinkDeviceRequest,
+  LinkDeviceResponse,
   RefreshAccessTokenRequest,
   RefreshAccessTokenResponse,
   RotateAuthenticationKeyRequest,
@@ -76,8 +79,8 @@ export class BetterAuthClient {
     return await response.verify(verifier, publicKey)
   }
 
-  async createAccount(registrationMaterials: string, recoveryKeyDigest: string): Promise<void> {
-    const materials = CreationContainer.parse(registrationMaterials)
+  async createAccount(creationContainer: string, recoveryKeyDigest: string): Promise<void> {
+    const materials = CreationContainer.parse(creationContainer)
     if (!(await this.verifyResponse(materials, materials.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
@@ -104,7 +107,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.stores.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.io.network.sendRequest('/auth/key/register', message)
+    const reply = await this.io.network.sendRequest('/auth/create', message)
 
     const response = CreationResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
@@ -113,6 +116,49 @@ export class BetterAuthClient {
 
     await this.stores.identifier.account.store(response.payload.response.identification.accountId)
     await this.stores.identifier.device.store(deviceId)
+  }
+
+  // happens on the new device
+  async generateLinkContainer(accountId: string): Promise<string> {
+    const [current, nextDigest] = await this.stores.key.authentication.initialize()
+    const deviceId = await this.crypto.digester.sum(current)
+
+    await this.stores.identifier.account.store(accountId)
+    await this.stores.identifier.device.store(deviceId)
+
+    const linkContainer = new LinkContainer({
+      deviceId: deviceId,
+      publicKeys: {
+        current: current,
+        nextDigest: nextDigest,
+      },
+    })
+
+    await linkContainer.sign(await this.stores.key.authentication.signer())
+
+    return await linkContainer.serialize()
+  }
+
+  // happens on the existing device (share with qr code + camera)
+  async linkDevice(linkContainer: string): Promise<void> {
+    const container = LinkContainer.parse(linkContainer)
+
+    const request = new LinkDeviceRequest({
+      identification: {
+        accountId: await this.stores.identifier.account.get(),
+        deviceId: await this.stores.identifier.device.get(),
+      },
+      link: container,
+    })
+
+    await request.sign(await this.stores.key.authentication.signer())
+    const message = await request.serialize()
+    const reply = await this.io.network.sendRequest('/auth/link', message)
+
+    const response = LinkDeviceResponse.parse(reply)
+    if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
+      throw 'invalid signature'
+    }
   }
 
   async rotateAuthenticationKey(): Promise<void> {
@@ -134,7 +180,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.stores.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.io.network.sendRequest('/auth/key/rotate', message)
+    const reply = await this.io.network.sendRequest('/auth/rotate', message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
@@ -150,7 +196,7 @@ export class BetterAuthClient {
     })
 
     const beginMessage = await beginRequest.serialize()
-    const beginReply = await this.io.network.sendRequest('/auth/key/begin', beginMessage)
+    const beginReply = await this.io.network.sendRequest('/auth/begin', beginMessage)
 
     const beginResponse = BeginAuthenticationResponse.parse(beginReply)
     if (
@@ -177,7 +223,7 @@ export class BetterAuthClient {
 
     await completeRequest.sign(await this.stores.key.authentication.signer())
     const completeMessage = await completeRequest.serialize()
-    const completeReply = await this.io.network.sendRequest('/auth/key/complete', completeMessage)
+    const completeReply = await this.io.network.sendRequest('/auth/complete', completeMessage)
 
     const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
     if (

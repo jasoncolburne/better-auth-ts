@@ -20,6 +20,9 @@ import {
   CreationContainer,
   CreationRequest,
   CreationResponse,
+  LinkContainer,
+  LinkDeviceRequest,
+  LinkDeviceResponse,
   RefreshAccessTokenRequest,
   RefreshAccessTokenResponse,
   RotateAuthenticationKeyRequest,
@@ -127,6 +130,45 @@ export class BetterAuthServer {
     await response.sign(this.crypto.keyPairs.response)
 
     return await response.serialize()
+  }
+
+  // linking
+
+  async linkDevice(message: string): Promise<string> {
+    const request = LinkDeviceRequest.parse(message)
+
+    const publicKey = await this.stores.authentication.key.public(
+      request.payload.identification.accountId,
+      request.payload.identification.deviceId
+    )
+
+    if (!(await request.verify(this.crypto.verifier, publicKey))) {
+      throw 'invalid signature'
+    }
+
+    const linkContainer = new LinkContainer(request.payload.link.payload)
+    linkContainer.signature = request.payload.link.signature
+
+    if (!linkContainer.verify(this.crypto.verifier, linkContainer.payload.publicKeys.current)) {
+      throw 'invalid signature'
+    }
+
+    await this.stores.authentication.key.register(
+      request.payload.identification.accountId,
+      linkContainer.payload.deviceId,
+      linkContainer.payload.publicKeys.current,
+      linkContainer.payload.publicKeys.nextDigest
+    )
+
+    const response = new LinkDeviceResponse(
+      {},
+      await this.responseKeyDigest(),
+      await this.crypto.noncer.generate128()
+    )
+
+    await response.sign(this.crypto.keyPairs.response)
+
+    return response.serialize()
   }
 
   // rotation

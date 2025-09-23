@@ -55,18 +55,20 @@ class MockNetworkServer implements INetwork {
 
   async sendRequest(path: string, message: string): Promise<string> {
     switch (path) {
-      case '/auth/key/register':
+      case '/auth/create':
         return await this.betterAuthServer.createAccount(message)
-      case '/auth/key/rotate':
+      case '/auth/recover':
+        return await this.betterAuthServer.recoverAccount(message)
+      case '/auth/link':
+        return await this.betterAuthServer.linkDevice(message)
+      case '/auth/rotate':
         return await this.betterAuthServer.rotateAuthenticationKey(message)
-      case '/auth/key/begin':
+      case '/auth/begin':
         return await this.betterAuthServer.beginAuthentication(message)
-      case '/auth/key/complete':
+      case '/auth/complete':
         return await this.betterAuthServer.completeAuthentication(message, this.attributes)
       case '/auth/refresh':
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
-      case '/auth/recover':
-        return await this.betterAuthServer.recoverAccount(message)
       case '/foo/bar':
         if (!(await this.accessVerifier.verify<IFakeRequest>(message))) {
           throw 'invalid signature'
@@ -260,5 +262,39 @@ describe('api', () => {
     await newBetterAuthClient.rotateAuthenticationKey()
     await newBetterAuthClient.authenticate()
     await newBetterAuthClient.refreshAccessToken()
+
+    const linkedBetterAuthClient = new BetterAuthClient(
+      {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+        },
+        token: {
+          access: new ClientValueStore(),
+        },
+        key: {
+          authentication: new ClientRotatingKeyStore(),
+          access: new ClientRotatingKeyStore(),
+        },
+      },
+      {
+        digester: new Digester(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+        noncer: new Noncer(),
+      },
+      {
+        network: mockNetworkServer,
+      }
+    )
+
+    const linkContainer = await linkedBetterAuthClient.generateLinkContainer(
+      await newBetterAuthClient.accountId()
+    )
+    await newBetterAuthClient.linkDevice(linkContainer)
+    await linkedBetterAuthClient.authenticate()
+    await linkedBetterAuthClient.rotateAuthenticationKey()
+    await linkedBetterAuthClient.refreshAccessToken()
   }, 10000)
 })
