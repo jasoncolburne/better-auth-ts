@@ -3,6 +3,7 @@ import {
   INoncer,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
+  IServerRecoveryKeyDigestStore,
   IServerRegistrationTokenStore,
   IServerTimeLockStore,
   ISigningKey,
@@ -24,6 +25,7 @@ import {
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
 } from '../messages'
+import { RecoverAccountRequest, RecoverAccountResponse } from '../messages/recovery'
 import { rfc3339Nano } from '../utils'
 
 export class BetterAuthServer {
@@ -35,6 +37,9 @@ export class BetterAuthServer {
       authentication: {
         key: IServerAuthenticationKeyStore
         nonce: IServerAuthenticationNonceStore
+      }
+      recovery: {
+        key: IServerRecoveryKeyDigestStore
       }
       access: {
         keyDigest: IServerTimeLockStore
@@ -55,12 +60,13 @@ export class BetterAuthServer {
     }
   ) {}
 
+  // we fetch this every time since the keypair implementation may rotate behind the scenes
   private async responseKeyDigest(): Promise<string> {
     const responsePublicKey = await this.crypto.keyPairs.response.public()
     return await this.crypto.digester.sum(responsePublicKey)
   }
 
-  // registration
+  // account creation
 
   async generateCreationContainer(): Promise<string> {
     const token = await this.stores.registration.token.generate()
@@ -93,6 +99,11 @@ export class BetterAuthServer {
 
     const token = request.payload.registration.token
     const accountId = await this.stores.registration.token.validate(token)
+
+    await this.stores.recovery.key.register(
+      accountId,
+      request.payload.registration.recoveryKeyDigest
+    )
 
     await this.stores.authentication.key.register(
       accountId,
@@ -277,6 +288,33 @@ export class BetterAuthServer {
           token: serializedToken,
         },
       },
+      await this.responseKeyDigest(),
+      await this.crypto.noncer.generate128()
+    )
+
+    await response.sign(this.crypto.keyPairs.response)
+
+    return await response.serialize()
+  }
+
+  async recoverAccount(message: string): Promise<string> {
+    const request = RecoverAccountRequest.parse(message)
+    if (!(await request.verify(this.crypto.verifier, request.payload.recovery.publicKey))) {
+      throw 'invalid signature'
+    }
+
+    const digest = await this.crypto.digester.sum(request.payload.recovery.publicKey)
+    await this.stores.recovery.key.validate(request.payload.identification.accountId, digest)
+
+    await this.stores.authentication.key.register(
+      request.payload.identification.accountId,
+      request.payload.identification.deviceId,
+      request.payload.authentication.publicKeys.current,
+      request.payload.authentication.publicKeys.nextDigest
+    )
+
+    const response = new RecoverAccountResponse(
+      {},
       await this.responseKeyDigest(),
       await this.crypto.noncer.generate128()
     )

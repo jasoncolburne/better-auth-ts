@@ -73,6 +73,15 @@ export interface IServerAuthenticationKeyStore {
   public(accountId: string, deviceId: string): Promise<string>
 }
 
+export interface IServerRecoveryKeyDigestStore {
+  register(accountId: string, keyDigest: string): Promise<void>
+
+  // throw exceptions if:
+  // - not found
+  // - digest does not match
+  validate(accountId: string, keyDigest: string): Promise<void>
+}
+
 export interface IServerTimeLockStore {
   lifetimeInSeconds: number
 

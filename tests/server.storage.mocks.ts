@@ -5,6 +5,7 @@ import {
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerRegistrationTokenStore,
+  IServerRecoveryKeyDigestStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
@@ -108,6 +109,31 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
 
     return bundle[0]
   }
+}
+
+export class ServerRecoveryKeyDigestStore implements IServerRecoveryKeyDigestStore {
+  private readonly dataByAccount: Map<string, string>
+
+  constructor() {
+    this.dataByAccount = new Map<string, string>()
+  }
+
+  async register(accountId: string, digest: string): Promise<void> {
+    this.dataByAccount.set(accountId, digest)
+  }
+
+  async validate(accountId: string, digest: string): Promise<void> {
+    const stored = this.dataByAccount.get(accountId)
+
+    if (typeof stored === 'undefined') {
+      throw 'not found'
+    }
+
+    if (stored !== digest) {
+      throw 'incorrect digest'
+    }
+  }
+
 }
 
 export class ServerAuthenticationNonceStore implements IServerAuthenticationNonceStore {

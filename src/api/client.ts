@@ -4,6 +4,7 @@ import {
   IDigester,
   INetwork,
   INoncer,
+  ISigningKey,
   IVerificationKey,
 } from '../interfaces'
 import {
@@ -21,6 +22,7 @@ import {
   RotateAuthenticationKeyResponse,
   SignableMessage,
 } from '../messages'
+import { RecoverAccountRequest, RecoverAccountResponse } from '../messages/recovery'
 import { rfc3339Nano } from '../utils'
 
 export class BetterAuthClient {
@@ -39,23 +41,31 @@ export class BetterAuthClient {
       }
     },
     private readonly crypto: {
-      digest: IDigester
       publicKeys: {
         response: IVerificationKey
       }
-      nonce: INoncer
+      digester: IDigester
+      noncer: INoncer
     },
     private readonly io: {
       network: INetwork
     }
   ) {}
 
+  async accountId(): Promise<string> {
+    return await this.stores.identifier.account.get()
+  }
+
+  async deviceId(): Promise<string> {
+    return await this.stores.identifier.device.get()
+  }
+
   private async verifyResponse(
     response: SignableMessage,
     publicKeyDigest: string
   ): Promise<boolean> {
     const publicKey = await this.crypto.publicKeys.response.public()
-    const digest = await this.crypto.digest.sum(publicKey)
+    const digest = await this.crypto.digester.sum(publicKey)
 
     if (digest !== publicKeyDigest) {
       throw 'digest mismatch'
@@ -66,7 +76,7 @@ export class BetterAuthClient {
     return await response.verify(verifier, publicKey)
   }
 
-  async createAccount(registrationMaterials: string): Promise<void> {
+  async createAccount(registrationMaterials: string, recoveryKeyDigest: string): Promise<void> {
     const materials = CreationContainer.parse(registrationMaterials)
     if (!(await this.verifyResponse(materials, materials.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
@@ -74,11 +84,12 @@ export class BetterAuthClient {
 
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
       await this.stores.key.authentication.initialize()
-    const deviceId = await this.crypto.digest.sum(currentAuthenticationPublicKey)
+    const deviceId = await this.crypto.digester.sum(currentAuthenticationPublicKey)
 
     const request = new CreationRequest({
       registration: {
         token: materials.payload.response.registration.token,
+        recoveryKeyDigest: recoveryKeyDigest,
       },
       identification: {
         deviceId: deviceId,
@@ -206,12 +217,45 @@ export class BetterAuthClient {
     await this.stores.token.access.store(response.payload.response.access.token)
   }
 
+  async recoverAccount(accountId: string, recoveryKey: ISigningKey): Promise<void> {
+    const [current, nextDigest] = await this.stores.key.authentication.initialize()
+    const deviceId = await this.crypto.digester.sum(current)
+
+    const request = new RecoverAccountRequest({
+      identification: {
+        accountId: accountId,
+        deviceId: deviceId,
+      },
+      recovery: {
+        publicKey: await recoveryKey.public(),
+      },
+      authentication: {
+        publicKeys: {
+          current: current,
+          nextDigest: nextDigest,
+        },
+      },
+    })
+
+    await request.sign(recoveryKey)
+    const message = await request.serialize()
+    const reply = await this.io.network.sendRequest('/auth/recover', message)
+
+    const response = RecoverAccountResponse.parse(reply)
+    if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
+      throw 'invalid signature'
+    }
+
+    await this.stores.identifier.account.store(accountId)
+    await this.stores.identifier.device.store(deviceId)
+  }
+
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {
     const accessRequest = new AccessRequest<T>({
       token: await this.stores.token.access.get(),
       access: {
         timestamp: rfc3339Nano(new Date()),
-        nonce: await this.crypto.nonce.generate128(),
+        nonce: await this.crypto.noncer.generate128(),
       },
       request: request,
     })

@@ -1,11 +1,12 @@
 import { beforeAll, describe, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { INetwork, INoncer, ISigningKey, IVerifier } from '../src/interfaces'
+import { IDigester, INetwork, INoncer, ISigningKey, IVerifier } from '../src/interfaces'
 import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerAuthenticationRegistrationTokenStore,
+  ServerRecoveryKeyDigestStore,
 } from './server.storage.mocks'
 import {
   Digester,
@@ -64,6 +65,8 @@ class MockNetworkServer implements INetwork {
         return await this.betterAuthServer.completeAuthentication(message, this.attributes)
       case '/auth/refresh':
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
+      case '/auth/recover':
+        return await this.betterAuthServer.recoverAccount(message)
       case '/foo/bar':
         if (!(await this.accessVerifier.verify<IFakeRequest>(message))) {
           throw 'invalid signature'
@@ -95,9 +98,13 @@ class FakeResponse extends ServerResponse<IFakeResponse> {
 describe('api', () => {
   let betterAuthServer: BetterAuthServer
   let betterAuthClient: BetterAuthClient
+  let recoveryKey: Secp256r1
   let responseSigner: Secp256r1
   let accessSigner: Secp256r1
   let eccVerifier: IVerifier
+  let digester: IDigester
+  let noncer: INoncer
+  let mockNetworkServer: INetwork
 
   beforeAll(async () => {
     responseSigner = new Secp256r1()
@@ -107,11 +114,19 @@ describe('api', () => {
     await accessSigner.generate()
 
     eccVerifier = new Secp256r1Verifier()
+    digester = new Digester()
+    noncer = new Noncer()
+
+    recoveryKey = new Secp256r1()
+    await recoveryKey.generate()
 
     betterAuthServer = new BetterAuthServer(
       {
         registration: {
           token: new ServerAuthenticationRegistrationTokenStore(30), // minutes
+        },
+        recovery: {
+          key: new ServerRecoveryKeyDigestStore()
         },
         authentication: {
           key: new ServerAuthenticationKeyStore(),
@@ -127,8 +142,8 @@ describe('api', () => {
           access: accessSigner,
         },
         verifier: eccVerifier,
-        noncer: new Noncer(),
-        digester: new Digester(),
+        noncer: noncer,
+        digester: digester,
       },
       {
         accessInMinutes: 15,
@@ -153,7 +168,7 @@ describe('api', () => {
         verifier: eccVerifier,
       }
     )
-    const mockNetworkServer = new MockNetworkServer(
+    mockNetworkServer = new MockNetworkServer(
       betterAuthServer,
       accessVerifier,
       responseSigner,
@@ -176,11 +191,11 @@ describe('api', () => {
         },
       },
       {
-        digest: new Digester(),
+        digester: new Digester(),
         publicKeys: {
           response: responseSigner, // this would only be a public key in production
         },
-        nonce: new Noncer(),
+        noncer: new Noncer(),
       },
       {
         network: mockNetworkServer,
@@ -188,10 +203,11 @@ describe('api', () => {
     )
   })
 
-  it('completes auth flow', async () => {
+  it('completes auth flows', async () => {
     const creationContainer = await betterAuthServer.generateCreationContainer()
+    const recoveryKeyDigest = await digester.sum(await recoveryKey.public())
 
-    await betterAuthClient.createAccount(creationContainer)
+    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
     await betterAuthClient.rotateAuthenticationKey()
     await betterAuthClient.authenticate()
     await betterAuthClient.refreshAccessToken()
@@ -213,5 +229,36 @@ describe('api', () => {
     ) {
       throw 'invalid data returned'
     }
-  }, 5000)
+
+    const newBetterAuthClient = new BetterAuthClient(
+      {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+        },
+        token: {
+          access: new ClientValueStore(),
+        },
+        key: {
+          authentication: new ClientRotatingKeyStore(),
+          access: new ClientRotatingKeyStore(),
+        },
+      },
+      {
+        digester: new Digester(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+        noncer: new Noncer(),
+      },
+      {
+        network: mockNetworkServer,
+      }
+    )
+
+    await newBetterAuthClient.recoverAccount(await betterAuthClient.accountId(), recoveryKey)
+    await newBetterAuthClient.rotateAuthenticationKey()
+    await newBetterAuthClient.authenticate()
+    await newBetterAuthClient.refreshAccessToken()
+  }, 10000)
 })

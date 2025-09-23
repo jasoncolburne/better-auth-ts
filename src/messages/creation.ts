@@ -17,6 +17,7 @@ export interface ICreationRequest {
   payload: {
     registration: {
       token: string
+      recoveryKeyDigest: string
     }
     identification: {
       deviceId: string
@@ -36,6 +37,7 @@ export class CreationRequest extends SignableMessage implements ICreationRequest
     public payload: {
       registration: {
         token: string
+        recoveryKeyDigest: string
       }
       identification: {
         deviceId: string
