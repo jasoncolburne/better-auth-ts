@@ -33,7 +33,6 @@ class MockNetworkServer implements INetwork {
     private readonly betterAuthServer: BetterAuthServer,
     private readonly accessVerifier: AccessVerifier,
     private readonly responseSigner: ISigningKey,
-    private readonly noncer: INoncer,
     private readonly attributes: IMockAccessAttributes
   ) {}
 
@@ -205,7 +204,6 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      new Noncer(),
       attributes
     )
 
