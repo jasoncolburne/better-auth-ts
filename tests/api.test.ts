@@ -97,6 +97,30 @@ class FakeResponse extends ServerResponse<IFakeResponse> {
   }
 }
 
+async function testAccess(
+  betterAuthClient: BetterAuthClient,
+  eccVerifier: IVerifier,
+  responseSigner: ISigningKey
+): Promise<void> {
+    const message = {
+      foo: 'bar',
+      bar: 'foo',
+    }
+    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
+    const response = FakeResponse.parse(reply)
+
+    if (!(await response.verify(eccVerifier, await responseSigner.public()))) {
+      throw 'invalid signature'
+    }
+
+    if (
+      response.payload.response.wasFoo !== 'bar' ||
+      response.payload.response.wasBar !== 'foo'
+    ) {
+      throw 'invalid data returned'
+    }
+}
+
 describe('api', () => {
   let betterAuthServer: BetterAuthServer
   let betterAuthClient: BetterAuthClient
@@ -221,25 +245,11 @@ describe('api', () => {
     await betterAuthClient.authenticate()
     await betterAuthClient.refreshAccessToken()
 
-    const message = {
-      foo: 'foo-y',
-      bar: 'bar-y',
-    }
-    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
-    const response = FakeResponse.parse(reply)
+    await testAccess(betterAuthClient, eccVerifier, responseSigner)
+  })
 
-    if (!(await response.verify(eccVerifier, await responseSigner.public()))) {
-      throw 'invalid signature'
-    }
-
-    if (
-      response.payload.response.wasFoo !== 'foo-y' ||
-      response.payload.response.wasBar !== 'bar-y'
-    ) {
-      throw 'invalid data returned'
-    }
-
-    const newBetterAuthClient = new BetterAuthClient(
+  it('recovers from loss', async () => {
+    const recoveredBetterAuthClient = new BetterAuthClient(
       {
         identifier: {
           account: new ClientValueStore(),
@@ -265,11 +275,19 @@ describe('api', () => {
       }
     )
 
-    await newBetterAuthClient.recoverAccount(await betterAuthClient.accountId(), recoveryKey)
-    await newBetterAuthClient.rotateAuthenticationKey()
-    await newBetterAuthClient.authenticate()
-    await newBetterAuthClient.refreshAccessToken()
+    // this is saved with the recovery key/derivation material, wherever that is
+    const accountId = await betterAuthClient.accountId()
 
+    await recoveredBetterAuthClient.recoverAccount(accountId, recoveryKey)
+
+    await recoveredBetterAuthClient.rotateAuthenticationKey()
+    await recoveredBetterAuthClient.authenticate()
+    await recoveredBetterAuthClient.refreshAccessToken()
+
+    await testAccess(betterAuthClient, eccVerifier, responseSigner)
+  })
+
+  it('links another device', async () => {
     const linkedBetterAuthClient = new BetterAuthClient(
       {
         identifier: {
@@ -305,8 +323,11 @@ describe('api', () => {
     // submit link containe with existing device
     await betterAuthClient.linkDevice(linkContainer)
 
-    await linkedBetterAuthClient.authenticate()
+    // authenticate and request resource access with the new device
     await linkedBetterAuthClient.rotateAuthenticationKey()
+    await linkedBetterAuthClient.authenticate()
     await linkedBetterAuthClient.refreshAccessToken()
-  }, 10000)
+
+    await testAccess(betterAuthClient, eccVerifier, responseSigner)
+  })
 })
