@@ -33,7 +33,7 @@
   "keywords": [
     "authentication",
     "security",
-    "crypto"
+    "cryptography"
   ],
   "author": "Jason Colburne",
   "license": "MIT",
