@@ -2,7 +2,7 @@ import { SignableMessage } from './message'
 import { ServerResponse } from './response'
 
 interface ICreationContainer {
-  registration: {
+  creation: {
     token: string
   }
 }
@@ -15,7 +15,7 @@ export class CreationContainer extends ServerResponse<ICreationContainer> {
 
 export interface ICreationRequest {
   payload: {
-    registration: {
+    creation: {
       token: string
       recoveryKeyDigest: string
     }
@@ -35,7 +35,7 @@ export interface ICreationRequest {
 export class CreationRequest extends SignableMessage implements ICreationRequest {
   constructor(
     public payload: {
-      registration: {
+      creation: {
         token: string
         recoveryKeyDigest: string
       }

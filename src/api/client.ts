@@ -30,28 +30,28 @@ import { rfc3339Nano } from '../utils'
 
 export class BetterAuthClient {
   constructor(
+    private readonly crypto: {
+      digester: IDigester
+      noncer: INoncer
+      publicKeys: {
+        response: IVerificationKey
+      }
+    },
+    private readonly io: {
+      network: INetwork
+    },
     private readonly stores: {
       identifier: {
         account: IClientValueStore
         device: IClientValueStore
       }
+      key: {
+        access: IClientRotatingKeyStore
+        authentication: IClientRotatingKeyStore
+      }
       token: {
         access: IClientValueStore
       }
-      key: {
-        authentication: IClientRotatingKeyStore
-        access: IClientRotatingKeyStore
-      }
-    },
-    private readonly crypto: {
-      publicKeys: {
-        response: IVerificationKey
-      }
-      digester: IDigester
-      noncer: INoncer
-    },
-    private readonly io: {
-      network: INetwork
     }
   ) {}
 
@@ -90,8 +90,8 @@ export class BetterAuthClient {
     const deviceId = await this.crypto.digester.sum(currentAuthenticationPublicKey)
 
     const request = new CreationRequest({
-      registration: {
-        token: materials.payload.response.registration.token,
+      creation: {
+        token: materials.payload.response.creation.token,
         recoveryKeyDigest: recoveryKeyDigest,
       },
       identification: {

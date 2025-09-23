@@ -4,14 +4,14 @@ import {
   IServerTimeLockStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
-  IServerRegistrationTokenStore,
+  IServerCreationTokenStore,
   IServerRecoveryKeyDigestStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
 
-export class ServerAuthenticationRegistrationTokenStore
-  implements IServerRegistrationTokenStore
+export class ServerCreationTokenStore
+  implements IServerCreationTokenStore
 {
   private readonly dataByToken: Map<string, string>
   private readonly tokenExpirations: Map<string, Date>

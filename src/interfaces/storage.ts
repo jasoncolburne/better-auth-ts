@@ -41,7 +41,7 @@ export interface IServerAuthenticationNonceStore {
   validate(nonce: string): Promise<string>
 }
 
-export interface IServerRegistrationTokenStore {
+export interface IServerCreationTokenStore {
   lifetimeInMinutes: number
 
   // returns: token

@@ -3,8 +3,8 @@ import {
   INoncer,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
+  IServerCreationTokenStore,
   IServerRecoveryKeyDigestStore,
-  IServerRegistrationTokenStore,
   IServerTimeLockStore,
   ISigningKey,
   IVerificationKey,
@@ -34,28 +34,28 @@ import { rfc3339Nano } from '../utils'
 export class BetterAuthServer {
   constructor(
     private readonly stores: {
-      registration: {
-        token: IServerRegistrationTokenStore
+      access: {
+        keyDigest: IServerTimeLockStore
       }
       authentication: {
         key: IServerAuthenticationKeyStore
         nonce: IServerAuthenticationNonceStore
       }
+      creation: {
+        token: IServerCreationTokenStore
+      }
       recovery: {
         key: IServerRecoveryKeyDigestStore
       }
-      access: {
-        keyDigest: IServerTimeLockStore
-      }
     },
     private readonly crypto: {
+      digester: IDigester
       keyPairs: {
         response: ISigningKey
         access: ISigningKey
       }
-      verifier: IVerifier
       noncer: INoncer
-      digester: IDigester
+      verifier: IVerifier
     },
     private readonly expiry: {
       accessInMinutes: number
@@ -72,11 +72,11 @@ export class BetterAuthServer {
   // account creation
 
   async generateCreationContainer(): Promise<string> {
-    const token = await this.stores.registration.token.generate()
+    const token = await this.stores.creation.token.generate()
 
     const response = new CreationContainer(
       {
-        registration: {
+        creation: {
           token: token,
         },
       },
@@ -100,13 +100,10 @@ export class BetterAuthServer {
       throw 'invalid signature'
     }
 
-    const token = request.payload.registration.token
-    const accountId = await this.stores.registration.token.validate(token)
+    const token = request.payload.creation.token
+    const accountId = await this.stores.creation.token.validate(token)
 
-    await this.stores.recovery.key.register(
-      accountId,
-      request.payload.registration.recoveryKeyDigest
-    )
+    await this.stores.recovery.key.register(accountId, request.payload.creation.recoveryKeyDigest)
 
     await this.stores.authentication.key.register(
       accountId,
@@ -115,7 +112,7 @@ export class BetterAuthServer {
       request.payload.authentication.publicKeys.nextDigest
     )
 
-    await this.stores.registration.token.invalidate(token)
+    await this.stores.creation.token.invalidate(token)
 
     const response = new CreationResponse(
       {
@@ -375,16 +372,16 @@ export class BetterAuthServer {
 
 export class AccessVerifier {
   constructor(
-    private readonly stores: {
-      access: {
-        nonce: IServerTimeLockStore
-      }
-    },
     private readonly crypto: {
       publicKeys: {
         access: IVerificationKey
       }
       verifier: IVerifier
+    },
+    private readonly stores: {
+      access: {
+        nonce: IServerTimeLockStore
+      }
     }
   ) {}
 

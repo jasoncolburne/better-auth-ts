@@ -5,7 +5,7 @@ import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
-  ServerAuthenticationRegistrationTokenStore,
+  ServerCreationTokenStore,
   ServerRecoveryKeyDigestStore,
 } from './server.storage.mocks'
 import {
@@ -153,29 +153,29 @@ describe('api', () => {
 
     betterAuthServer = new BetterAuthServer(
       {
-        registration: {
-          token: new ServerAuthenticationRegistrationTokenStore(creationTimeoutInMinutes),
-        },
-        recovery: {
-          key: new ServerRecoveryKeyDigestStore()
+        access: {
+          // the lock time is the refresh lifetime in seconds
+          keyDigest: new ServerTimeLockStore(60 * 60 * refreshLifetimeInHours)
         },
         authentication: {
           key: new ServerAuthenticationKeyStore(),
           nonce: new ServerAuthenticationNonceStore(authenticationChallengeLifetimeInSeconds),
         },
-        access: {
-          // the lock time is the refresh lifetime in seconds
-          keyDigest: new ServerTimeLockStore(60 * 60 * refreshLifetimeInHours)
-        }
+        creation: {
+          token: new ServerCreationTokenStore(creationTimeoutInMinutes),
+        },
+        recovery: {
+          key: new ServerRecoveryKeyDigestStore()
+        },
       },
       {
-        keyPairs: {
-          response: responseSigner,
-          access: accessSigner,
-        },
-        verifier: eccVerifier,
-        noncer: noncer,
         digester: digester,
+        keyPairs: {
+          access: accessSigner,
+          response: responseSigner,
+        },
+        noncer: noncer,
+        verifier: eccVerifier,
       },
       {
         accessInMinutes: accessLifetimeInMinutes,
@@ -189,15 +189,15 @@ describe('api', () => {
     const attributes = new MockAccessAttributes(map)
     const accessVerifier = new AccessVerifier(
       {
-        access: {
-          nonce: new ServerTimeLockStore(accessWindowInSeconds),
-        }
-      },
-      {
         publicKeys: {
           access: accessSigner,
         },
         verifier: eccVerifier,
+      },
+      {
+        access: {
+          nonce: new ServerTimeLockStore(accessWindowInSeconds),
+        }
       }
     )
     mockNetworkServer = new MockNetworkServer(
@@ -209,28 +209,28 @@ describe('api', () => {
 
     betterAuthClient = new BetterAuthClient(
       {
+        digester: new Digester(),
+        noncer: new Noncer(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      {
+        network: mockNetworkServer,
+      },
+      {
         identifier: {
           account: new ClientValueStore(),
           device: new ClientValueStore(),
         },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
         token: {
           access: new ClientValueStore(),
         },
-        key: {
-          authentication: new ClientRotatingKeyStore(),
-          access: new ClientRotatingKeyStore(),
-        },
       },
-      {
-        digester: new Digester(),
-        publicKeys: {
-          response: responseSigner, // this would only be a public key in production
-        },
-        noncer: new Noncer(),
-      },
-      {
-        network: mockNetworkServer,
-      }
     )
   })
 
@@ -249,28 +249,28 @@ describe('api', () => {
   it('recovers from loss', async () => {
     const recoveredBetterAuthClient = new BetterAuthClient(
       {
+        digester: new Digester(),
+        noncer: new Noncer(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      {
+        network: mockNetworkServer,
+      },
+      {
         identifier: {
           account: new ClientValueStore(),
           device: new ClientValueStore(),
         },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
         token: {
           access: new ClientValueStore(),
         },
-        key: {
-          authentication: new ClientRotatingKeyStore(),
-          access: new ClientRotatingKeyStore(),
-        },
       },
-      {
-        digester: new Digester(),
-        publicKeys: {
-          response: responseSigner, // this would only be a public key in production
-        },
-        noncer: new Noncer(),
-      },
-      {
-        network: mockNetworkServer,
-      }
     )
 
     // this is saved with the recovery key/derivation material, wherever that is
@@ -288,28 +288,28 @@ describe('api', () => {
   it('links another device', async () => {
     const linkedBetterAuthClient = new BetterAuthClient(
       {
+        digester: new Digester(),
+        noncer: new Noncer(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      {
+        network: mockNetworkServer,
+      },
+      {
         identifier: {
           account: new ClientValueStore(),
           device: new ClientValueStore(),
         },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
         token: {
           access: new ClientValueStore(),
         },
-        key: {
-          authentication: new ClientRotatingKeyStore(),
-          access: new ClientRotatingKeyStore(),
-        },
       },
-      {
-        digester: new Digester(),
-        publicKeys: {
-          response: responseSigner, // this would only be a public key in production
-        },
-        noncer: new Noncer(),
-      },
-      {
-        network: mockNetworkServer,
-      }
     )
 
     // get account id from the existing device
