@@ -48,6 +48,10 @@ export class BetterAuthServer {
       verifier: IVerifier
       noncer: INoncer
       digester: IDigester
+    },
+    private readonly expiry: {
+      accessInMinutes: number
+      refreshInHours: number
     }
   ) {}
 
@@ -186,11 +190,11 @@ export class BetterAuthServer {
 
     const now = new Date()
     const later = new Date(now)
-    later.setMinutes(later.getMinutes() + 15) // TODO remove magic
+    later.setMinutes(later.getMinutes() + this.expiry.accessInMinutes)
     const issuedAt = rfc3339Nano(now)
     const expiry = rfc3339Nano(later)
     const evenLater = new Date(now)
-    evenLater.setHours(evenLater.getHours() + 12) // TODO remove magic
+    evenLater.setHours(evenLater.getHours() + this.expiry.refreshInHours)
     const refreshExpiry = rfc3339Nano(evenLater)
 
     const accessToken = new AccessToken<T>(
@@ -240,8 +244,6 @@ export class BetterAuthServer {
       throw 'digest mismatch'
     }
 
-    await this.stores.access.keyDigest.reserve(digest)
-
     const now = new Date()
     const refreshExpiry = new Date(token.refreshExpiry)
 
@@ -249,8 +251,10 @@ export class BetterAuthServer {
       throw 'refresh has expired'
     }
 
+    await this.stores.access.keyDigest.reserve(digest)
+
     const later = new Date(now)
-    later.setMinutes(later.getMinutes() + 15) // TODO remove magic
+    later.setMinutes(later.getMinutes() + this.expiry.accessInMinutes)
     const issuedAt = rfc3339Nano(now)
     const expiry = rfc3339Nano(later)
 

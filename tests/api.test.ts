@@ -129,6 +129,10 @@ describe('api', () => {
         verifier: eccVerifier,
         noncer: new Noncer(),
         digester: new Digester(),
+      },
+      {
+        accessInMinutes: 15,
+        refreshInHours: 12,
       }
     )
 
