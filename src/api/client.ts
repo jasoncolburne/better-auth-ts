@@ -23,6 +23,7 @@ import {
   RefreshAccessTokenResponse,
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
+  ScannableResponse,
   SignableMessage,
 } from '../messages'
 import { RecoverAccountRequest, RecoverAccountResponse } from '../messages/recovery'
@@ -314,6 +315,12 @@ export class BetterAuthClient {
 
     await accessRequest.sign(await this.stores.key.access.signer())
     const message = await accessRequest.serialize()
-    return await this.io.network.sendRequest(path, message)
+    const reply = await this.io.network.sendRequest(path, message)
+    const response = ScannableResponse.parse(reply)
+    if (response.payload.access.nonce !== accessRequest.payload.access.nonce) {
+      throw 'invalid reply nonce'
+    }
+
+    return reply
   }
 }

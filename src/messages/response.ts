@@ -55,3 +55,11 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
     return result
   }
 }
+
+interface IScannableResponse {}
+
+export class ScannableResponse extends ServerResponse<IScannableResponse> {
+  static parse(message: string): ScannableResponse {
+    return ServerResponse._parse(message, ScannableResponse)
+  }
+}
