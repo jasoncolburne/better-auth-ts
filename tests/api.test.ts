@@ -54,7 +54,9 @@ class MockNetworkServer implements INetwork {
 
   async sendRequest(path: string, message: string): Promise<string> {
     // this abstraction exists so we can easily log, do other stuff, etc
+    // console.log(message)
     const reply = await this._sendRequest(path, message)
+    // console.log(reply)
     return reply
   }
 
@@ -243,6 +245,7 @@ describe('api', () => {
   it('completes auth flows', async () => {
     const creationContainer = await betterAuthServer.generateCreationContainer()
     const recoveryKeyDigest = await digester.sum(await recoveryKey.public())
+    // console.log(creationContainer)
 
     await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
     await betterAuthClient.rotateAuthenticationKey()
@@ -323,6 +326,7 @@ describe('api', () => {
 
     // get link container from the new device
     const linkContainer = await linkedBetterAuthClient.generateLinkContainer(accountId)
+    // console.log(linkContainer)
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
