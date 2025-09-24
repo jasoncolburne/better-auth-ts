@@ -93,24 +93,24 @@ export class BetterAuthClient {
     const deviceId = await this.args.crypto.digester.sum(currentAuthenticationPublicKey)
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new CreationRequest({
-      access: {
-        nonce: nonce,
-      },
-      authentication: {
-        publicKeys: {
-          current: currentAuthenticationPublicKey,
-          nextDigest: nextAuthenticationPublicKeyDigest,
+    const request = new CreationRequest(
+      {
+        authentication: {
+          publicKeys: {
+            current: currentAuthenticationPublicKey,
+            nextDigest: nextAuthenticationPublicKeyDigest,
+          },
+        },
+        creation: {
+          token: materials.payload.response.creation.token,
+          recoveryKeyDigest: recoveryKeyDigest,
+        },
+        identification: {
+          deviceId: deviceId,
         },
       },
-      creation: {
-        token: materials.payload.response.creation.token,
-        recoveryKeyDigest: recoveryKeyDigest,
-      },
-      identification: {
-        deviceId: deviceId,
-      },
-    })
+      nonce
+    )
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
@@ -163,16 +163,16 @@ export class BetterAuthClient {
     const container = LinkContainer.parse(linkContainer)
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new LinkDeviceRequest({
-      access: {
-        nonce: nonce,
+    const request = new LinkDeviceRequest(
+      {
+        identification: {
+          accountId: await this.args.store.identifier.account.get(),
+          deviceId: await this.args.store.identifier.device.get(),
+        },
+        link: container,
       },
-      identification: {
-        accountId: await this.args.store.identifier.account.get(),
-        deviceId: await this.args.store.identifier.device.get(),
-      },
-      link: container,
-    })
+      nonce
+    )
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
@@ -193,21 +193,21 @@ export class BetterAuthClient {
       await this.args.store.key.authentication.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new RotateAuthenticationKeyRequest({
-      access: {
-        nonce: nonce,
-      },
-      identification: {
-        accountId: await this.args.store.identifier.account.get(),
-        deviceId: await this.args.store.identifier.device.get(),
-      },
-      authentication: {
-        publicKeys: {
-          current: currentAuthenticationPublicKey,
-          nextDigest: nextAuthenticationPublicKeyDigest,
+    const request = new RotateAuthenticationKeyRequest(
+      {
+        identification: {
+          accountId: await this.args.store.identifier.account.get(),
+          deviceId: await this.args.store.identifier.device.get(),
+        },
+        authentication: {
+          publicKeys: {
+            current: currentAuthenticationPublicKey,
+            nextDigest: nextAuthenticationPublicKeyDigest,
+          },
         },
       },
-    })
+      nonce
+    )
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
@@ -230,8 +230,10 @@ export class BetterAuthClient {
       access: {
         nonce: beginNonce,
       },
-      identification: {
-        accountId: await this.args.store.identifier.account.get(),
+      request: {
+        identification: {
+          accountId: await this.args.store.identifier.account.get(),
+        },
       },
     })
 
@@ -252,21 +254,23 @@ export class BetterAuthClient {
     const [currentKey, nextKeyDigest] = await this.args.store.key.access.initialize()
     const completeNonce = await this.args.crypto.noncer.generate128()
 
-    const completeRequest = new CompleteAuthenticationRequest({
-      access: {
-        nonce: completeNonce,
-        publicKeys: {
-          current: currentKey,
-          nextDigest: nextKeyDigest,
+    const completeRequest = new CompleteAuthenticationRequest(
+      {
+        access: {
+          publicKeys: {
+            current: currentKey,
+            nextDigest: nextKeyDigest,
+          },
+        },
+        authentication: {
+          nonce: beginResponse.payload.response.authentication.nonce,
+        },
+        identification: {
+          deviceId: await this.args.store.identifier.device.get(),
         },
       },
-      authentication: {
-        nonce: beginResponse.payload.response.authentication.nonce,
-      },
-      identification: {
-        deviceId: await this.args.store.identifier.device.get(),
-      },
-    })
+      completeNonce
+    )
 
     await completeRequest.sign(await this.args.store.key.authentication.signer())
     const completeMessage = await completeRequest.serialize()
@@ -293,16 +297,18 @@ export class BetterAuthClient {
     const [currentKey, nextKeyDigest] = await this.args.store.key.access.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new RefreshAccessTokenRequest({
-      access: {
-        nonce: nonce,
-        publicKeys: {
-          current: currentKey,
-          nextDigest: nextKeyDigest,
+    const request = new RefreshAccessTokenRequest(
+      {
+        access: {
+          publicKeys: {
+            current: currentKey,
+            nextDigest: nextKeyDigest,
+          },
+          token: await this.args.store.token.access.get(),
         },
-        token: await this.args.store.token.access.get(),
       },
-    })
+      nonce
+    )
 
     await request.sign(await this.args.store.key.access.signer())
     const message = await request.serialize()
@@ -325,24 +331,24 @@ export class BetterAuthClient {
     const deviceId = await this.args.crypto.digester.sum(current)
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new RecoverAccountRequest({
-      access: {
-        nonce: nonce,
-      },
-      authentication: {
-        publicKeys: {
-          current: current,
-          nextDigest: nextDigest,
+    const request = new RecoverAccountRequest(
+      {
+        authentication: {
+          publicKeys: {
+            current: current,
+            nextDigest: nextDigest,
+          },
+        },
+        identification: {
+          accountId: accountId,
+          deviceId: deviceId,
+        },
+        recovery: {
+          publicKey: await recoveryKey.public(),
         },
       },
-      identification: {
-        accountId: accountId,
-        deviceId: deviceId,
-      },
-      recovery: {
-        publicKey: await recoveryKey.public(),
-      },
-    })
+      nonce
+    )
 
     await request.sign(recoveryKey)
     const message = await request.serialize()
@@ -363,12 +369,12 @@ export class BetterAuthClient {
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {
     const accessRequest = new AccessRequest<T>({
-      token: await this.args.store.token.access.get(),
       access: {
-        timestamp: rfc3339Nano(new Date()),
         nonce: await this.args.crypto.noncer.generate128(),
+        timestamp: rfc3339Nano(new Date()),
       },
       request: request,
+      token: await this.args.store.token.access.get(),
     })
 
     await accessRequest.sign(await this.args.store.key.access.signer())

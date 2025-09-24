@@ -125,10 +125,6 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     super()
   }
 
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
   async _verify<T>(
     nonceStore: IServerTimeLockStore,
     verifier: IVerifier,

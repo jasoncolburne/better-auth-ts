@@ -13,9 +13,16 @@ export abstract class SerializableMessage implements Serializable {
 }
 
 export abstract class SignableMessage extends SerializableMessage implements Signable {
+  payload?: object
   signature?: string
 
-  abstract composePayload(): string
+  composePayload(): string {
+    if (typeof this.payload === 'undefined') {
+      throw 'payload not defined'
+    }
+
+    return JSON.stringify(this.payload)
+  }
 
   async serialize(): Promise<string> {
     if (this.signature === undefined) {

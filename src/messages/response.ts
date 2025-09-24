@@ -32,10 +32,6 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
     }
   }
 
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
   static _parse<T, U extends ServerResponse<T>>(
     message: string,
     constructor: new (response: T, publicKeyDigest: string, nonce: string) => U

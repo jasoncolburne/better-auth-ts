@@ -1,4 +1,4 @@
-import { SignableMessage } from './message'
+import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
 interface ICreationContainer {
@@ -14,61 +14,24 @@ export class CreationContainer extends ServerResponse<ICreationContainer> {
 }
 
 export interface ICreationRequest {
-  payload: {
-    access: {
-      nonce: string
-    }
-    authentication: {
-      publicKeys: {
-        current: string
-        nextDigest: string
-      }
-    }
-    creation: {
-      token: string
-      recoveryKeyDigest: string
-    }
-    identification: {
-      deviceId: string
+  authentication: {
+    publicKeys: {
+      current: string
+      nextDigest: string
     }
   }
-  signature?: string
+  creation: {
+    token: string
+    recoveryKeyDigest: string
+  }
+  identification: {
+    deviceId: string
+  }
 }
 
-export class CreationRequest extends SignableMessage implements ICreationRequest {
-  constructor(
-    public payload: {
-      access: {
-        nonce: string
-      }
-      authentication: {
-        publicKeys: {
-          current: string
-          nextDigest: string
-        }
-      }
-      creation: {
-        token: string
-        recoveryKeyDigest: string
-      }
-      identification: {
-        deviceId: string
-      }
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
+export class CreationRequest extends ClientRequest<ICreationRequest> {
   static parse(message: string): CreationRequest {
-    const json = JSON.parse(message)
-    const result = new CreationRequest(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ClientRequest._parse(message, CreationRequest)
   }
 }
 

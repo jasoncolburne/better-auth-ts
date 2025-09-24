@@ -1,59 +1,22 @@
-import { SignableMessage } from './message'
+import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
 interface IRotateAuthenticationKeyRequest {
-  payload: {
-    access: {
-      nonce: string
-    }
-    authentication: {
-      publicKeys: {
-        current: string
-        nextDigest: string
-      }
-    }
-    identification: {
-      accountId: string
-      deviceId: string
+  authentication: {
+    publicKeys: {
+      current: string
+      nextDigest: string
     }
   }
-  signature?: string
+  identification: {
+    accountId: string
+    deviceId: string
+  }
 }
 
-export class RotateAuthenticationKeyRequest
-  extends SignableMessage
-  implements IRotateAuthenticationKeyRequest
-{
-  constructor(
-    public payload: {
-      access: {
-        nonce: string
-      }
-      authentication: {
-        publicKeys: {
-          current: string
-          nextDigest: string
-        }
-      }
-      identification: {
-        accountId: string
-        deviceId: string
-      }
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
+export class RotateAuthenticationKeyRequest extends ClientRequest<IRotateAuthenticationKeyRequest> {
   static parse(message: string): RotateAuthenticationKeyRequest {
-    const json = JSON.parse(message)
-    const result = new RotateAuthenticationKeyRequest(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ClientRequest._parse(message, RotateAuthenticationKeyRequest)
   }
 }
 
