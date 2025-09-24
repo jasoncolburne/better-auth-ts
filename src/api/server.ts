@@ -96,7 +96,7 @@ export class BetterAuthServer {
     if (
       !(await request.verify(
         this.args.crypto.verifier,
-        request.payload.request.authentication.publicKeys.current
+        request.payload.request.authentication.publicKey.current
       ))
     ) {
       throw 'invalid signature'
@@ -113,8 +113,8 @@ export class BetterAuthServer {
     await this.args.store.authentication.key.register(
       accountId,
       request.payload.request.identification.deviceId,
-      request.payload.request.authentication.publicKeys.current,
-      request.payload.request.authentication.publicKeys.rotationDigest
+      request.payload.request.authentication.publicKey.current,
+      request.payload.request.authentication.publicKey.rotationDigest
     )
 
     await this.args.store.creation.token.invalidate(token)
@@ -151,9 +151,7 @@ export class BetterAuthServer {
     const linkContainer = new LinkContainer(request.payload.request.link.payload)
     linkContainer.signature = request.payload.request.link.signature
 
-    if (
-      !linkContainer.verify(this.args.crypto.verifier, linkContainer.payload.publicKeys.current)
-    ) {
+    if (!linkContainer.verify(this.args.crypto.verifier, linkContainer.payload.publicKey.current)) {
       throw 'invalid signature'
     }
 
@@ -167,8 +165,8 @@ export class BetterAuthServer {
     await this.args.store.authentication.key.register(
       linkContainer.payload.identification.accountId,
       linkContainer.payload.identification.deviceId,
-      linkContainer.payload.publicKeys.current,
-      linkContainer.payload.publicKeys.rotationDigest
+      linkContainer.payload.publicKey.current,
+      linkContainer.payload.publicKey.rotationDigest
     )
 
     const response = new LinkDeviceResponse(
@@ -189,7 +187,7 @@ export class BetterAuthServer {
     if (
       !(await request.verify(
         this.args.crypto.verifier,
-        request.payload.request.authentication.publicKeys.current
+        request.payload.request.authentication.publicKey.current
       ))
     ) {
       throw 'invalid signature'
@@ -198,8 +196,8 @@ export class BetterAuthServer {
     await this.args.store.authentication.key.rotate(
       request.payload.request.identification.accountId,
       request.payload.request.identification.deviceId,
-      request.payload.request.authentication.publicKeys.current,
-      request.payload.request.authentication.publicKeys.rotationDigest
+      request.payload.request.authentication.publicKey.current,
+      request.payload.request.authentication.publicKey.rotationDigest
     )
 
     // this is replayable, and should be fixed but making it not fixed
@@ -263,8 +261,8 @@ export class BetterAuthServer {
 
     const accessToken = new AccessToken<T>(
       accountId,
-      request.payload.request.access.publicKeys.current,
-      request.payload.request.access.publicKeys.rotationDigest,
+      request.payload.request.access.publicKey.current,
+      request.payload.request.access.publicKey.rotationDigest,
       issuedAt,
       expiry,
       refreshExpiry,
@@ -296,7 +294,7 @@ export class BetterAuthServer {
     if (
       !(await request.verify(
         this.args.crypto.verifier,
-        request.payload.request.access.publicKeys.current
+        request.payload.request.access.publicKey.current
       ))
     ) {
       throw 'invalid signature'
@@ -309,7 +307,7 @@ export class BetterAuthServer {
     }
 
     const digest = await this.args.crypto.digester.sum(
-      request.payload.request.access.publicKeys.current
+      request.payload.request.access.publicKey.current
     )
     if (digest !== token.rotationDigest) {
       throw 'digest mismatch'
@@ -331,8 +329,8 @@ export class BetterAuthServer {
 
     const accessToken = new AccessToken(
       token.accountId,
-      request.payload.request.access.publicKeys.current,
-      request.payload.request.access.publicKeys.rotationDigest,
+      request.payload.request.access.publicKey.current,
+      request.payload.request.access.publicKey.rotationDigest,
       issuedAt,
       expiry,
       token.refreshExpiry,
@@ -374,8 +372,8 @@ export class BetterAuthServer {
     await this.args.store.authentication.key.register(
       request.payload.request.identification.accountId,
       request.payload.request.identification.deviceId,
-      request.payload.request.authentication.publicKeys.current,
-      request.payload.request.authentication.publicKeys.rotationDigest
+      request.payload.request.authentication.publicKey.current,
+      request.payload.request.authentication.publicKey.rotationDigest
     )
 
     const response = new RecoverAccountResponse(
@@ -394,7 +392,7 @@ export class AccessVerifier {
   constructor(
     private readonly args: {
       crypto: {
-        publicKeys: {
+        publicKey: {
           access: IVerificationKey
         }
         verifier: IVerifier
@@ -413,7 +411,7 @@ export class AccessVerifier {
       this.args.store.access.nonce,
       this.args.crypto.verifier,
       this.args.crypto.verifier,
-      await this.args.crypto.publicKeys.access.public()
+      await this.args.crypto.publicKey.access.public()
     )
   }
 }

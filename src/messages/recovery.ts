@@ -3,7 +3,7 @@ import { ServerResponse } from './response'
 
 interface IRecoverAccountRequest {
   authentication: {
-    publicKeys: {
+    publicKey: {
       current: string
       rotationDigest: string
     }

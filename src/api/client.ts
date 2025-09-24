@@ -35,7 +35,7 @@ export class BetterAuthClient {
       crypto: {
         digester: IDigester
         noncer: INoncer
-        publicKeys: {
+        publicKey: {
           response: IVerificationKey
         }
       }
@@ -70,14 +70,14 @@ export class BetterAuthClient {
     response: SignableMessage,
     publicKeyDigest: string
   ): Promise<boolean> {
-    const publicKey = await this.args.crypto.publicKeys.response.public()
+    const publicKey = await this.args.crypto.publicKey.response.public()
     const digest = await this.args.crypto.digester.sum(publicKey)
 
     if (digest !== publicKeyDigest) {
       throw 'digest mismatch'
     }
 
-    const verifier = this.args.crypto.publicKeys.response.verifier()
+    const verifier = this.args.crypto.publicKey.response.verifier()
 
     return await response.verify(verifier, publicKey)
   }
@@ -96,7 +96,7 @@ export class BetterAuthClient {
     const request = new CreationRequest(
       {
         authentication: {
-          publicKeys: {
+          publicKey: {
             current: currentAuthenticationPublicKey,
             rotationDigest: nextAuthenticationPublicKeyDigest,
           },
@@ -145,7 +145,7 @@ export class BetterAuthClient {
         accountId: accountId,
         deviceId: deviceId,
       },
-      publicKeys: {
+      publicKey: {
         current: current,
         rotationDigest: rotationDigest,
       },
@@ -200,7 +200,7 @@ export class BetterAuthClient {
           deviceId: await this.args.store.identifier.device.get(),
         },
         authentication: {
-          publicKeys: {
+          publicKey: {
             current: currentAuthenticationPublicKey,
             rotationDigest: nextAuthenticationPublicKeyDigest,
           },
@@ -260,7 +260,7 @@ export class BetterAuthClient {
     const completeRequest = new CompleteAuthenticationRequest(
       {
         access: {
-          publicKeys: {
+          publicKey: {
             current: currentKey,
             rotationDigest: nextKeyDigest,
           },
@@ -306,7 +306,7 @@ export class BetterAuthClient {
     const request = new RefreshAccessTokenRequest(
       {
         access: {
-          publicKeys: {
+          publicKey: {
             current: currentKey,
             rotationDigest: nextKeyDigest,
           },
@@ -340,7 +340,7 @@ export class BetterAuthClient {
     const request = new RecoverAccountRequest(
       {
         authentication: {
-          publicKeys: {
+          publicKey: {
             current: current,
             rotationDigest: rotationDigest,
           },

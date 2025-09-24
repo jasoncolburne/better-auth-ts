@@ -3,7 +3,7 @@ import { ServerResponse } from './response'
 
 interface IRotateAuthenticationKeyRequest {
   authentication: {
-    publicKeys: {
+    publicKey: {
       current: string
       rotationDigest: string
     }

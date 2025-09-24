@@ -15,7 +15,7 @@ export class CreationContainer extends ServerResponse<ICreationContainer> {
 
 export interface ICreationRequest {
   authentication: {
-    publicKeys: {
+    publicKey: {
       current: string
       rotationDigest: string
     }

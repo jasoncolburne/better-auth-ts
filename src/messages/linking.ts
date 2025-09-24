@@ -8,7 +8,7 @@ interface ILinkContainer {
       accountId: string
       deviceId: string
     }
-    publicKeys: {
+    publicKey: {
       current: string
       rotationDigest: string
     }
@@ -23,7 +23,7 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
         accountId: string
         deviceId: string
       }
-      publicKeys: {
+      publicKey: {
         current: string
         rotationDigest: string
       }

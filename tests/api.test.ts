@@ -220,7 +220,7 @@ async function createVerifier(args: {
 
   const accessVerifier = new AccessVerifier({
     crypto: {
-      publicKeys: {
+      publicKey: {
         access: args.keys.accessVerifier,
       },
       verifier: eccVerifier,
@@ -289,7 +289,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -376,7 +376,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -402,7 +402,7 @@ describe('api', () => {
       crypto: {
         digester: new Digester(),
         noncer: new Noncer(),
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -489,7 +489,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -515,7 +515,7 @@ describe('api', () => {
       crypto: {
         digester: new Digester(),
         noncer: new Noncer(),
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -609,7 +609,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -696,7 +696,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -784,7 +784,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
@@ -872,7 +872,7 @@ describe('api', () => {
       crypto: {
         digester: digester,
         noncer: noncer,
-        publicKeys: {
+        publicKey: {
           response: responseSigner, // this would only be a public key in production
         },
       },
