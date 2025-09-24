@@ -82,7 +82,7 @@ export class BetterAuthClient {
     return await response.verify(verifier, publicKey)
   }
 
-  async createAccount(creationContainer: string, recoveryKeyDigest: string): Promise<void> {
+  async createAccount(creationContainer: string, recoveryDigest: string): Promise<void> {
     const materials = CreationContainer.parse(creationContainer)
     if (!(await this.verifyResponse(materials, materials.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
@@ -98,12 +98,12 @@ export class BetterAuthClient {
         authentication: {
           publicKeys: {
             current: currentAuthenticationPublicKey,
-            nextDigest: nextAuthenticationPublicKeyDigest,
+            rotationDigest: nextAuthenticationPublicKeyDigest,
           },
         },
         creation: {
           token: materials.payload.response.creation.token,
-          recoveryKeyDigest: recoveryKeyDigest,
+          recoveryDigest: recoveryDigest,
         },
         identification: {
           deviceId: deviceId,
@@ -134,7 +134,7 @@ export class BetterAuthClient {
   // happens on the new device
   // send account id by qr code or network from the existing device
   async generateLinkContainer(accountId: string): Promise<string> {
-    const [current, nextDigest] = await this.args.store.key.authentication.initialize()
+    const [current, rotationDigest] = await this.args.store.key.authentication.initialize()
     const deviceId = await this.args.crypto.digester.sum(current)
 
     await this.args.store.identifier.account.store(accountId)
@@ -147,7 +147,7 @@ export class BetterAuthClient {
       },
       publicKeys: {
         current: current,
-        nextDigest: nextDigest,
+        rotationDigest: rotationDigest,
       },
     })
 
@@ -202,7 +202,7 @@ export class BetterAuthClient {
         authentication: {
           publicKeys: {
             current: currentAuthenticationPublicKey,
-            nextDigest: nextAuthenticationPublicKeyDigest,
+            rotationDigest: nextAuthenticationPublicKeyDigest,
           },
         },
       },
@@ -262,7 +262,7 @@ export class BetterAuthClient {
         access: {
           publicKeys: {
             current: currentKey,
-            nextDigest: nextKeyDigest,
+            rotationDigest: nextKeyDigest,
           },
         },
         authentication: {
@@ -308,7 +308,7 @@ export class BetterAuthClient {
         access: {
           publicKeys: {
             current: currentKey,
-            nextDigest: nextKeyDigest,
+            rotationDigest: nextKeyDigest,
           },
           token: await this.args.store.token.access.get(),
         },
@@ -333,7 +333,7 @@ export class BetterAuthClient {
   }
 
   async recoverAccount(accountId: string, recoveryKey: ISigningKey): Promise<void> {
-    const [current, nextDigest] = await this.args.store.key.authentication.initialize()
+    const [current, rotationDigest] = await this.args.store.key.authentication.initialize()
     const deviceId = await this.args.crypto.digester.sum(current)
     const nonce = await this.args.crypto.noncer.generate128()
 
@@ -342,7 +342,7 @@ export class BetterAuthClient {
         authentication: {
           publicKeys: {
             current: current,
-            nextDigest: nextDigest,
+            rotationDigest: rotationDigest,
           },
         },
         identification: {

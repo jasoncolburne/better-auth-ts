@@ -5,7 +5,7 @@ import {
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerCreationTokenStore,
-  IServerRecoveryKeyDigestStore,
+  IServerrecoveryDigestStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
@@ -74,16 +74,16 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     accountId: string,
     deviceId: string,
     current: string,
-    nextDigest: string
+    rotationDigest: string
   ): Promise<void> {
-    this.dataByToken.set(accountId + deviceId, [current, nextDigest])
+    this.dataByToken.set(accountId + deviceId, [current, rotationDigest])
   }
 
   async rotate(
     accountId: string,
     deviceId: string,
     current: string,
-    nextDigest: string
+    rotationDigest: string
   ): Promise<void> {
     const bundle = this.dataByToken.get(accountId + deviceId)
 
@@ -97,7 +97,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'invalid forward secret'
     }
 
-    this.dataByToken.set(accountId + deviceId, [current, nextDigest])
+    this.dataByToken.set(accountId + deviceId, [current, rotationDigest])
   }
 
   async public(accountId: string, deviceId: string): Promise<string> {
@@ -111,7 +111,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   }
 }
 
-export class ServerRecoveryKeyDigestStore implements IServerRecoveryKeyDigestStore {
+export class ServerrecoveryDigestStore implements IServerrecoveryDigestStore {
   private readonly dataByAccount: Map<string, string>
 
   constructor() {

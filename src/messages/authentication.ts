@@ -62,7 +62,7 @@ interface ICompleteAuthenticationRequest {
   access: {
     publicKeys: {
       current: string
-      nextDigest: string
+      rotationDigest: string
     }
   }
   authentication: {

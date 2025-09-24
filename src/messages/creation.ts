@@ -17,12 +17,12 @@ export interface ICreationRequest {
   authentication: {
     publicKeys: {
       current: string
-      nextDigest: string
+      rotationDigest: string
     }
   }
   creation: {
     token: string
-    recoveryKeyDigest: string
+    recoveryDigest: string
   }
   identification: {
     deviceId: string

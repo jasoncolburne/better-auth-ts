@@ -5,7 +5,7 @@ interface IRotateAuthenticationKeyRequest {
   authentication: {
     publicKeys: {
       current: string
-      nextDigest: string
+      rotationDigest: string
     }
   }
   identification: {

@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { IDigester, INetwork, INoncer, IServerRecoveryKeyDigestStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
+import { IDigester, INetwork, INoncer, IServerrecoveryDigestStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
 import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerCreationTokenStore,
-  ServerRecoveryKeyDigestStore,
+  ServerrecoveryDigestStore,
 } from './server.storage.mocks'
 import {
   Digester,
@@ -196,7 +196,7 @@ async function createServer(args: {
         token: creationTokenStore,
       },
       recovery: {
-        key: new ServerRecoveryKeyDigestStore()
+        key: new ServerrecoveryDigestStore()
       },
     },
   })
@@ -317,9 +317,9 @@ describe('api', () => {
       console.log(creationContainer)
     }
 
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
 
-    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
     await executeFlow(betterAuthClient, eccVerifier, responseSigner)
   })
 
@@ -425,9 +425,9 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
 
-    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
 
     // this is saved with the recovery key/derivation material, wherever that is
     const accountId = await betterAuthClient.accountId()
@@ -538,9 +538,9 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
     
-    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
 
     // get account id from the existing device
     const accountId = await betterAuthClient.accountId()
@@ -632,11 +632,11 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
     
 
     try {
-      await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+      await betterAuthClient.createAccount(creationContainer, recoveryDigest)
       throw 'unexpected failure'
     } catch(e: unknown) {
       expect(e).toBe('expired token')
@@ -719,9 +719,9 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
     
-    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -807,9 +807,9 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
     
-    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -895,9 +895,9 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    const recoveryDigest = await digester.sum(await recoverySigner.public())
     
-    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
+    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)

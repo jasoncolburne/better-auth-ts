@@ -4,7 +4,7 @@ import {
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerCreationTokenStore,
-  IServerRecoveryKeyDigestStore,
+  IServerrecoveryDigestStore,
   IServerTimeLockStore,
   ISigningKey,
   IVerificationKey,
@@ -59,7 +59,7 @@ export class BetterAuthServer {
           token: IServerCreationTokenStore
         }
         recovery: {
-          key: IServerRecoveryKeyDigestStore
+          key: IServerrecoveryDigestStore
         }
       }
     }
@@ -107,14 +107,14 @@ export class BetterAuthServer {
 
     await this.args.store.recovery.key.register(
       accountId,
-      request.payload.request.creation.recoveryKeyDigest
+      request.payload.request.creation.recoveryDigest
     )
 
     await this.args.store.authentication.key.register(
       accountId,
       request.payload.request.identification.deviceId,
       request.payload.request.authentication.publicKeys.current,
-      request.payload.request.authentication.publicKeys.nextDigest
+      request.payload.request.authentication.publicKeys.rotationDigest
     )
 
     await this.args.store.creation.token.invalidate(token)
@@ -168,7 +168,7 @@ export class BetterAuthServer {
       linkContainer.payload.identification.accountId,
       linkContainer.payload.identification.deviceId,
       linkContainer.payload.publicKeys.current,
-      linkContainer.payload.publicKeys.nextDigest
+      linkContainer.payload.publicKeys.rotationDigest
     )
 
     const response = new LinkDeviceResponse(
@@ -199,7 +199,7 @@ export class BetterAuthServer {
       request.payload.request.identification.accountId,
       request.payload.request.identification.deviceId,
       request.payload.request.authentication.publicKeys.current,
-      request.payload.request.authentication.publicKeys.nextDigest
+      request.payload.request.authentication.publicKeys.rotationDigest
     )
 
     // this is replayable, and should be fixed but making it not fixed
@@ -264,7 +264,7 @@ export class BetterAuthServer {
     const accessToken = new AccessToken<T>(
       accountId,
       request.payload.request.access.publicKeys.current,
-      request.payload.request.access.publicKeys.nextDigest,
+      request.payload.request.access.publicKeys.rotationDigest,
       issuedAt,
       expiry,
       refreshExpiry,
@@ -311,7 +311,7 @@ export class BetterAuthServer {
     const digest = await this.args.crypto.digester.sum(
       request.payload.request.access.publicKeys.current
     )
-    if (digest !== token.nextDigest) {
+    if (digest !== token.rotationDigest) {
       throw 'digest mismatch'
     }
 
@@ -332,7 +332,7 @@ export class BetterAuthServer {
     const accessToken = new AccessToken(
       token.accountId,
       request.payload.request.access.publicKeys.current,
-      request.payload.request.access.publicKeys.nextDigest,
+      request.payload.request.access.publicKeys.rotationDigest,
       issuedAt,
       expiry,
       token.refreshExpiry,
@@ -375,7 +375,7 @@ export class BetterAuthServer {
       request.payload.request.identification.accountId,
       request.payload.request.identification.deviceId,
       request.payload.request.authentication.publicKeys.current,
-      request.payload.request.authentication.publicKeys.nextDigest
+      request.payload.request.authentication.publicKeys.rotationDigest
     )
 
     const response = new RecoverAccountResponse(

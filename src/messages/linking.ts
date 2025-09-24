@@ -10,7 +10,7 @@ interface ILinkContainer {
     }
     publicKeys: {
       current: string
-      nextDigest: string
+      rotationDigest: string
     }
   }
   signature?: string
@@ -25,7 +25,7 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
       }
       publicKeys: {
         current: string
-        nextDigest: string
+        rotationDigest: string
       }
     }
   ) {

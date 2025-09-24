@@ -26,9 +26,9 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     this.current = current
     this.next = next
 
-    const nextDigest = await this.digester.sum(await next.public())
+    const rotationDigest = await this.digester.sum(await next.public())
 
-    return [await current.public(), nextDigest]
+    return [await current.public(), rotationDigest]
   }
 
   async rotate(): Promise<[string, string]> {
@@ -42,9 +42,9 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     this.current = this.next
     this.next = next
 
-    const nextDigest = await this.digester.sum(await next.public())
+    const rotationDigest = await this.digester.sum(await next.public())
 
-    return [await this.current.public(), nextDigest]
+    return [await this.current.public(), rotationDigest]
   }
 
   async signer(): Promise<ISigningKey> {

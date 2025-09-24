@@ -5,7 +5,7 @@ interface IRefreshAccessTokenRequest {
   access: {
     publicKeys: {
       current: string
-      nextDigest: string
+      rotationDigest: string
     }
     token: string
   }

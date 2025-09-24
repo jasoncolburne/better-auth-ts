@@ -5,7 +5,7 @@ interface IRecoverAccountRequest {
   authentication: {
     publicKeys: {
       current: string
-      nextDigest: string
+      rotationDigest: string
     }
   }
   identification: {
