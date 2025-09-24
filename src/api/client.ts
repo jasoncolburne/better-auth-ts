@@ -93,10 +93,8 @@ export class BetterAuthClient {
           device: deviceId,
           identity: accountId,
           publicKey: currentAuthenticationPublicKey,
-          rotationDigest: nextAuthenticationPublicKeyDigest,
-        },
-        creation: {
           recoveryDigest: recoveryDigest,
+          rotationDigest: nextAuthenticationPublicKeyDigest,
         },
       },
       nonce

@@ -83,7 +83,7 @@ export class BetterAuthServer {
 
     await this.args.store.recovery.key.register(
       identity,
-      request.payload.request.creation.recoveryDigest
+      request.payload.request.authentication.recoveryDigest
     )
 
     await this.args.store.authentication.key.register(
