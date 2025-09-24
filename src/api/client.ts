@@ -153,8 +153,8 @@ export class BetterAuthClient {
   }
 
   // happens on the existing device (share with qr code + camera)
-  // use a 61x61 module layout and a 53x53 module code, centered on the new device, at 300x300px
-  // for best results
+  // use a 61x61 module layout and a 53x53 module code, centered on the new device, at something
+  // like 244x244px (61*4x61*4)
   async linkDevice(linkContainer: string): Promise<void> {
     const container = LinkContainer.parse(linkContainer)
     const nonce = await this.crypto.noncer.generate128()
