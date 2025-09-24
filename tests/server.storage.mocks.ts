@@ -4,62 +4,10 @@ import {
   IServerTimeLockStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
-  IServerCreationTokenStore,
   IServerRecoveryDigestStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
-
-export class ServerCreationTokenStore
-  implements IServerCreationTokenStore
-{
-  private readonly dataByToken: Map<string, string>
-  private readonly tokenExpirations: Map<string, Date>
-  private readonly digester: IDigester
-  private readonly noncer: INoncer
-
-  constructor(public readonly lifetimeInMinutes: number) {
-    this.dataByToken = new Map<string, string>()
-    this.tokenExpirations = new Map<string, Date>()
-    this.digester = new Digester()
-    this.noncer = new Noncer()
-  }
-
-  async generate(): Promise<string> {
-    let saltyNonce = await this.noncer.generate128()
-    const accountId = await this.digester.sum(saltyNonce)
-    saltyNonce = await this.noncer.generate128()
-    const token = await this.digester.sum(saltyNonce)
-
-    const expiration = new Date()
-    expiration.setMinutes(expiration.getMinutes() + this.lifetimeInMinutes)
-    this.dataByToken.set(token, accountId)
-    this.tokenExpirations.set(token, expiration)
-
-    return token
-  }
-
-  async validate(token: string): Promise<string> {
-    const expiration = this.tokenExpirations.get(token)
-    const accountId = this.dataByToken.get(token)
-
-    if (typeof accountId === 'undefined' || typeof expiration === 'undefined') {
-      throw 'invalid token'
-    }
-
-    const now = new Date()
-    if (now > expiration) {
-      throw 'expired token'
-    }
-
-    return accountId
-  }
-
-  async invalidate(token: string): Promise<void> {
-    this.dataByToken.delete(token)
-    this.tokenExpirations.delete(token)
-  }
-}
 
 export class ServerAuthenticationKeyStore implements IServerAuthenticationKeyStore {
   private readonly dataByToken: Map<string, [string, string]>

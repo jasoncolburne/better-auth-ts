@@ -13,7 +13,6 @@ import {
   BeginAuthenticationResponse,
   CompleteAuthenticationRequest,
   CompleteAuthenticationResponse,
-  CreationContainer,
   CreationRequest,
   CreationResponse,
   LinkContainer,
@@ -82,12 +81,7 @@ export class BetterAuthClient {
     return await response.verify(verifier, publicKey)
   }
 
-  async createAccount(creationContainer: string, recoveryDigest: string): Promise<void> {
-    const materials = CreationContainer.parse(creationContainer)
-    if (!(await this.verifyResponse(materials, materials.payload.access.responseKeyDigest))) {
-      throw 'invalid signature'
-    }
-
+  async createAccount(accountId: string, recoveryDigest: string): Promise<void> {
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
       await this.args.store.key.authentication.initialize()
     const deviceId = await this.args.crypto.digester.sum(currentAuthenticationPublicKey)
@@ -96,17 +90,13 @@ export class BetterAuthClient {
     const request = new CreationRequest(
       {
         authentication: {
-          publicKey: {
-            current: currentAuthenticationPublicKey,
-            rotationDigest: nextAuthenticationPublicKeyDigest,
-          },
+          device: deviceId,
+          identity: accountId,
+          publicKey: currentAuthenticationPublicKey,
+          rotationDigest: nextAuthenticationPublicKeyDigest,
         },
         creation: {
-          token: materials.payload.response.creation.token,
           recoveryDigest: recoveryDigest,
-        },
-        identification: {
-          deviceId: deviceId,
         },
       },
       nonce
@@ -125,9 +115,7 @@ export class BetterAuthClient {
       throw 'incorrect nonce'
     }
 
-    await this.args.store.identifier.account.store(
-      response.payload.response.identification.accountId
-    )
+    await this.args.store.identifier.account.store(accountId)
     await this.args.store.identifier.device.store(deviceId)
   }
 
@@ -141,12 +129,10 @@ export class BetterAuthClient {
     await this.args.store.identifier.device.store(deviceId)
 
     const linkContainer = new LinkContainer({
-      identification: {
-        accountId: accountId,
-        deviceId: deviceId,
-      },
-      publicKey: {
-        current: current,
+      authentication: {
+        device: deviceId,
+        identity: accountId,
+        publicKey: current,
         rotationDigest: rotationDigest,
       },
     })
@@ -165,9 +151,9 @@ export class BetterAuthClient {
 
     const request = new LinkDeviceRequest(
       {
-        identification: {
-          accountId: await this.args.store.identifier.account.get(),
-          deviceId: await this.args.store.identifier.device.get(),
+        authentication: {
+          device: await this.args.store.identifier.device.get(),
+          identity: await this.args.store.identifier.account.get(),
         },
         link: container,
       },
@@ -195,15 +181,11 @@ export class BetterAuthClient {
 
     const request = new RotateAuthenticationKeyRequest(
       {
-        identification: {
-          accountId: await this.args.store.identifier.account.get(),
-          deviceId: await this.args.store.identifier.device.get(),
-        },
         authentication: {
-          publicKey: {
-            current: currentAuthenticationPublicKey,
-            rotationDigest: nextAuthenticationPublicKeyDigest,
-          },
+          device: await this.args.store.identifier.device.get(),
+          identity: await this.args.store.identifier.account.get(),
+          publicKey: currentAuthenticationPublicKey,
+          rotationDigest: nextAuthenticationPublicKeyDigest,
         },
       },
       nonce
@@ -231,8 +213,8 @@ export class BetterAuthClient {
         nonce: startNonce,
       },
       request: {
-        identification: {
-          accountId: await this.args.store.identifier.account.get(),
+        authentication: {
+          identity: await this.args.store.identifier.account.get(),
         },
       },
     })
@@ -260,16 +242,12 @@ export class BetterAuthClient {
     const finishRequest = new CompleteAuthenticationRequest(
       {
         access: {
-          publicKey: {
-            current: currentKey,
-            rotationDigest: nextKeyDigest,
-          },
+          publicKey: currentKey,
+          rotationDigest: nextKeyDigest,
         },
         authentication: {
+          device: await this.args.store.identifier.device.get(),
           nonce: startResponse.payload.response.authentication.nonce,
-        },
-        identification: {
-          deviceId: await this.args.store.identifier.device.get(),
         },
       },
       finishNonce
@@ -303,10 +281,8 @@ export class BetterAuthClient {
     const request = new RefreshAccessTokenRequest(
       {
         access: {
-          publicKey: {
-            current: currentKey,
-            rotationDigest: nextKeyDigest,
-          },
+          publicKey: currentKey,
+          rotationDigest: nextKeyDigest,
           token: await this.args.store.token.access.get(),
         },
       },
@@ -337,14 +313,10 @@ export class BetterAuthClient {
     const request = new RecoverAccountRequest(
       {
         authentication: {
-          publicKey: {
-            current: current,
-            rotationDigest: rotationDigest,
-          },
-        },
-        identification: {
-          accountId: accountId,
-          deviceId: deviceId,
+          identity: accountId,
+          device: deviceId,
+          publicKey: current,
+          rotationDigest: rotationDigest,
         },
         recovery: {
           publicKey: await recoveryKey.public(),

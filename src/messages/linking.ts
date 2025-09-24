@@ -4,12 +4,10 @@ import { ServerResponse } from './response'
 
 interface ILinkContainer {
   payload: {
-    identification: {
-      accountId: string
-      deviceId: string
-    }
-    publicKey: {
-      current: string
+    authentication: {
+      device: string
+      identity: string
+      publicKey: string
       rotationDigest: string
     }
   }
@@ -19,12 +17,10 @@ interface ILinkContainer {
 export class LinkContainer extends SignableMessage implements ILinkContainer {
   constructor(
     public payload: {
-      identification: {
-        accountId: string
-        deviceId: string
-      }
-      publicKey: {
-        current: string
+      authentication: {
+        device: string
+        identity: string
+        publicKey: string
         rotationDigest: string
       }
     }
@@ -46,9 +42,9 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
 }
 
 interface ILinkDeviceRequest {
-  identification: {
-    accountId: string
-    deviceId: string
+  authentication: {
+    device: string
+    identity: string
   }
   link: ILinkContainer
 }

@@ -3,14 +3,10 @@ import { ServerResponse } from './response'
 
 interface IRecoverAccountRequest {
   authentication: {
-    publicKey: {
-      current: string
-      rotationDigest: string
-    }
-  }
-  identification: {
-    accountId: string
-    deviceId: string
+    device: string
+    identity: string
+    publicKey: string
+    rotationDigest: string
   }
   recovery: {
     publicKey: string

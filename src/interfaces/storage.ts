@@ -41,24 +41,6 @@ export interface IServerAuthenticationNonceStore {
   validate(nonce: string): Promise<string>
 }
 
-export interface IServerCreationTokenStore {
-  lifetimeInMinutes: number
-
-  // returns: token
-  generate(): Promise<string>
-
-  // throw an exception if:
-  // - the token is not in the store
-  // - the token is more than `lifetimeInMinutes` minutes old
-  //
-  // returns: account id
-  validate(token: string): Promise<string>
-
-  // throw an exception if:
-  // - the token is not in the store
-  invalidate(token: string): Promise<void>
-}
-
 export interface IServerAuthenticationKeyStore {
   // throw an exception for:
   // - account id and device id combination exists

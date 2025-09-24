@@ -5,7 +5,6 @@ import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
-  ServerCreationTokenStore,
   ServerRecoveryDigestStore,
 } from './server.storage.mocks'
 import {
@@ -153,7 +152,6 @@ async function createServer(args: {
   expiry: {
     accessLifetimeInMinutes: number,
     authenticationChallengeLifetimeInSeconds: number,
-    creationTimeoutInMinutes: number,
     refreshLifetimeInHours: number,
   },
   keys: {
@@ -167,7 +165,6 @@ async function createServer(args: {
 
   const accessKeyDigestStore = new ServerTimeLockStore(60 * 60 * args.expiry.refreshLifetimeInHours)
   const authenticationNonceStore = new ServerAuthenticationNonceStore(args.expiry.authenticationChallengeLifetimeInSeconds)
-  const creationTokenStore = new ServerCreationTokenStore(args.expiry.creationTimeoutInMinutes)
 
   const betterAuthServer = new BetterAuthServer({
     crypto: {
@@ -191,9 +188,6 @@ async function createServer(args: {
       authentication: {
         key: new ServerAuthenticationKeyStore(),
         nonce: authenticationNonceStore
-      },
-      creation: {
-        token: creationTokenStore,
       },
       recovery: {
         key: new ServerRecoveryDigestStore()
@@ -254,7 +248,6 @@ describe('api', () => {
         refreshLifetimeInHours: 12,
         accessLifetimeInMinutes: 15,
         authenticationChallengeLifetimeInSeconds: 60,
-        creationTimeoutInMinutes: 30,
       },
       keys: {
         accessSigner: accessSigner,
@@ -311,15 +304,10 @@ describe('api', () => {
       },
     })
 
-    const creationContainer = await betterAuthServer.generateCreationContainer()
-
-    if (DEBUG_LOGGING) {
-      console.log(creationContainer)
-    }
-
     const recoveryDigest = await digester.sum(await recoverySigner.public())
+    const accountId = await digester.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
+    await betterAuthClient.createAccount(accountId, recoveryDigest)
     await executeFlow(betterAuthClient, eccVerifier, responseSigner)
   })
 
@@ -341,7 +329,6 @@ describe('api', () => {
         refreshLifetimeInHours: 12,
         accessLifetimeInMinutes: 15,
         authenticationChallengeLifetimeInSeconds: 60,
-        creationTimeoutInMinutes: 30,
       },
       keys: {
         accessSigner: accessSigner,
@@ -424,14 +411,10 @@ describe('api', () => {
       },
     })
 
-    const creationContainer = await betterAuthServer.generateCreationContainer()
     const recoveryDigest = await digester.sum(await recoverySigner.public())
+    const accountId = await digester.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
-
-    // this is saved with the recovery key/derivation material, wherever that is
-    const accountId = await betterAuthClient.accountId()
-
+    await betterAuthClient.createAccount(accountId, recoveryDigest)
     await recoveredBetterAuthClient.recoverAccount(accountId, recoverySigner)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseSigner)
   })
@@ -454,7 +437,6 @@ describe('api', () => {
         refreshLifetimeInHours: 12,
         accessLifetimeInMinutes: 15,
         authenticationChallengeLifetimeInSeconds: 60,
-        creationTimeoutInMinutes: 30,
       },
       keys: {
         accessSigner: accessSigner,
@@ -537,13 +519,10 @@ describe('api', () => {
       },
     })
 
-    const creationContainer = await betterAuthServer.generateCreationContainer()
     const recoveryDigest = await digester.sum(await recoverySigner.public())
-    
-    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
+    const accountId = await digester.sum(await noncer.generate128())
 
-    // get account id from the existing device
-    const accountId = await betterAuthClient.accountId()
+    await betterAuthClient.createAccount(accountId, recoveryDigest)
 
     // get link container from the new device
     const linkContainer = await linkedBetterAuthClient.generateLinkContainer(accountId)
@@ -554,93 +533,6 @@ describe('api', () => {
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseSigner)
-  })
-
-  it(('rejects expired creation tokens'), async () => {
-    const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
-    const noncer = new Noncer()
-
-    const accessSigner = new Secp256r1()
-    const responseSigner = new Secp256r1()
-    const recoverySigner = new Secp256r1()
-
-    await accessSigner.generate()
-    await responseSigner.generate()
-    await recoverySigner.generate()
-
-    const betterAuthServer = await createServer({
-      expiry: {
-        refreshLifetimeInHours: 12,
-        accessLifetimeInMinutes: 15,
-        authenticationChallengeLifetimeInSeconds: 60,
-        creationTimeoutInMinutes: -1,
-      },
-      keys: {
-        accessSigner: accessSigner,
-        responseSigner: responseSigner,
-      }
-    })
-
-    const accessVerifier = await createVerifier({
-      expiry: {
-        accessWindowInSeconds: 30,
-      },
-      keys: {
-        // this would typically not be a signing key pair
-        //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
-    })
-
-    const map = {
-      admin: ['read', 'write'],
-    }
-    const attributes = new MockAccessAttributes(map)
-
-    const mockNetworkServer = new MockNetworkServer(
-      betterAuthServer,
-      accessVerifier,
-      responseSigner,
-      attributes
-    )
-
-    const betterAuthClient = new BetterAuthClient({
-      crypto: {
-        digester: digester,
-        noncer: noncer,
-        publicKey: {
-          response: responseSigner, // this would only be a public key in production
-        },
-      },
-      io: {
-        network: mockNetworkServer,
-      },
-      store: {
-        identifier: {
-          account: new ClientValueStore(),
-          device: new ClientValueStore(),
-        },
-        key: {
-          access: new ClientRotatingKeyStore(),
-          authentication: new ClientRotatingKeyStore(),
-        },
-        token: {
-          access: new ClientValueStore(),
-        },
-      },
-    })
-
-    const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    
-
-    try {
-      await betterAuthClient.createAccount(creationContainer, recoveryDigest)
-      throw 'unexpected failure'
-    } catch(e: unknown) {
-      expect(e).toBe('expired token')
-    }
   })
 
   it(('rejects expired authentication challenges'), async () => {
@@ -661,7 +553,6 @@ describe('api', () => {
         refreshLifetimeInHours: 12,
         accessLifetimeInMinutes: 15,
         authenticationChallengeLifetimeInSeconds: -5,
-        creationTimeoutInMinutes: 30,
       },
       keys: {
         accessSigner: accessSigner,
@@ -718,10 +609,10 @@ describe('api', () => {
       },
     })
 
-    const creationContainer = await betterAuthServer.generateCreationContainer()
     const recoveryDigest = await digester.sum(await recoverySigner.public())
-    
-    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
+    const accountId = await digester.sum(await noncer.generate128())
+
+    await betterAuthClient.createAccount(accountId, recoveryDigest)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -749,7 +640,6 @@ describe('api', () => {
         refreshLifetimeInHours: -1,
         accessLifetimeInMinutes: 15,
         authenticationChallengeLifetimeInSeconds: 60,
-        creationTimeoutInMinutes: 30,
       },
       keys: {
         accessSigner: accessSigner,
@@ -806,10 +696,10 @@ describe('api', () => {
       },
     })
 
-    const creationContainer = await betterAuthServer.generateCreationContainer()
     const recoveryDigest = await digester.sum(await recoverySigner.public())
-    
-    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
+    const accountId = await digester.sum(await noncer.generate128())
+
+    await betterAuthClient.createAccount(accountId, recoveryDigest)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -837,7 +727,6 @@ describe('api', () => {
         refreshLifetimeInHours: 12,
         accessLifetimeInMinutes: -1,
         authenticationChallengeLifetimeInSeconds: 60,
-        creationTimeoutInMinutes: 30,
       },
       keys: {
         accessSigner: accessSigner,
@@ -894,10 +783,10 @@ describe('api', () => {
       },
     })
 
-    const creationContainer = await betterAuthServer.generateCreationContainer()
     const recoveryDigest = await digester.sum(await recoverySigner.public())
-    
-    await betterAuthClient.createAccount(creationContainer, recoveryDigest)
+    const accountId = await digester.sum(await noncer.generate128())
+
+    await betterAuthClient.createAccount(accountId, recoveryDigest)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)

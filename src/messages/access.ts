@@ -5,7 +5,7 @@ import { SignableMessage } from './message'
 import { TextDecoder, TextEncoder } from 'util'
 
 export interface IAccessToken<T> {
-  accountId: string
+  identity: string
   publicKey: string
   rotationDigest: string
   issuedAt: string
@@ -16,7 +16,7 @@ export interface IAccessToken<T> {
 
 export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
-    public accountId: string,
+    public identity: string,
     public publicKey: string,
     public rotationDigest: string,
     public issuedAt: string,
@@ -59,7 +59,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
   composePayload(): string {
     return JSON.stringify({
-      accountId: this.accountId,
+      accountId: this.identity,
       publicKey: this.publicKey,
       rotationDigest: this.rotationDigest,
       issuedAt: this.issuedAt,
