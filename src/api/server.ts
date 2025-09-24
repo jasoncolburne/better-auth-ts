@@ -4,8 +4,8 @@ import {
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerCreationTokenStore,
+  IServerRecoveryDigestStore,
   IServerTimeLockStore,
-  IServerrecoveryDigestStore,
   ISigningKey,
   IVerificationKey,
   IVerifier,
@@ -59,7 +59,7 @@ export class BetterAuthServer {
           token: IServerCreationTokenStore
         }
         recovery: {
-          key: IServerrecoveryDigestStore
+          key: IServerRecoveryDigestStore
         }
       }
     }

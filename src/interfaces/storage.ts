@@ -83,7 +83,7 @@ export interface IServerAuthenticationKeyStore {
   public(accountId: string, deviceId: string): Promise<string>
 }
 
-export interface IServerrecoveryDigestStore {
+export interface IServerRecoveryDigestStore {
   register(accountId: string, keyDigest: string): Promise<void>
 
   // throw exceptions if:

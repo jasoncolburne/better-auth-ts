@@ -5,7 +5,7 @@ import {
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerCreationTokenStore,
-  IServerrecoveryDigestStore,
+  IServerRecoveryDigestStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
 import { Digester } from './crypto/digest'
@@ -111,7 +111,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   }
 }
 
-export class ServerrecoveryDigestStore implements IServerrecoveryDigestStore {
+export class ServerRecoveryDigestStore implements IServerRecoveryDigestStore {
   private readonly dataByAccount: Map<string, string>
 
   constructor() {

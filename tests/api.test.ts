@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { IDigester, INetwork, INoncer, IServerrecoveryDigestStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
+import { IDigester, INetwork, INoncer, IServerRecoveryDigestStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
 import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerCreationTokenStore,
-  ServerrecoveryDigestStore,
+  ServerRecoveryDigestStore,
 } from './server.storage.mocks'
 import {
   Digester,
@@ -196,7 +196,7 @@ async function createServer(args: {
         token: creationTokenStore,
       },
       recovery: {
-        key: new ServerrecoveryDigestStore()
+        key: new ServerRecoveryDigestStore()
       },
     },
   })
