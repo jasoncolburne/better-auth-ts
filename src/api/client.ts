@@ -18,6 +18,8 @@ import {
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
+  RecoverAccountRequest,
+  RecoverAccountResponse,
   RefreshAccessTokenRequest,
   RefreshAccessTokenResponse,
   RotateAuthenticationKeyRequest,
@@ -25,7 +27,6 @@ import {
   ScannableResponse,
   SignableMessage,
 } from '../messages'
-import { RecoverAccountRequest, RecoverAccountResponse } from '../messages/recovery'
 import { rfc3339Nano } from '../utils'
 
 export class BetterAuthClient {
@@ -311,8 +312,8 @@ export class BetterAuthClient {
     const request = new RecoverAccountRequest(
       {
         authentication: {
-          identity: accountId,
           device: deviceId,
+          identity: accountId,
           publicKey: current,
           recoveryKey: await recoveryKey.public(),
           rotationDigest: rotationDigest,
