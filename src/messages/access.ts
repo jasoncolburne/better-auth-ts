@@ -102,11 +102,11 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 export interface IAccessRequest<T> {
   payload: {
     access: {
-      timestamp: string
       nonce: string
+      timestamp: string
+      token: string
     }
     request: T
-    token: string
   }
   signature?: string
 }
@@ -115,11 +115,11 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   constructor(
     public payload: {
       access: {
-        timestamp: string
         nonce: string
+        timestamp: string
+        token: string
       }
       request: T
-      token: string
     }
   ) {
     super()
@@ -131,7 +131,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
   ): Promise<boolean> {
-    const accessToken = await AccessToken.parse<T>(this.payload.token)
+    const accessToken = await AccessToken.parse<T>(this.payload.access.token)
 
     if (!(await accessToken.verify(tokenVerifier, serverAccessPublicKey))) {
       return false

@@ -94,11 +94,7 @@ export class BetterAuthServer {
     )
 
     const response = new CreationResponse(
-      {
-        identification: {
-          accountId: identity,
-        },
-      },
+      {},
       await this.responseKeyDigest(),
       request.payload.access.nonce
     )

@@ -6,10 +6,8 @@ export interface ICreationRequest {
     device: string
     identity: string
     publicKey: string
-    rotationDigest: string
-  }
-  creation: {
     recoveryDigest: string
+    rotationDigest: string
   }
 }
 

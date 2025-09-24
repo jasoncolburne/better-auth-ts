@@ -343,9 +343,9 @@ export class BetterAuthClient {
       access: {
         nonce: await this.args.crypto.noncer.generate128(),
         timestamp: rfc3339Nano(new Date()),
+        token: await this.args.store.token.access.get(),
       },
       request: request,
-      token: await this.args.store.token.access.get(),
     })
 
     await accessRequest.sign(await this.args.store.key.access.signer())
