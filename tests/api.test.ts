@@ -1,6 +1,6 @@
 import { beforeAll, describe, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { IDigester, INetwork, INoncer, ISigningKey, IVerifier } from '../src/interfaces'
+import { IDigester, INetwork, INoncer, IServerRecoveryKeyDigestStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
 import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
@@ -104,6 +104,18 @@ class FakeResponse extends ServerResponse<IFakeResponse> {
   }
 }
 
+async function executeFlow(
+  betterAuthClient: BetterAuthClient,
+  eccVerifier: IVerifier,
+  responseSigner: ISigningKey
+) {
+  await betterAuthClient.rotateAuthenticationKey()
+  await betterAuthClient.authenticate()
+  await betterAuthClient.refreshAccessToken()
+
+  await testAccess(betterAuthClient, eccVerifier, responseSigner)
+}
+
 async function testAccess(
   betterAuthClient: BetterAuthClient,
   eccVerifier: IVerifier,
@@ -128,105 +140,154 @@ async function testAccess(
     }
 }
 
-describe('api', () => {
-  let betterAuthServer: BetterAuthServer
-  let betterAuthClient: BetterAuthClient
-  let recoveryKey: Secp256r1
-  let responseSigner: Secp256r1
-  let accessSigner: Secp256r1
-  let eccVerifier: IVerifier
-  let digester: IDigester
-  let noncer: INoncer
-  let mockNetworkServer: INetwork
+async function createServer(args: {
+  expiry: {
+    accessLifetimeInMinutes: number,
+    authenticationChallengeLifetimeInSeconds: number,
+    creationTimeoutInMinutes: number,
+    refreshLifetimeInHours: number,
+  },
+  keys: {
+    accessSigner: ISigningKey,
+    responseSigner: ISigningKey,
+  }
+}): Promise<BetterAuthServer> {
+  const eccVerifier = new Secp256r1Verifier()
+  const digester = new Digester()
+  const noncer = new Noncer()
 
-  beforeAll(async () => {
-    responseSigner = new Secp256r1()
-    accessSigner = new Secp256r1()
+  const accessKeyDigestStore = new ServerTimeLockStore(60 * 60 * args.expiry.refreshLifetimeInHours)
+  const authenticationNonceStore = new ServerAuthenticationNonceStore(args.expiry.authenticationChallengeLifetimeInSeconds)
+  const creationTokenStore = new ServerCreationTokenStore(args.expiry.creationTimeoutInMinutes)
 
-    await responseSigner.generate()
-    await accessSigner.generate()
-
-    eccVerifier = new Secp256r1Verifier()
-    digester = new Digester()
-    noncer = new Noncer()
-
-    recoveryKey = new Secp256r1()
-    await recoveryKey.generate()
-
-    const refreshLifetimeInHours = 12
-    const accessLifetimeInMinutes = 15
-    const authenticationChallengeLifetimeInSeconds = 60
-    const creationTimeoutInMinutes = 30
-    const accessWindowInSeconds = 30
-
-    betterAuthServer = new BetterAuthServer(
-      {
-        access: {
-          // the lock time is the refresh lifetime in seconds
-          keyDigest: new ServerTimeLockStore(60 * 60 * refreshLifetimeInHours)
-        },
-        authentication: {
-          key: new ServerAuthenticationKeyStore(),
-          nonce: new ServerAuthenticationNonceStore(authenticationChallengeLifetimeInSeconds),
-        },
-        creation: {
-          token: new ServerCreationTokenStore(creationTimeoutInMinutes),
-        },
-        recovery: {
-          key: new ServerRecoveryKeyDigestStore()
-        },
+  const betterAuthServer = new BetterAuthServer({
+    crypto: {
+      digester: digester,
+      keyPairs: {
+        access: args.keys.accessSigner,
+        response: args.keys.responseSigner,
       },
-      {
-        digester: digester,
-        keyPairs: {
-          access: accessSigner,
-          response: responseSigner,
-        },
-        noncer: noncer,
-        verifier: eccVerifier,
+      noncer: noncer,
+      verifier: eccVerifier,
+    },
+    expiry: {
+      accessInMinutes: args.expiry.accessLifetimeInMinutes,
+      refreshInHours: args.expiry.refreshLifetimeInHours,
+    },
+    store: {
+      access: {
+        // the lock time is the refresh lifetime in seconds
+        keyDigest: accessKeyDigestStore
       },
-      {
-        accessInMinutes: accessLifetimeInMinutes,
-        refreshInHours: refreshLifetimeInHours,
+      authentication: {
+        key: new ServerAuthenticationKeyStore(),
+        nonce: authenticationNonceStore
+      },
+      creation: {
+        token: creationTokenStore,
+      },
+      recovery: {
+        key: new ServerRecoveryKeyDigestStore()
+      },
+    },
+  })
+
+  return betterAuthServer
+}
+
+async function createVerifier(args: {
+  expiry: {
+    accessWindowInSeconds: number
+  },
+  keys: {
+    accessVerifier: IVerificationKey
+  }
+}): Promise<AccessVerifier> {
+  const eccVerifier = new Secp256r1Verifier()
+  const digester = new Digester()
+  const noncer = new Noncer()
+
+  const accessNonceStore = new ServerTimeLockStore(args.expiry.accessWindowInSeconds)
+
+  const accessVerifier = new AccessVerifier({
+    crypto: {
+      publicKeys: {
+        access: args.keys.accessVerifier,
+      },
+      verifier: eccVerifier,
+    },
+    store: {
+      access: {
+        nonce: accessNonceStore,
       }
-    )
+    }
+  })
+
+  return accessVerifier
+}
+
+describe('api', () => {
+  it('completes auth flows', async () => {
+    const eccVerifier = new Secp256r1Verifier()
+    const digester = new Digester()
+    const noncer = new Noncer()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+    const recoverySigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+    await recoverySigner.generate()
+
+    const betterAuthServer = await createServer({
+      expiry: {
+        refreshLifetimeInHours: 12,
+        accessLifetimeInMinutes: 15,
+        authenticationChallengeLifetimeInSeconds: 60,
+        creationTimeoutInMinutes: 30,
+      },
+      keys: {
+        accessSigner: accessSigner,
+        responseSigner: responseSigner,
+      }
+    })
+
+    const accessVerifier = await createVerifier({
+      expiry: {
+        accessWindowInSeconds: 30,
+      },
+      keys: {
+        // this would typically not be a signing key pair
+        //  instead, a verification key (the interface contract) is required
+        accessVerifier: accessSigner
+      }
+    })
 
     const map = {
       admin: ['read', 'write'],
     }
     const attributes = new MockAccessAttributes(map)
-    const accessVerifier = new AccessVerifier(
-      {
-        publicKeys: {
-          access: accessSigner,
-        },
-        verifier: eccVerifier,
-      },
-      {
-        access: {
-          nonce: new ServerTimeLockStore(accessWindowInSeconds),
-        }
-      }
-    )
-    mockNetworkServer = new MockNetworkServer(
+
+    const mockNetworkServer = new MockNetworkServer(
       betterAuthServer,
       accessVerifier,
       responseSigner,
       attributes
     )
 
-    betterAuthClient = new BetterAuthClient(
-      {
-        digester: new Digester(),
-        noncer: new Noncer(),
+    const betterAuthClient = new BetterAuthClient({
+      crypto: {
+        digester: digester,
+        noncer: noncer,
         publicKeys: {
           response: responseSigner, // this would only be a public key in production
         },
       },
-      {
+      io: {
         network: mockNetworkServer,
       },
-      {
+      store: {
         identifier: {
           account: new ClientValueStore(),
           device: new ClientValueStore(),
@@ -239,35 +300,76 @@ describe('api', () => {
           access: new ClientValueStore(),
         },
       },
-    )
-  })
+    })
 
-  it('completes auth flows', async () => {
     const creationContainer = await betterAuthServer.generateCreationContainer()
-    const recoveryKeyDigest = await digester.sum(await recoveryKey.public())
-    // console.log(creationContainer)
+    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
 
     await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
-    await betterAuthClient.rotateAuthenticationKey()
-    await betterAuthClient.authenticate()
-    await betterAuthClient.refreshAccessToken()
-
-    await testAccess(betterAuthClient, eccVerifier, responseSigner)
+    await executeFlow(betterAuthClient, eccVerifier, responseSigner)
   })
 
   it('recovers from loss', async () => {
-    const recoveredBetterAuthClient = new BetterAuthClient(
-      {
-        digester: new Digester(),
-        noncer: new Noncer(),
+    const eccVerifier = new Secp256r1Verifier()
+    const digester = new Digester()
+    const noncer = new Noncer()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+    const recoverySigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+    await recoverySigner.generate()
+
+    const betterAuthServer = await createServer({
+      expiry: {
+        refreshLifetimeInHours: 12,
+        accessLifetimeInMinutes: 15,
+        authenticationChallengeLifetimeInSeconds: 60,
+        creationTimeoutInMinutes: 30,
+      },
+      keys: {
+        accessSigner: accessSigner,
+        responseSigner: responseSigner,
+      }
+    })
+
+    const accessVerifier = await createVerifier({
+      expiry: {
+        accessWindowInSeconds: 30,
+      },
+      keys: {
+        // this would typically not be a signing key pair
+        //  instead, a verification key (the interface contract) is required
+        accessVerifier: accessSigner
+      }
+    })
+
+    const map = {
+      admin: ['read', 'write'],
+    }
+    const attributes = new MockAccessAttributes(map)
+
+    const mockNetworkServer = new MockNetworkServer(
+      betterAuthServer,
+      accessVerifier,
+      responseSigner,
+      attributes
+    )
+
+    const betterAuthClient = new BetterAuthClient({
+      crypto: {
+        digester: digester,
+        noncer: noncer,
         publicKeys: {
           response: responseSigner, // this would only be a public key in production
         },
       },
-      {
+      io: {
         network: mockNetworkServer,
       },
-      {
+      store: {
         identifier: {
           account: new ClientValueStore(),
           device: new ClientValueStore(),
@@ -280,33 +382,107 @@ describe('api', () => {
           access: new ClientValueStore(),
         },
       },
-    )
+    })
+
+    const recoveredBetterAuthClient = new BetterAuthClient({
+      crypto: {
+        digester: new Digester(),
+        noncer: new Noncer(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      io: {
+        network: mockNetworkServer,
+      },
+      store: {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+        },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
+        token: {
+          access: new ClientValueStore(),
+        },
+      },
+    })
+
+    const creationContainer = await betterAuthServer.generateCreationContainer()
+    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+
+    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
 
     // this is saved with the recovery key/derivation material, wherever that is
     const accountId = await betterAuthClient.accountId()
 
-    await recoveredBetterAuthClient.recoverAccount(accountId, recoveryKey)
-
-    await recoveredBetterAuthClient.rotateAuthenticationKey()
-    await recoveredBetterAuthClient.authenticate()
-    await recoveredBetterAuthClient.refreshAccessToken()
-
-    await testAccess(betterAuthClient, eccVerifier, responseSigner)
+    await recoveredBetterAuthClient.recoverAccount(accountId, recoverySigner)
+    await executeFlow(recoveredBetterAuthClient, eccVerifier, responseSigner)
   })
 
   it('links another device', async () => {
-    const linkedBetterAuthClient = new BetterAuthClient(
-      {
-        digester: new Digester(),
-        noncer: new Noncer(),
+    const eccVerifier = new Secp256r1Verifier()
+    const digester = new Digester()
+    const noncer = new Noncer()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+    const recoverySigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+    await recoverySigner.generate()
+
+    const betterAuthServer = await createServer({
+      expiry: {
+        refreshLifetimeInHours: 12,
+        accessLifetimeInMinutes: 15,
+        authenticationChallengeLifetimeInSeconds: 60,
+        creationTimeoutInMinutes: 30,
+      },
+      keys: {
+        accessSigner: accessSigner,
+        responseSigner: responseSigner,
+      }
+    })
+
+    const accessVerifier = await createVerifier({
+      expiry: {
+        accessWindowInSeconds: 30,
+      },
+      keys: {
+        // this would typically not be a signing key pair
+        //  instead, a verification key (the interface contract) is required
+        accessVerifier: accessSigner
+      }
+    })
+
+    const map = {
+      admin: ['read', 'write'],
+    }
+    const attributes = new MockAccessAttributes(map)
+
+    const mockNetworkServer = new MockNetworkServer(
+      betterAuthServer,
+      accessVerifier,
+      responseSigner,
+      attributes
+    )
+
+    const betterAuthClient = new BetterAuthClient({
+      crypto: {
+        digester: digester,
+        noncer: noncer,
         publicKeys: {
           response: responseSigner, // this would only be a public key in production
         },
       },
-      {
+      io: {
         network: mockNetworkServer,
       },
-      {
+      store: {
         identifier: {
           account: new ClientValueStore(),
           device: new ClientValueStore(),
@@ -319,7 +495,38 @@ describe('api', () => {
           access: new ClientValueStore(),
         },
       },
-    )
+    })
+
+    const linkedBetterAuthClient = new BetterAuthClient({
+      crypto: {
+        digester: new Digester(),
+        noncer: new Noncer(),
+        publicKeys: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      io: {
+        network: mockNetworkServer,
+      },
+      store: {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+        },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
+        token: {
+          access: new ClientValueStore(),
+        },
+      },
+    })
+
+    const creationContainer = await betterAuthServer.generateCreationContainer()
+    const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
+    
+    await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
 
     // get account id from the existing device
     const accountId = await betterAuthClient.accountId()
@@ -330,12 +537,6 @@ describe('api', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
-
-    // authenticate and request resource access with the new device
-    await linkedBetterAuthClient.rotateAuthenticationKey()
-    await linkedBetterAuthClient.authenticate()
-    await linkedBetterAuthClient.refreshAccessToken()
-
-    await testAccess(betterAuthClient, eccVerifier, responseSigner)
+    await executeFlow(linkedBetterAuthClient, eccVerifier, responseSigner)
   })
 })
