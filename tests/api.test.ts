@@ -53,6 +53,12 @@ class MockNetworkServer implements INetwork {
   }
 
   async sendRequest(path: string, message: string): Promise<string> {
+    // this abstraction exists so we can easily log, do other stuff, etc
+    const reply = await this._sendRequest(path, message)
+    return reply
+  }
+
+  async _sendRequest(path: string, message: string): Promise<string> {
     switch (path) {
       case '/auth/create':
         return await this.betterAuthServer.createAccount(message)
@@ -318,7 +324,7 @@ describe('api', () => {
     // get link container from the new device
     const linkContainer = await linkedBetterAuthClient.generateLinkContainer(accountId)
 
-    // submit link containe with existing device
+    // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
 
     // authenticate and request resource access with the new device
