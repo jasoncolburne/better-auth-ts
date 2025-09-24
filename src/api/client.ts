@@ -369,12 +369,12 @@ export class BetterAuthClient {
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {
     const accessRequest = new AccessRequest<T>({
-      token: await this.args.store.token.access.get(),
       access: {
-        timestamp: rfc3339Nano(new Date()),
         nonce: await this.args.crypto.noncer.generate128(),
+        timestamp: rfc3339Nano(new Date()),
       },
       request: request,
+      token: await this.args.store.token.access.get(),
     })
 
     await accessRequest.sign(await this.args.store.key.access.signer())
