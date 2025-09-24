@@ -26,10 +26,6 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
       responseKeyDigest: responseKeyDigest,
     }
 
-    // if (typeof nonce !== 'undefined') {
-    //   access.nonce = nonce
-    // }
-
     this.payload = {
       access: access,
       response: response,
