@@ -314,10 +314,8 @@ export class BetterAuthClient {
           identity: accountId,
           device: deviceId,
           publicKey: current,
+          recoveryKey: await recoveryKey.public(),
           rotationDigest: rotationDigest,
-        },
-        recovery: {
-          publicKey: await recoveryKey.public(),
         },
       },
       nonce

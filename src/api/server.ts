@@ -332,12 +332,17 @@ export class BetterAuthServer {
   async recoverAccount(message: string): Promise<string> {
     const request = RecoverAccountRequest.parse(message)
     if (
-      !(await request.verify(this.args.crypto.verifier, request.payload.request.recovery.publicKey))
+      !(await request.verify(
+        this.args.crypto.verifier,
+        request.payload.request.authentication.recoveryKey
+      ))
     ) {
       throw 'invalid signature'
     }
 
-    const digest = await this.args.crypto.digester.sum(request.payload.request.recovery.publicKey)
+    const digest = await this.args.crypto.digester.sum(
+      request.payload.request.authentication.recoveryKey
+    )
     await this.args.store.recovery.key.validate(
       request.payload.request.authentication.identity,
       digest
