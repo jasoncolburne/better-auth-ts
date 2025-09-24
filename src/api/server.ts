@@ -33,46 +33,48 @@ import { rfc3339Nano } from '../utils'
 
 export class BetterAuthServer {
   constructor(
-    private readonly stores: {
-      access: {
-        keyDigest: IServerTimeLockStore
+    private readonly args: {
+      crypto: {
+        digester: IDigester
+        keyPairs: {
+          response: ISigningKey
+          access: ISigningKey
+        }
+        noncer: INoncer
+        verifier: IVerifier
       }
-      authentication: {
-        key: IServerAuthenticationKeyStore
-        nonce: IServerAuthenticationNonceStore
+      expiry: {
+        accessInMinutes: number
+        refreshInHours: number
       }
-      creation: {
-        token: IServerCreationTokenStore
+      store: {
+        access: {
+          keyDigest: IServerTimeLockStore
+        }
+        authentication: {
+          key: IServerAuthenticationKeyStore
+          nonce: IServerAuthenticationNonceStore
+        }
+        creation: {
+          token: IServerCreationTokenStore
+        }
+        recovery: {
+          key: IServerRecoveryKeyDigestStore
+        }
       }
-      recovery: {
-        key: IServerRecoveryKeyDigestStore
-      }
-    },
-    private readonly crypto: {
-      digester: IDigester
-      keyPairs: {
-        response: ISigningKey
-        access: ISigningKey
-      }
-      noncer: INoncer
-      verifier: IVerifier
-    },
-    private readonly expiry: {
-      accessInMinutes: number
-      refreshInHours: number
     }
   ) {}
 
   // we fetch this every time since the keypair implementation may rotate behind the scenes
   private async responseKeyDigest(): Promise<string> {
-    const responsePublicKey = await this.crypto.keyPairs.response.public()
-    return await this.crypto.digester.sum(responsePublicKey)
+    const responsePublicKey = await this.args.crypto.keyPairs.response.public()
+    return await this.args.crypto.digester.sum(responsePublicKey)
   }
 
   // account creation
 
   async generateCreationContainer(): Promise<string> {
-    const token = await this.stores.creation.token.generate()
+    const token = await this.args.store.creation.token.generate()
 
     const response = new CreationContainer(
       {
@@ -81,10 +83,10 @@ export class BetterAuthServer {
         },
       },
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      await this.args.crypto.noncer.generate128()
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
@@ -93,7 +95,7 @@ export class BetterAuthServer {
     const request = CreationRequest.parse(message)
     if (
       !(await request.verify(
-        this.crypto.verifier,
+        this.args.crypto.verifier,
         request.payload.authentication.publicKeys.current
       ))
     ) {
@@ -101,18 +103,21 @@ export class BetterAuthServer {
     }
 
     const token = request.payload.creation.token
-    const accountId = await this.stores.creation.token.validate(token)
+    const accountId = await this.args.store.creation.token.validate(token)
 
-    await this.stores.recovery.key.register(accountId, request.payload.creation.recoveryKeyDigest)
+    await this.args.store.recovery.key.register(
+      accountId,
+      request.payload.creation.recoveryKeyDigest
+    )
 
-    await this.stores.authentication.key.register(
+    await this.args.store.authentication.key.register(
       accountId,
       request.payload.identification.deviceId,
       request.payload.authentication.publicKeys.current,
       request.payload.authentication.publicKeys.nextDigest
     )
 
-    await this.stores.creation.token.invalidate(token)
+    await this.args.store.creation.token.invalidate(token)
 
     const response = new CreationResponse(
       {
@@ -124,7 +129,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
@@ -134,19 +139,21 @@ export class BetterAuthServer {
   async linkDevice(message: string): Promise<string> {
     const request = LinkDeviceRequest.parse(message)
 
-    const publicKey = await this.stores.authentication.key.public(
+    const publicKey = await this.args.store.authentication.key.public(
       request.payload.identification.accountId,
       request.payload.identification.deviceId
     )
 
-    if (!(await request.verify(this.crypto.verifier, publicKey))) {
+    if (!(await request.verify(this.args.crypto.verifier, publicKey))) {
       throw 'invalid signature'
     }
 
     const linkContainer = new LinkContainer(request.payload.link.payload)
     linkContainer.signature = request.payload.link.signature
 
-    if (!linkContainer.verify(this.crypto.verifier, linkContainer.payload.publicKeys.current)) {
+    if (
+      !linkContainer.verify(this.args.crypto.verifier, linkContainer.payload.publicKeys.current)
+    ) {
       throw 'invalid signature'
     }
 
@@ -156,7 +163,7 @@ export class BetterAuthServer {
       throw 'mismatched account ids'
     }
 
-    await this.stores.authentication.key.register(
+    await this.args.store.authentication.key.register(
       linkContainer.payload.identification.accountId,
       linkContainer.payload.identification.deviceId,
       linkContainer.payload.publicKeys.current,
@@ -169,7 +176,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return response.serialize()
   }
@@ -180,14 +187,14 @@ export class BetterAuthServer {
     const request = RotateAuthenticationKeyRequest.parse(message)
     if (
       !(await request.verify(
-        this.crypto.verifier,
+        this.args.crypto.verifier,
         request.payload.authentication.publicKeys.current
       ))
     ) {
       throw 'invalid signature'
     }
 
-    await this.stores.authentication.key.rotate(
+    await this.args.store.authentication.key.rotate(
       request.payload.identification.accountId,
       request.payload.identification.deviceId,
       request.payload.authentication.publicKeys.current,
@@ -201,7 +208,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
@@ -211,7 +218,7 @@ export class BetterAuthServer {
   async beginAuthentication(message: string): Promise<string> {
     const request = BeginAuthenticationRequest.parse(message)
 
-    const nonce = await this.stores.authentication.nonce.generate(
+    const nonce = await this.args.store.authentication.nonce.generate(
       request.payload.identification.accountId
     )
 
@@ -225,32 +232,32 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
 
   async completeAuthentication<T>(message: string, attributes: T): Promise<string> {
     const request = CompleteAuthenticationRequest.parse(message)
-    const accountId = await this.stores.authentication.nonce.validate(
+    const accountId = await this.args.store.authentication.nonce.validate(
       request.payload.authentication.nonce
     )
 
-    const authenticationPublicKey = await this.stores.authentication.key.public(
+    const authenticationPublicKey = await this.args.store.authentication.key.public(
       accountId,
       request.payload.identification.deviceId
     )
-    if (!(await request.verify(this.crypto.verifier, authenticationPublicKey))) {
+    if (!(await request.verify(this.args.crypto.verifier, authenticationPublicKey))) {
       throw 'invalid signature'
     }
 
     const now = new Date()
     const later = new Date(now)
-    later.setMinutes(later.getMinutes() + this.expiry.accessInMinutes)
+    later.setMinutes(later.getMinutes() + this.args.expiry.accessInMinutes)
     const issuedAt = rfc3339Nano(now)
     const expiry = rfc3339Nano(later)
     const evenLater = new Date(now)
-    evenLater.setHours(evenLater.getHours() + this.expiry.refreshInHours)
+    evenLater.setHours(evenLater.getHours() + this.args.expiry.refreshInHours)
     const refreshExpiry = rfc3339Nano(evenLater)
 
     const accessToken = new AccessToken<T>(
@@ -263,7 +270,7 @@ export class BetterAuthServer {
       attributes
     )
 
-    await accessToken.sign(this.crypto.keyPairs.access)
+    await accessToken.sign(this.args.crypto.keyPairs.access)
     const token = await accessToken.serialize()
 
     const response = new CompleteAuthenticationResponse(
@@ -276,7 +283,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
@@ -285,17 +292,19 @@ export class BetterAuthServer {
 
   async refreshAccessToken<T>(message: string): Promise<string> {
     const request = RefreshAccessTokenRequest.parse(message)
-    if (!(await request.verify(this.crypto.verifier, request.payload.access.publicKeys.current))) {
+    if (
+      !(await request.verify(this.args.crypto.verifier, request.payload.access.publicKeys.current))
+    ) {
       throw 'invalid signature'
     }
 
     const tokenString = request.payload.access.token
     const token = await AccessToken.parse<T>(tokenString)
-    if (!token.verify(this.crypto.verifier, await this.crypto.keyPairs.access.public())) {
+    if (!token.verify(this.args.crypto.verifier, await this.args.crypto.keyPairs.access.public())) {
       throw 'invalid token signature'
     }
 
-    const digest = await this.crypto.digester.sum(request.payload.access.publicKeys.current)
+    const digest = await this.args.crypto.digester.sum(request.payload.access.publicKeys.current)
     if (digest !== token.nextDigest) {
       throw 'digest mismatch'
     }
@@ -307,10 +316,10 @@ export class BetterAuthServer {
       throw 'refresh has expired'
     }
 
-    await this.stores.access.keyDigest.reserve(digest)
+    await this.args.store.access.keyDigest.reserve(digest)
 
     const later = new Date(now)
-    later.setMinutes(later.getMinutes() + this.expiry.accessInMinutes)
+    later.setMinutes(later.getMinutes() + this.args.expiry.accessInMinutes)
     const issuedAt = rfc3339Nano(now)
     const expiry = rfc3339Nano(later)
 
@@ -324,7 +333,7 @@ export class BetterAuthServer {
       token.attributes
     )
 
-    await accessToken.sign(this.crypto.keyPairs.access)
+    await accessToken.sign(this.args.crypto.keyPairs.access)
     const serializedToken = await accessToken.serialize()
 
     const response = new RefreshAccessTokenResponse(
@@ -337,21 +346,21 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
 
   async recoverAccount(message: string): Promise<string> {
     const request = RecoverAccountRequest.parse(message)
-    if (!(await request.verify(this.crypto.verifier, request.payload.recovery.publicKey))) {
+    if (!(await request.verify(this.args.crypto.verifier, request.payload.recovery.publicKey))) {
       throw 'invalid signature'
     }
 
-    const digest = await this.crypto.digester.sum(request.payload.recovery.publicKey)
-    await this.stores.recovery.key.validate(request.payload.identification.accountId, digest)
+    const digest = await this.args.crypto.digester.sum(request.payload.recovery.publicKey)
+    await this.args.store.recovery.key.validate(request.payload.identification.accountId, digest)
 
-    await this.stores.authentication.key.register(
+    await this.args.store.authentication.key.register(
       request.payload.identification.accountId,
       request.payload.identification.deviceId,
       request.payload.authentication.publicKeys.current,
@@ -364,7 +373,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPairs.response)
 
     return await response.serialize()
   }
@@ -372,15 +381,17 @@ export class BetterAuthServer {
 
 export class AccessVerifier {
   constructor(
-    private readonly crypto: {
-      publicKeys: {
-        access: IVerificationKey
+    private readonly args: {
+      crypto: {
+        publicKeys: {
+          access: IVerificationKey
+        }
+        verifier: IVerifier
       }
-      verifier: IVerifier
-    },
-    private readonly stores: {
-      access: {
-        nonce: IServerTimeLockStore
+      store: {
+        access: {
+          nonce: IServerTimeLockStore
+        }
       }
     }
   ) {}
@@ -388,10 +399,10 @@ export class AccessVerifier {
   async verify<T>(message: string): Promise<boolean> {
     const request = AccessRequest.parse<T>(message)
     return await request._verify<T>(
-      this.stores.access.nonce,
-      this.crypto.verifier,
-      this.crypto.verifier,
-      await this.crypto.publicKeys.access.public()
+      this.args.store.access.nonce,
+      this.args.crypto.verifier,
+      this.args.crypto.verifier,
+      await this.args.crypto.publicKeys.access.public()
     )
   }
 }
