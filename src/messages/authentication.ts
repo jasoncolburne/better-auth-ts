@@ -1,4 +1,5 @@
-import { SerializableMessage, SignableMessage } from './message'
+import { SerializableMessage } from './message'
+import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
 interface IBeginAuthenticationRequest {
@@ -6,8 +7,10 @@ interface IBeginAuthenticationRequest {
     access: {
       nonce: string
     }
-    identification: {
-      accountId: string
+    request: {
+      identification: {
+        accountId: string
+      }
     }
   }
 }
@@ -21,8 +24,10 @@ export class BeginAuthenticationRequest
       access: {
         nonce: string
       }
-      identification: {
-        accountId: string
+      request: {
+        identification: {
+          accountId: string
+        }
       }
     }
   ) {
@@ -54,58 +59,23 @@ export class BeginAuthenticationResponse extends ServerResponse<IBeginAuthentica
 }
 
 interface ICompleteAuthenticationRequest {
-  payload: {
-    access: {
-      nonce: string
-      publicKeys: {
-        current: string
-        nextDigest: string
-      }
-    }
-    authentication: {
-      nonce: string
-    }
-    identification: {
-      deviceId: string
+  access: {
+    publicKeys: {
+      current: string
+      nextDigest: string
     }
   }
-  signature?: string
+  authentication: {
+    nonce: string
+  }
+  identification: {
+    deviceId: string
+  }
 }
 
-export class CompleteAuthenticationRequest
-  extends SignableMessage
-  implements ICompleteAuthenticationRequest
-{
-  constructor(
-    public payload: {
-      access: {
-        nonce: string
-        publicKeys: {
-          current: string
-          nextDigest: string
-        }
-      }
-      authentication: {
-        nonce: string
-      }
-      identification: {
-        deviceId: string
-      }
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
+export class CompleteAuthenticationRequest extends ClientRequest<ICompleteAuthenticationRequest> {
   static parse(message: string): CompleteAuthenticationRequest {
-    const json = JSON.parse(message)
-    const result = new CompleteAuthenticationRequest(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ClientRequest._parse(message, CompleteAuthenticationRequest)
   }
 }
 

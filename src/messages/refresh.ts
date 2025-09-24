@@ -1,49 +1,19 @@
-import { SignableMessage } from './message'
+import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
 interface IRefreshAccessTokenRequest {
-  payload: {
-    access: {
-      nonce: string
-      publicKeys: {
-        current: string
-        nextDigest: string
-      }
-      token: string
+  access: {
+    publicKeys: {
+      current: string
+      nextDigest: string
     }
+    token: string
   }
-  signature?: string
 }
 
-export class RefreshAccessTokenRequest
-  extends SignableMessage
-  implements IRefreshAccessTokenRequest
-{
-  constructor(
-    public payload: {
-      access: {
-        nonce: string
-        publicKeys: {
-          current: string
-          nextDigest: string
-        }
-        token: string
-      }
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
+export class RefreshAccessTokenRequest extends ClientRequest<IRefreshAccessTokenRequest> {
   static parse(message: string): RefreshAccessTokenRequest {
-    const json = JSON.parse(message)
-    const result = new RefreshAccessTokenRequest(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ClientRequest._parse(message, RefreshAccessTokenRequest)
   }
 }
 

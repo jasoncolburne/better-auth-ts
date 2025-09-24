@@ -1,4 +1,5 @@
 import { SignableMessage } from './message'
+import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
 interface ILinkContainer {
@@ -45,45 +46,16 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
 }
 
 interface ILinkDeviceRequest {
-  payload: {
-    access: {
-      nonce: string
-    }
-    identification: {
-      accountId: string
-      deviceId: string
-    }
-    link: ILinkContainer
+  identification: {
+    accountId: string
+    deviceId: string
   }
-  signature?: string
+  link: ILinkContainer
 }
 
-export class LinkDeviceRequest extends SignableMessage implements ILinkDeviceRequest {
-  constructor(
-    public payload: {
-      access: {
-        nonce: string
-      }
-      identification: {
-        accountId: string
-        deviceId: string
-      }
-      link: ILinkContainer
-    }
-  ) {
-    super()
-  }
-
-  composePayload(): string {
-    return JSON.stringify(this.payload)
-  }
-
+export class LinkDeviceRequest extends ClientRequest<ILinkDeviceRequest> {
   static parse(message: string): LinkDeviceRequest {
-    const json = JSON.parse(message)
-    const result = new LinkDeviceRequest(json.payload)
-    result.signature = json.signature
-
-    return result
+    return ClientRequest._parse(message, LinkDeviceRequest)
   }
 }
 
