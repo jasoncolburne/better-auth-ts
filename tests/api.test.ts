@@ -71,19 +71,19 @@ class MockNetworkServer implements INetwork {
 
   async _sendRequest(path: string, message: string): Promise<string> {
     switch (path) {
-      case '/auth/create':
+      case '/auth/creation/create':
         return await this.betterAuthServer.createAccount(message)
-      case '/auth/recover':
+      case '/auth/recovery/recover':
         return await this.betterAuthServer.recoverAccount(message)
-      case '/auth/link':
+      case '/auth/linking/link':
         return await this.betterAuthServer.linkDevice(message)
-      case '/auth/rotate':
+      case '/auth/rotation/rotate':
         return await this.betterAuthServer.rotateAuthenticationKey(message)
-      case '/auth/begin':
+      case '/auth/authentication/start':
         return await this.betterAuthServer.beginAuthentication(message)
-      case '/auth/complete':
+      case '/auth/authentication/finish':
         return await this.betterAuthServer.completeAuthentication(message, this.attributes)
-      case '/auth/refresh':
+      case '/auth/refresh/refresh':
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
         if (!(await this.accessVerifier.verify<IFakeRequest>(message))) {

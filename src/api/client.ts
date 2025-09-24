@@ -114,7 +114,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/create', message)
+    const reply = await this.args.io.network.sendRequest('/auth/creation/create', message)
 
     const response = CreationResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
@@ -176,7 +176,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/link', message)
+    const reply = await this.args.io.network.sendRequest('/auth/linking/link', message)
 
     const response = LinkDeviceResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
@@ -211,7 +211,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/rotate', message)
+    const reply = await this.args.io.network.sendRequest('/auth/rotation/rotate', message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
@@ -238,7 +238,10 @@ export class BetterAuthClient {
     })
 
     const beginMessage = await beginRequest.serialize()
-    const beginReply = await this.args.io.network.sendRequest('/auth/begin', beginMessage)
+    const beginReply = await this.args.io.network.sendRequest(
+      '/auth/authentication/start',
+      beginMessage
+    )
 
     const beginResponse = BeginAuthenticationResponse.parse(beginReply)
     if (
@@ -274,7 +277,10 @@ export class BetterAuthClient {
 
     await completeRequest.sign(await this.args.store.key.authentication.signer())
     const completeMessage = await completeRequest.serialize()
-    const completeReply = await this.args.io.network.sendRequest('/auth/complete', completeMessage)
+    const completeReply = await this.args.io.network.sendRequest(
+      '/auth/authentication/finish',
+      completeMessage
+    )
 
     const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
     if (
@@ -312,7 +318,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.access.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/refresh', message)
+    const reply = await this.args.io.network.sendRequest('/auth/refresh/refresh', message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
@@ -352,7 +358,7 @@ export class BetterAuthClient {
 
     await request.sign(recoveryKey)
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/recover', message)
+    const reply = await this.args.io.network.sendRequest('/auth/recovery/recover', message)
 
     const response = RecoverAccountResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
