@@ -20,6 +20,8 @@ import {
 } from './client.storage.mocks'
 import { AccessRequest, ServerResponse } from '../src/messages'
 
+const DEBUG_LOGGING = false
+
 interface IMockAccessAttributes {
   permissionsByRole: object
 }
@@ -53,10 +55,17 @@ class MockNetworkServer implements INetwork {
   }
 
   async sendRequest(path: string, message: string): Promise<string> {
-    // this abstraction exists so we can easily log, do other stuff, etc
-    // console.log(message)
+    if (DEBUG_LOGGING) {
+      console.log(message)
+    }
+
     const reply = await this._sendRequest(path, message)
-    // console.log(reply)
+
+
+    if (DEBUG_LOGGING) {
+      console.log(reply)
+    }
+
     return reply
   }
 
@@ -303,6 +312,11 @@ describe('api', () => {
     })
 
     const creationContainer = await betterAuthServer.generateCreationContainer()
+
+    if (DEBUG_LOGGING) {
+      console.log(creationContainer)
+    }
+
     const recoveryKeyDigest = await digester.sum(await recoverySigner.public())
 
     await betterAuthClient.createAccount(creationContainer, recoveryKeyDigest)
@@ -533,7 +547,9 @@ describe('api', () => {
 
     // get link container from the new device
     const linkContainer = await linkedBetterAuthClient.generateLinkContainer(accountId)
-    // console.log(linkContainer)
+    if (DEBUG_LOGGING) {
+      console.log(linkContainer)
+    }
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
