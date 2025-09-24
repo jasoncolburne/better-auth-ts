@@ -22,8 +22,8 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
     super()
 
     const access: IServerAccess = {
-      responseKeyDigest: responseKeyDigest,
       nonce: nonce,
+      responseKeyDigest: responseKeyDigest,
     }
 
     // if (typeof nonce !== 'undefined') {
