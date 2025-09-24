@@ -62,12 +62,22 @@ export interface IServerCreationTokenStore {
 export interface IServerAuthenticationKeyStore {
   // throw an exception for:
   // - account id and device id combination exists
-  register(accountId: string, deviceId: string, current: string, rotationDigest: string): Promise<void>
+  register(
+    accountId: string,
+    deviceId: string,
+    current: string,
+    rotationDigest: string
+  ): Promise<void>
 
   // throw exceptions for:
   // - account id and device id combination does not exist
   // - previous next digest doesn't match current digest
-  rotate(accountId: string, deviceId: string, current: string, rotationDigest: string): Promise<void>
+  rotate(
+    accountId: string,
+    deviceId: string,
+    current: string,
+    rotationDigest: string
+  ): Promise<void>
 
   // returns: encoded key
   public(accountId: string, deviceId: string): Promise<string>
