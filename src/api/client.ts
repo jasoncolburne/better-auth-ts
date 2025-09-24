@@ -224,11 +224,11 @@ export class BetterAuthClient {
   }
 
   async authenticate(): Promise<void> {
-    const beginNonce = await this.args.crypto.noncer.generate128()
+    const startNonce = await this.args.crypto.noncer.generate128()
 
-    const beginRequest = new BeginAuthenticationRequest({
+    const startRequest = new BeginAuthenticationRequest({
       access: {
-        nonce: beginNonce,
+        nonce: startNonce,
       },
       request: {
         identification: {
@@ -237,27 +237,27 @@ export class BetterAuthClient {
       },
     })
 
-    const beginMessage = await beginRequest.serialize()
-    const beginReply = await this.args.io.network.sendRequest(
+    const startMessage = await startRequest.serialize()
+    const startReply = await this.args.io.network.sendRequest(
       '/auth/authentication/start',
-      beginMessage
+      startMessage
     )
 
-    const beginResponse = BeginAuthenticationResponse.parse(beginReply)
+    const startResponse = BeginAuthenticationResponse.parse(startReply)
     if (
-      !(await this.verifyResponse(beginResponse, beginResponse.payload.access.responseKeyDigest))
+      !(await this.verifyResponse(startResponse, startResponse.payload.access.responseKeyDigest))
     ) {
       throw 'invalid signature'
     }
 
-    if (beginResponse.payload.access.nonce !== beginNonce) {
+    if (startResponse.payload.access.nonce !== startNonce) {
       throw 'incorrect nonce'
     }
 
     const [currentKey, nextKeyDigest] = await this.args.store.key.access.initialize()
-    const completeNonce = await this.args.crypto.noncer.generate128()
+    const finishNonce = await this.args.crypto.noncer.generate128()
 
-    const completeRequest = new CompleteAuthenticationRequest(
+    const finishRequest = new CompleteAuthenticationRequest(
       {
         access: {
           publicKey: {
@@ -266,37 +266,34 @@ export class BetterAuthClient {
           },
         },
         authentication: {
-          nonce: beginResponse.payload.response.authentication.nonce,
+          nonce: startResponse.payload.response.authentication.nonce,
         },
         identification: {
           deviceId: await this.args.store.identifier.device.get(),
         },
       },
-      completeNonce
+      finishNonce
     )
 
-    await completeRequest.sign(await this.args.store.key.authentication.signer())
-    const completeMessage = await completeRequest.serialize()
-    const completeReply = await this.args.io.network.sendRequest(
+    await finishRequest.sign(await this.args.store.key.authentication.signer())
+    const finishMessage = await finishRequest.serialize()
+    const finishReply = await this.args.io.network.sendRequest(
       '/auth/authentication/finish',
-      completeMessage
+      finishMessage
     )
 
-    const completeResponse = CompleteAuthenticationResponse.parse(completeReply)
+    const finishResponse = CompleteAuthenticationResponse.parse(finishReply)
     if (
-      !(await this.verifyResponse(
-        completeResponse,
-        completeResponse.payload.access.responseKeyDigest
-      ))
+      !(await this.verifyResponse(finishResponse, finishResponse.payload.access.responseKeyDigest))
     ) {
       throw 'invalid signature'
     }
 
-    if (completeResponse.payload.access.nonce !== completeNonce) {
+    if (finishResponse.payload.access.nonce !== finishNonce) {
       throw 'incorrect nonce'
     }
 
-    await this.args.store.token.access.store(completeResponse.payload.response.access.token)
+    await this.args.store.token.access.store(finishResponse.payload.response.access.token)
   }
 
   async refreshAccessToken(): Promise<void> {
