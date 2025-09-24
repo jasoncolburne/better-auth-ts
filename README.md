@@ -1,4 +1,2 @@
 # better-auth-ts
-typescript implementation of better auth
-
-this is ahead of the [spec](https://github.com/jasoncolburne/better-auth)
+reference typescript implementation of [better auth](https://github.com/jasoncolburne/better-auth)
