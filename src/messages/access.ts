@@ -101,12 +101,12 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
 export interface IAccessRequest<T> {
   payload: {
-    token: string
     access: {
       timestamp: string
       nonce: string
     }
     request: T
+    token: string
   }
   signature?: string
 }
@@ -114,12 +114,12 @@ export interface IAccessRequest<T> {
 export class AccessRequest<T> extends SignableMessage implements IAccessRequest<T> {
   constructor(
     public payload: {
-      token: string
       access: {
         timestamp: string
         nonce: string
       }
       request: T
+      token: string
     }
   ) {
     super()

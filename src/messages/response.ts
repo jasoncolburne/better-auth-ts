@@ -1,8 +1,8 @@
 import { SignableMessage } from './message'
 
 interface IServerAccess {
-  responseKeyDigest: string
   nonce: string
+  responseKeyDigest: string
 }
 
 interface IServerPayload<T> {

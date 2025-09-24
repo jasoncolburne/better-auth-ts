@@ -89,20 +89,24 @@ export class BetterAuthClient {
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
       await this.stores.key.authentication.initialize()
     const deviceId = await this.crypto.digester.sum(currentAuthenticationPublicKey)
+    const nonce = await this.crypto.noncer.generate128()
 
     const request = new CreationRequest({
-      creation: {
-        token: materials.payload.response.creation.token,
-        recoveryKeyDigest: recoveryKeyDigest,
-      },
-      identification: {
-        deviceId: deviceId,
+      access: {
+        nonce: nonce,
       },
       authentication: {
         publicKeys: {
           current: currentAuthenticationPublicKey,
           nextDigest: nextAuthenticationPublicKeyDigest,
         },
+      },
+      creation: {
+        token: materials.payload.response.creation.token,
+        recoveryKeyDigest: recoveryKeyDigest,
+      },
+      identification: {
+        deviceId: deviceId,
       },
     })
 
@@ -113,6 +117,10 @@ export class BetterAuthClient {
     const response = CreationResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
+    }
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
     }
 
     await this.stores.identifier.account.store(response.payload.response.identification.accountId)
@@ -149,8 +157,12 @@ export class BetterAuthClient {
   // for best results
   async linkDevice(linkContainer: string): Promise<void> {
     const container = LinkContainer.parse(linkContainer)
+    const nonce = await this.crypto.noncer.generate128()
 
     const request = new LinkDeviceRequest({
+      access: {
+        nonce: nonce,
+      },
       identification: {
         accountId: await this.stores.identifier.account.get(),
         deviceId: await this.stores.identifier.device.get(),
@@ -166,13 +178,21 @@ export class BetterAuthClient {
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
   }
 
   async rotateAuthenticationKey(): Promise<void> {
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyDigest] =
       await this.stores.key.authentication.rotate()
+    const nonce = await this.crypto.noncer.generate128()
 
     const request = new RotateAuthenticationKeyRequest({
+      access: {
+        nonce: nonce,
+      },
       identification: {
         accountId: await this.stores.identifier.account.get(),
         deviceId: await this.stores.identifier.device.get(),
@@ -193,10 +213,19 @@ export class BetterAuthClient {
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
     }
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
   }
 
   async authenticate(): Promise<void> {
+    const beginNonce = await this.crypto.noncer.generate128()
+
     const beginRequest = new BeginAuthenticationRequest({
+      access: {
+        nonce: beginNonce,
+      },
       identification: {
         accountId: await this.stores.identifier.account.get(),
       },
@@ -212,19 +241,26 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
+    if (beginResponse.payload.access.nonce !== beginNonce) {
+      throw 'incorrect nonce'
+    }
+
     const [currentKey, nextKeyDigest] = await this.stores.key.access.initialize()
+    const completeNonce = await this.crypto.noncer.generate128()
+
     const completeRequest = new CompleteAuthenticationRequest({
-      identification: {
-        deviceId: await this.stores.identifier.device.get(),
-      },
-      authentication: {
-        nonce: beginResponse.payload.response.authentication.nonce,
-      },
       access: {
+        nonce: completeNonce,
         publicKeys: {
           current: currentKey,
           nextDigest: nextKeyDigest,
         },
+      },
+      authentication: {
+        nonce: beginResponse.payload.response.authentication.nonce,
+      },
+      identification: {
+        deviceId: await this.stores.identifier.device.get(),
       },
     })
 
@@ -242,19 +278,25 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
+    if (completeResponse.payload.access.nonce !== completeNonce) {
+      throw 'incorrect nonce'
+    }
+
     await this.stores.token.access.store(completeResponse.payload.response.access.token)
   }
 
   async refreshAccessToken(): Promise<void> {
     const [currentKey, nextKeyDigest] = await this.stores.key.access.rotate()
+    const nonce = await this.crypto.noncer.generate128()
 
     const request = new RefreshAccessTokenRequest({
       access: {
-        token: await this.stores.token.access.get(),
+        nonce: nonce,
         publicKeys: {
           current: currentKey,
           nextDigest: nextKeyDigest,
         },
+        token: await this.stores.token.access.get(),
       },
     })
 
@@ -267,26 +309,34 @@ export class BetterAuthClient {
       throw 'invalid signature'
     }
 
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
+
     await this.stores.token.access.store(response.payload.response.access.token)
   }
 
   async recoverAccount(accountId: string, recoveryKey: ISigningKey): Promise<void> {
     const [current, nextDigest] = await this.stores.key.authentication.initialize()
     const deviceId = await this.crypto.digester.sum(current)
+    const nonce = await this.crypto.noncer.generate128()
 
     const request = new RecoverAccountRequest({
-      identification: {
-        accountId: accountId,
-        deviceId: deviceId,
-      },
-      recovery: {
-        publicKey: await recoveryKey.public(),
+      access: {
+        nonce: nonce,
       },
       authentication: {
         publicKeys: {
           current: current,
           nextDigest: nextDigest,
         },
+      },
+      identification: {
+        accountId: accountId,
+        deviceId: deviceId,
+      },
+      recovery: {
+        publicKey: await recoveryKey.public(),
       },
     })
 
@@ -297,6 +347,10 @@ export class BetterAuthClient {
     const response = RecoverAccountResponse.parse(reply)
     if (!(await this.verifyResponse(response, response.payload.access.responseKeyDigest))) {
       throw 'invalid signature'
+    }
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
     }
 
     await this.stores.identifier.account.store(accountId)

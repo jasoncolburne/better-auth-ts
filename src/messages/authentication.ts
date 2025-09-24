@@ -3,6 +3,9 @@ import { ServerResponse } from './response'
 
 interface IBeginAuthenticationRequest {
   payload: {
+    access: {
+      nonce: string
+    }
     identification: {
       accountId: string
     }
@@ -15,6 +18,9 @@ export class BeginAuthenticationRequest
 {
   constructor(
     public payload: {
+      access: {
+        nonce: string
+      }
       identification: {
         accountId: string
       }
@@ -49,17 +55,18 @@ export class BeginAuthenticationResponse extends ServerResponse<IBeginAuthentica
 
 interface ICompleteAuthenticationRequest {
   payload: {
-    identification: {
-      deviceId: string
-    }
-    authentication: {
-      nonce: string
-    }
     access: {
+      nonce: string
       publicKeys: {
         current: string
         nextDigest: string
       }
+    }
+    authentication: {
+      nonce: string
+    }
+    identification: {
+      deviceId: string
     }
   }
   signature?: string
@@ -71,17 +78,18 @@ export class CompleteAuthenticationRequest
 {
   constructor(
     public payload: {
-      identification: {
-        deviceId: string
-      }
-      authentication: {
-        nonce: string
-      }
       access: {
+        nonce: string
         publicKeys: {
           current: string
           nextDigest: string
         }
+      }
+      authentication: {
+        nonce: string
+      }
+      identification: {
+        deviceId: string
       }
     }
   ) {

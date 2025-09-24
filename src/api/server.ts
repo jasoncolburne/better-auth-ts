@@ -121,7 +121,7 @@ export class BetterAuthServer {
         },
       },
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -166,7 +166,7 @@ export class BetterAuthServer {
     const response = new LinkDeviceResponse(
       {},
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -198,7 +198,7 @@ export class BetterAuthServer {
     const response = new RotateAuthenticationKeyResponse(
       {},
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -222,7 +222,7 @@ export class BetterAuthServer {
         },
       },
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -273,7 +273,7 @@ export class BetterAuthServer {
         },
       },
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -334,7 +334,7 @@ export class BetterAuthServer {
         },
       },
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)
@@ -361,7 +361,7 @@ export class BetterAuthServer {
     const response = new RecoverAccountResponse(
       {},
       await this.responseKeyDigest(),
-      await this.crypto.noncer.generate128()
+      request.payload.access.nonce
     )
 
     await response.sign(this.crypto.keyPairs.response)

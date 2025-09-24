@@ -15,18 +15,21 @@ export class CreationContainer extends ServerResponse<ICreationContainer> {
 
 export interface ICreationRequest {
   payload: {
-    creation: {
-      token: string
-      recoveryKeyDigest: string
-    }
-    identification: {
-      deviceId: string
+    access: {
+      nonce: string
     }
     authentication: {
       publicKeys: {
         current: string
         nextDigest: string
       }
+    }
+    creation: {
+      token: string
+      recoveryKeyDigest: string
+    }
+    identification: {
+      deviceId: string
     }
   }
   signature?: string
@@ -35,18 +38,21 @@ export interface ICreationRequest {
 export class CreationRequest extends SignableMessage implements ICreationRequest {
   constructor(
     public payload: {
-      creation: {
-        token: string
-        recoveryKeyDigest: string
-      }
-      identification: {
-        deviceId: string
+      access: {
+        nonce: string
       }
       authentication: {
         publicKeys: {
           current: string
           nextDigest: string
         }
+      }
+      creation: {
+        token: string
+        recoveryKeyDigest: string
+      }
+      identification: {
+        deviceId: string
       }
     }
   ) {

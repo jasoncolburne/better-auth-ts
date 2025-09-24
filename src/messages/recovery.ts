@@ -3,18 +3,21 @@ import { ServerResponse } from './response'
 
 interface IRecoverAccountRequest {
   payload: {
-    identification: {
-      accountId: string
-      deviceId: string
-    }
-    recovery: {
-      publicKey: string
+    access: {
+      nonce: string
     }
     authentication: {
       publicKeys: {
         current: string
         nextDigest: string
       }
+    }
+    identification: {
+      accountId: string
+      deviceId: string
+    }
+    recovery: {
+      publicKey: string
     }
   }
   signature?: string
@@ -23,18 +26,21 @@ interface IRecoverAccountRequest {
 export class RecoverAccountRequest extends SignableMessage implements IRecoverAccountRequest {
   constructor(
     public payload: {
-      identification: {
-        accountId: string
-        deviceId: string
-      }
-      recovery: {
-        publicKey: string
+      access: {
+        nonce: string
       }
       authentication: {
         publicKeys: {
           current: string
           nextDigest: string
         }
+      }
+      identification: {
+        accountId: string
+        deviceId: string
+      }
+      recovery: {
+        publicKey: string
       }
     }
   ) {

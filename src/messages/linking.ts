@@ -46,6 +46,9 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
 
 interface ILinkDeviceRequest {
   payload: {
+    access: {
+      nonce: string
+    }
     identification: {
       accountId: string
       deviceId: string
@@ -58,6 +61,9 @@ interface ILinkDeviceRequest {
 export class LinkDeviceRequest extends SignableMessage implements ILinkDeviceRequest {
   constructor(
     public payload: {
+      access: {
+        nonce: string
+      }
       identification: {
         accountId: string
         deviceId: string

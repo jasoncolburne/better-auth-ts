@@ -4,11 +4,12 @@ import { ServerResponse } from './response'
 interface IRefreshAccessTokenRequest {
   payload: {
     access: {
-      token: string
+      nonce: string
       publicKeys: {
         current: string
         nextDigest: string
       }
+      token: string
     }
   }
   signature?: string
@@ -21,11 +22,12 @@ export class RefreshAccessTokenRequest
   constructor(
     public payload: {
       access: {
-        token: string
+        nonce: string
         publicKeys: {
           current: string
           nextDigest: string
         }
+        token: string
       }
     }
   ) {

@@ -3,15 +3,18 @@ import { ServerResponse } from './response'
 
 interface IRotateAuthenticationKeyRequest {
   payload: {
-    identification: {
-      accountId: string
-      deviceId: string
+    access: {
+      nonce: string
     }
     authentication: {
       publicKeys: {
         current: string
         nextDigest: string
       }
+    }
+    identification: {
+      accountId: string
+      deviceId: string
     }
   }
   signature?: string
@@ -23,15 +26,18 @@ export class RotateAuthenticationKeyRequest
 {
   constructor(
     public payload: {
-      identification: {
-        accountId: string
-        deviceId: string
+      access: {
+        nonce: string
       }
       authentication: {
         publicKeys: {
           current: string
           nextDigest: string
         }
+      }
+      identification: {
+        accountId: string
+        deviceId: string
       }
     }
   ) {
