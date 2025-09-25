@@ -1,9 +1,4 @@
-import {
-  IClientRotatingKeyStore,
-  IClientValueStore,
-  IHasher,
-  ISigningKey,
-} from '../src/interfaces'
+import { IClientRotatingKeyStore, IClientValueStore, IHasher, ISigningKey } from '../interfaces'
 import { Hasher } from './crypto/hash'
 import { Secp256r1 } from './crypto/secp256r1'
 

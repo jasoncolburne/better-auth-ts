@@ -1,23 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { INetwork, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
+import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
+import { INetwork, ISigningKey, IVerificationKey, IVerifier } from '../interfaces'
 import {
-  ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerRecoveryHashStore,
+  ServerTimeLockStore,
 } from './server.storage.mocks'
-import {
-  Hasher,
-  Noncer,
-  Secp256r1,
-  Secp256r1Verifier,
-} from './crypto'
-import {
-  ClientRotatingKeyStore,
-  ClientValueStore,
-} from './client.storage.mocks'
-import { AccessRequest, ServerResponse } from '../src/messages'
+import { Hasher, Noncer, Secp256r1, Secp256r1Verifier } from './crypto'
+import { ClientRotatingKeyStore, ClientValueStore } from './client.storage.mocks'
+import { AccessRequest, ServerResponse } from '../messages'
 
 const DEBUG_LOGGING = false
 
@@ -60,7 +52,6 @@ class MockNetworkServer implements INetwork {
 
     const reply = await this._sendRequest(path, message)
 
-
     if (DEBUG_LOGGING) {
       console.log(reply)
     }
@@ -69,6 +60,8 @@ class MockNetworkServer implements INetwork {
   }
 
   async _sendRequest(path: string, message: string): Promise<string> {
+    let accessIdentity: string
+
     switch (path) {
       case '/auth/creation/create':
         return await this.betterAuthServer.createAccount(message)
@@ -85,7 +78,7 @@ class MockNetworkServer implements INetwork {
       case '/auth/refresh/refresh':
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
-        const accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
+        accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
 
         if (typeof accessIdentity === 'undefined') {
           throw 'null identity'
@@ -95,7 +88,7 @@ class MockNetworkServer implements INetwork {
           throw 'unexpceted identity format'
         }
 
-        if (accessIdentity.length != 44) {
+        if (accessIdentity.length !== 44) {
           throw 'unexpected identity length'
         }
 
@@ -139,32 +132,29 @@ async function testAccess(
   eccVerifier: IVerifier,
   responseSigner: ISigningKey
 ): Promise<void> {
-    const message = {
-      foo: 'bar',
-      bar: 'foo',
-    }
-    const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
-    const response = FakeResponse.parse(reply)
+  const message = {
+    foo: 'bar',
+    bar: 'foo',
+  }
+  const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
+  const response = FakeResponse.parse(reply)
 
-    await response.verify(eccVerifier, await responseSigner.public())
+  await response.verify(eccVerifier, await responseSigner.public())
 
-    if (
-      response.payload.response.wasFoo !== 'bar' ||
-      response.payload.response.wasBar !== 'foo'
-    ) {
-      throw 'invalid data returned'
-    }
+  if (response.payload.response.wasFoo !== 'bar' || response.payload.response.wasBar !== 'foo') {
+    throw 'invalid data returned'
+  }
 }
 
 async function createServer(args: {
   expiry: {
-    accessLifetimeInMinutes: number,
-    authenticationChallengeLifetimeInSeconds: number,
-    refreshLifetimeInHours: number,
-  },
+    accessLifetimeInMinutes: number
+    authenticationChallengeLifetimeInSeconds: number
+    refreshLifetimeInHours: number
+  }
   keys: {
-    accessSigner: ISigningKey,
-    responseSigner: ISigningKey,
+    accessSigner: ISigningKey
+    responseSigner: ISigningKey
   }
 }): Promise<BetterAuthServer> {
   const eccVerifier = new Secp256r1Verifier()
@@ -172,7 +162,9 @@ async function createServer(args: {
   const noncer = new Noncer()
 
   const accessKeyHashStore = new ServerTimeLockStore(60 * 60 * args.expiry.refreshLifetimeInHours)
-  const authenticationNonceStore = new ServerAuthenticationNonceStore(args.expiry.authenticationChallengeLifetimeInSeconds)
+  const authenticationNonceStore = new ServerAuthenticationNonceStore(
+    args.expiry.authenticationChallengeLifetimeInSeconds
+  )
 
   const betterAuthServer = new BetterAuthServer({
     crypto: {
@@ -191,14 +183,14 @@ async function createServer(args: {
     store: {
       access: {
         // the lock time is the refresh lifetime in seconds
-        keyHash: accessKeyHashStore
+        keyHash: accessKeyHashStore,
       },
       authentication: {
         key: new ServerAuthenticationKeyStore(),
-        nonce: authenticationNonceStore
+        nonce: authenticationNonceStore,
       },
       recovery: {
-        key: new ServerRecoveryHashStore()
+        key: new ServerRecoveryHashStore(),
       },
     },
   })
@@ -209,15 +201,12 @@ async function createServer(args: {
 async function createVerifier(args: {
   expiry: {
     accessWindowInSeconds: number
-  },
+  }
   keys: {
     accessVerifier: IVerificationKey
   }
 }): Promise<AccessVerifier> {
   const eccVerifier = new Secp256r1Verifier()
-  const hasher = new Hasher()
-  const noncer = new Noncer()
-
   const accessNonceStore = new ServerTimeLockStore(args.expiry.accessWindowInSeconds)
 
   const accessVerifier = new AccessVerifier({
@@ -230,8 +219,8 @@ async function createVerifier(args: {
     store: {
       access: {
         nonce: accessNonceStore,
-      }
-    }
+      },
+    },
   })
 
   return accessVerifier
@@ -260,7 +249,7 @@ describe('api', () => {
       keys: {
         accessSigner: accessSigner,
         responseSigner: responseSigner,
-      }
+      },
     })
 
     const accessVerifier = await createVerifier({
@@ -270,8 +259,8 @@ describe('api', () => {
       keys: {
         // this would typically not be a signing key pair
         //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
+        accessVerifier: accessSigner,
+      },
     })
 
     const map = {
@@ -341,7 +330,7 @@ describe('api', () => {
       keys: {
         accessSigner: accessSigner,
         responseSigner: responseSigner,
-      }
+      },
     })
 
     const accessVerifier = await createVerifier({
@@ -351,8 +340,8 @@ describe('api', () => {
       keys: {
         // this would typically not be a signing key pair
         //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
+        accessVerifier: accessSigner,
+      },
     })
 
     const map = {
@@ -449,7 +438,7 @@ describe('api', () => {
       keys: {
         accessSigner: accessSigner,
         responseSigner: responseSigner,
-      }
+      },
     })
 
     const accessVerifier = await createVerifier({
@@ -459,8 +448,8 @@ describe('api', () => {
       keys: {
         // this would typically not be a signing key pair
         //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
+        accessVerifier: accessSigner,
+      },
     })
 
     const map = {
@@ -543,7 +532,7 @@ describe('api', () => {
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseSigner)
   })
 
-  it(('rejects expired authentication challenges'), async () => {
+  it('rejects expired authentication challenges', async () => {
     const eccVerifier = new Secp256r1Verifier()
     const hasher = new Hasher()
     const noncer = new Noncer()
@@ -565,7 +554,7 @@ describe('api', () => {
       keys: {
         accessSigner: accessSigner,
         responseSigner: responseSigner,
-      }
+      },
     })
 
     const accessVerifier = await createVerifier({
@@ -575,8 +564,8 @@ describe('api', () => {
       keys: {
         // this would typically not be a signing key pair
         //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
+        accessVerifier: accessSigner,
+      },
     })
 
     const map = {
@@ -625,12 +614,12 @@ describe('api', () => {
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
       throw 'unexpected failure'
-    } catch(e: unknown) {
+    } catch (e: unknown) {
       expect(e).toBe('expired nonce')
     }
   })
 
-  it(('rejects expired refresh tokens'), async () => {
+  it('rejects expired refresh tokens', async () => {
     const eccVerifier = new Secp256r1Verifier()
     const hasher = new Hasher()
     const noncer = new Noncer()
@@ -652,7 +641,7 @@ describe('api', () => {
       keys: {
         accessSigner: accessSigner,
         responseSigner: responseSigner,
-      }
+      },
     })
 
     const accessVerifier = await createVerifier({
@@ -662,8 +651,8 @@ describe('api', () => {
       keys: {
         // this would typically not be a signing key pair
         //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
+        accessVerifier: accessSigner,
+      },
     })
 
     const map = {
@@ -712,12 +701,12 @@ describe('api', () => {
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
       throw 'unexpected failure'
-    } catch(e: unknown) {
+    } catch (e: unknown) {
       expect(e).toBe('refresh has expired')
     }
   })
 
-  it(('rejects expired access tokens'), async () => {
+  it('rejects expired access tokens', async () => {
     const eccVerifier = new Secp256r1Verifier()
     const hasher = new Hasher()
     const noncer = new Noncer()
@@ -739,7 +728,7 @@ describe('api', () => {
       keys: {
         accessSigner: accessSigner,
         responseSigner: responseSigner,
-      }
+      },
     })
 
     const accessVerifier = await createVerifier({
@@ -749,8 +738,8 @@ describe('api', () => {
       keys: {
         // this would typically not be a signing key pair
         //  instead, a verification key (the interface contract) is required
-        accessVerifier: accessSigner
-      }
+        accessVerifier: accessSigner,
+      },
     })
 
     const map = {
@@ -799,7 +788,7 @@ describe('api', () => {
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
       throw 'unexpected failure'
-    } catch(e: unknown) {
+    } catch (e: unknown) {
       expect(e).toBe('token expired')
     }
   })

@@ -1,7 +1,7 @@
-import { ISigningKey, IVerifier } from '../../src/interfaces'
+import { ISigningKey, IVerifier } from '../../interfaces'
 import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
-import { Base64 } from '../../src/utils/base64'
+import { Base64 } from '../../utils/base64'
 
 function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
   if (uncompressedKey.length !== 65) {
@@ -47,12 +47,9 @@ export class Secp256r1Verifier implements IVerifier {
       hash: 'SHA-256',
     }
 
-    if (!await webcrypto.subtle.verify(
-      verifyParams,
-      publicCryptoKey,
-      signatureBytes,
-      messageBytes
-    )) {
+    if (
+      !(await webcrypto.subtle.verify(verifyParams, publicCryptoKey, signatureBytes, messageBytes))
+    ) {
       throw 'invalid signature'
     }
   }

@@ -68,7 +68,7 @@ export default [
   
   // Test files configuration
   {
-    files: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
+    files: ['**/*.test.ts', '**/*.spec.ts', 'src/tests/**/*.ts'],
     rules: {
       // Relax some rules for test files
       '@typescript-eslint/no-explicit-any': 'warn',

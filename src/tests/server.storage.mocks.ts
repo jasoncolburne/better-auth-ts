@@ -1,11 +1,11 @@
 import {
   IHasher,
   INoncer,
-  IServerTimeLockStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
   IServerRecoveryHashStore,
-} from '../src/interfaces'
+  IServerTimeLockStore,
+} from '../interfaces'
 import { Noncer } from './crypto/nonce'
 import { Hasher } from './crypto/hash'
 
@@ -81,7 +81,6 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
       throw 'incorrect hash'
     }
   }
-
 }
 
 export class ServerAuthenticationNonceStore implements IServerAuthenticationNonceStore {
@@ -116,7 +115,7 @@ export class ServerAuthenticationNonceStore implements IServerAuthenticationNonc
 
     const now = new Date()
 
-    if (now > expiration) { 
+    if (now > expiration) {
       throw 'expired nonce'
     }
 
