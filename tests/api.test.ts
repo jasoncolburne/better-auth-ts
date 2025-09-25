@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { IHasher, INetwork, INoncer, IServerRecoveryHashStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
+import { INetwork, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
 import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
