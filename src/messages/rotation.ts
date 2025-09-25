@@ -6,7 +6,7 @@ interface IRotateAuthenticationKeyRequest {
     device: string
     identity: string
     publicKey: string
-    rotationDigest: string
+    rotationHash: string
   }
 }
 

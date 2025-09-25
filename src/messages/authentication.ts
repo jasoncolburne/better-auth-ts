@@ -61,7 +61,7 @@ export class BeginAuthenticationResponse extends ServerResponse<IBeginAuthentica
 interface ICompleteAuthenticationRequest {
   access: {
     publicKey: string
-    rotationDigest: string
+    rotationHash: string
   }
   authentication: {
     device: string

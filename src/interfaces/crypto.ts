@@ -1,4 +1,4 @@
-export interface IDigester {
+export interface IHasher {
   sum(message: string): Promise<string>
 }
 

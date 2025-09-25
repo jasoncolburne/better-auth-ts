@@ -4,7 +4,7 @@ import { ServerResponse } from './response'
 interface IRefreshAccessTokenRequest {
   access: {
     publicKey: string
-    rotationDigest: string
+    rotationHash: string
     token: string
   }
 }

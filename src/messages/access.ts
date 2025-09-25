@@ -7,7 +7,7 @@ import { TextDecoder, TextEncoder } from 'util'
 export interface IAccessToken<T> {
   identity: string
   publicKey: string
-  rotationDigest: string
+  rotationHash: string
   issuedAt: string
   expiry: string
   refreshExpiry: string
@@ -18,7 +18,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
     public identity: string,
     public publicKey: string,
-    public rotationDigest: string,
+    public rotationHash: string,
     public issuedAt: string,
     public expiry: string,
     public refreshExpiry: string,
@@ -43,9 +43,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
     const json = JSON.parse(tokenString)
     const result = new AccessToken<T>(
-      json.accountId,
+      json.identity,
       json.publicKey,
-      json.rotationDigest,
+      json.rotationHash,
       json.issuedAt,
       json.expiry,
       json.refreshExpiry,
@@ -59,9 +59,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
   composePayload(): string {
     return JSON.stringify({
-      accountId: this.identity,
+      identity: this.identity,
       publicKey: this.publicKey,
-      rotationDigest: this.rotationDigest,
+      rotationHash: this.rotationHash,
       issuedAt: this.issuedAt,
       expiry: this.expiry,
       refreshExpiry: this.refreshExpiry,

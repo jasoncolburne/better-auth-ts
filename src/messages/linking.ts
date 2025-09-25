@@ -8,7 +8,7 @@ interface ILinkContainer {
       device: string
       identity: string
       publicKey: string
-      rotationDigest: string
+      rotationHash: string
     }
   }
   signature?: string
@@ -21,7 +21,7 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
         device: string
         identity: string
         publicKey: string
-        rotationDigest: string
+        rotationHash: string
       }
     }
   ) {

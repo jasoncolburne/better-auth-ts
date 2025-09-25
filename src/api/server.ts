@@ -1,9 +1,9 @@
 import {
-  IDigester,
+  IHasher,
   INoncer,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
-  IServerRecoveryDigestStore,
+  IServerRecoveryHashStore,
   IServerTimeLockStore,
   ISigningKey,
   IVerificationKey,
@@ -33,7 +33,7 @@ export class BetterAuthServer {
   constructor(
     private readonly args: {
       crypto: {
-        digester: IDigester
+        hasher: IHasher
         keyPairs: {
           response: ISigningKey
           access: ISigningKey
@@ -47,23 +47,23 @@ export class BetterAuthServer {
       }
       store: {
         access: {
-          keyDigest: IServerTimeLockStore
+          keyHash: IServerTimeLockStore
         }
         authentication: {
           key: IServerAuthenticationKeyStore
           nonce: IServerAuthenticationNonceStore
         }
         recovery: {
-          key: IServerRecoveryDigestStore
+          key: IServerRecoveryHashStore
         }
       }
     }
   ) {}
 
   // we fetch this every time since the keypair implementation may rotate behind the scenes
-  private async responseKeyDigest(): Promise<string> {
+  private async responseKeyHash(): Promise<string> {
     const responsePublicKey = await this.args.crypto.keyPairs.response.public()
-    return await this.args.crypto.digester.sum(responsePublicKey)
+    return await this.args.crypto.hasher.sum(responsePublicKey)
   }
 
   // account creation
@@ -83,19 +83,19 @@ export class BetterAuthServer {
 
     await this.args.store.recovery.key.register(
       identity,
-      request.payload.request.authentication.recoveryDigest
+      request.payload.request.authentication.recoveryHash
     )
 
     await this.args.store.authentication.key.register(
       identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationDigest
+      request.payload.request.authentication.rotationHash
     )
 
     const response = new CreationResponse(
       {},
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 
@@ -141,12 +141,12 @@ export class BetterAuthServer {
       linkContainer.payload.authentication.identity,
       linkContainer.payload.authentication.device,
       linkContainer.payload.authentication.publicKey,
-      linkContainer.payload.authentication.rotationDigest
+      linkContainer.payload.authentication.rotationHash
     )
 
     const response = new LinkDeviceResponse(
       {},
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 
@@ -172,13 +172,13 @@ export class BetterAuthServer {
       request.payload.request.authentication.identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationDigest
+      request.payload.request.authentication.rotationHash
     )
 
     // this is replayable, and should be fixed but making it not fixed
     const response = new RotateAuthenticationKeyResponse(
       {},
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 
@@ -202,7 +202,7 @@ export class BetterAuthServer {
           nonce: nonce,
         },
       },
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 
@@ -213,12 +213,12 @@ export class BetterAuthServer {
 
   async completeAuthentication<T>(message: string, attributes: T): Promise<string> {
     const request = CompleteAuthenticationRequest.parse(message)
-    const accountId = await this.args.store.authentication.nonce.validate(
+    const identity = await this.args.store.authentication.nonce.validate(
       request.payload.request.authentication.nonce
     )
 
     const authenticationPublicKey = await this.args.store.authentication.key.public(
-      accountId,
+      identity,
       request.payload.request.authentication.device
     )
     if (!(await request.verify(this.args.crypto.verifier, authenticationPublicKey))) {
@@ -235,9 +235,9 @@ export class BetterAuthServer {
     const refreshExpiry = rfc3339Nano(evenLater)
 
     const accessToken = new AccessToken<T>(
-      accountId,
+      identity,
       request.payload.request.access.publicKey,
-      request.payload.request.access.rotationDigest,
+      request.payload.request.access.rotationHash,
       issuedAt,
       expiry,
       refreshExpiry,
@@ -253,7 +253,7 @@ export class BetterAuthServer {
           token: token,
         },
       },
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 
@@ -278,9 +278,9 @@ export class BetterAuthServer {
       throw 'invalid token signature'
     }
 
-    const digest = await this.args.crypto.digester.sum(request.payload.request.access.publicKey)
-    if (digest !== token.rotationDigest) {
-      throw 'digest mismatch'
+    const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)
+    if (hash !== token.rotationHash) {
+      throw 'hash mismatch'
     }
 
     const now = new Date()
@@ -290,7 +290,7 @@ export class BetterAuthServer {
       throw 'refresh has expired'
     }
 
-    await this.args.store.access.keyDigest.reserve(digest)
+    await this.args.store.access.keyHash.reserve(hash)
 
     const later = new Date(now)
     later.setMinutes(later.getMinutes() + this.args.expiry.accessInMinutes)
@@ -300,7 +300,7 @@ export class BetterAuthServer {
     const accessToken = new AccessToken(
       token.identity,
       request.payload.request.access.publicKey,
-      request.payload.request.access.rotationDigest,
+      request.payload.request.access.rotationHash,
       issuedAt,
       expiry,
       token.refreshExpiry,
@@ -316,7 +316,7 @@ export class BetterAuthServer {
           token: serializedToken,
         },
       },
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 
@@ -336,24 +336,24 @@ export class BetterAuthServer {
       throw 'invalid signature'
     }
 
-    const digest = await this.args.crypto.digester.sum(
+    const hash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.recoveryKey
     )
     await this.args.store.recovery.key.validate(
       request.payload.request.authentication.identity,
-      digest
+      hash
     )
 
     await this.args.store.authentication.key.register(
       request.payload.request.authentication.identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationDigest
+      request.payload.request.authentication.rotationHash
     )
 
     const response = new RecoverAccountResponse(
       {},
-      await this.responseKeyDigest(),
+      await this.responseKeyHash(),
       request.payload.access.nonce
     )
 

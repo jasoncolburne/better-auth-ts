@@ -11,13 +11,13 @@ export interface IClientValueStore {
 }
 
 export interface IClientRotatingKeyStore {
-  // returns: [current public key, next public key digest]
+  // returns: [current public key, next public key hash]
   initialize(): Promise<[string, string]>
 
   // throw an exception if:
   // - no keys exist
   //
-  // returns: [current public key, next public key digest]
+  // returns: [current public key, next public key hash]
   rotate(): Promise<[string, string]>
 
   // returns: effectively, a handle to a signing key
@@ -32,7 +32,7 @@ export interface IServerAuthenticationNonceStore {
   // probably want to implement exponential backoff delay on generation, per account
   //
   // returns: nonce
-  generate(accountId: string): Promise<string>
+  generate(identity: string): Promise<string>
 
   // throw an exception if:
   // - nonce is not in the store
@@ -45,33 +45,28 @@ export interface IServerAuthenticationKeyStore {
   // throw an exception for:
   // - account id and device id combination exists
   register(
-    accountId: string,
+    identity: string,
     deviceId: string,
     current: string,
-    rotationDigest: string
+    rotationHash: string
   ): Promise<void>
 
   // throw exceptions for:
   // - account id and device id combination does not exist
-  // - previous next digest doesn't match current digest
-  rotate(
-    accountId: string,
-    deviceId: string,
-    current: string,
-    rotationDigest: string
-  ): Promise<void>
+  // - previous next hash doesn't match current hash
+  rotate(identity: string, deviceId: string, current: string, rotationHash: string): Promise<void>
 
   // returns: encoded key
-  public(accountId: string, deviceId: string): Promise<string>
+  public(identity: string, deviceId: string): Promise<string>
 }
 
-export interface IServerRecoveryDigestStore {
-  register(accountId: string, keyDigest: string): Promise<void>
+export interface IServerRecoveryHashStore {
+  register(identity: string, keyHash: string): Promise<void>
 
   // throw exceptions if:
   // - not found
-  // - digest does not match
-  validate(accountId: string, keyDigest: string): Promise<void>
+  // - hash does not match
+  validate(identity: string, keyHash: string): Promise<void>
 }
 
 export interface IServerTimeLockStore {

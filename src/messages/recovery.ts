@@ -7,7 +7,7 @@ interface IRecoverAccountRequest {
     identity: string
     publicKey: string
     recoveryKey: string
-    rotationDigest: string
+    rotationHash: string
   }
 }
 

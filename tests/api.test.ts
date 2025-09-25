@@ -1,14 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../src/api'
-import { IDigester, INetwork, INoncer, IServerRecoveryDigestStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
+import { IHasher, INetwork, INoncer, IServerRecoveryHashStore, ISigningKey, IVerificationKey, IVerifier } from '../src/interfaces'
 import {
   ServerTimeLockStore,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
-  ServerRecoveryDigestStore,
+  ServerRecoveryHashStore,
 } from './server.storage.mocks'
 import {
-  Digester,
+  Hasher,
   Noncer,
   Secp256r1,
   Secp256r1Verifier,
@@ -19,7 +19,7 @@ import {
 } from './client.storage.mocks'
 import { AccessRequest, ServerResponse } from '../src/messages'
 
-const DEBUG_LOGGING = false
+const DEBUG_LOGGING = true
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -160,15 +160,15 @@ async function createServer(args: {
   }
 }): Promise<BetterAuthServer> {
   const eccVerifier = new Secp256r1Verifier()
-  const digester = new Digester()
+  const hasher = new Hasher()
   const noncer = new Noncer()
 
-  const accessKeyDigestStore = new ServerTimeLockStore(60 * 60 * args.expiry.refreshLifetimeInHours)
+  const accessKeyHashStore = new ServerTimeLockStore(60 * 60 * args.expiry.refreshLifetimeInHours)
   const authenticationNonceStore = new ServerAuthenticationNonceStore(args.expiry.authenticationChallengeLifetimeInSeconds)
 
   const betterAuthServer = new BetterAuthServer({
     crypto: {
-      digester: digester,
+      hasher: hasher,
       keyPairs: {
         access: args.keys.accessSigner,
         response: args.keys.responseSigner,
@@ -183,14 +183,14 @@ async function createServer(args: {
     store: {
       access: {
         // the lock time is the refresh lifetime in seconds
-        keyDigest: accessKeyDigestStore
+        keyHash: accessKeyHashStore
       },
       authentication: {
         key: new ServerAuthenticationKeyStore(),
         nonce: authenticationNonceStore
       },
       recovery: {
-        key: new ServerRecoveryDigestStore()
+        key: new ServerRecoveryHashStore()
       },
     },
   })
@@ -207,7 +207,7 @@ async function createVerifier(args: {
   }
 }): Promise<AccessVerifier> {
   const eccVerifier = new Secp256r1Verifier()
-  const digester = new Digester()
+  const hasher = new Hasher()
   const noncer = new Noncer()
 
   const accessNonceStore = new ServerTimeLockStore(args.expiry.accessWindowInSeconds)
@@ -232,7 +232,7 @@ async function createVerifier(args: {
 describe('api', () => {
   it('completes auth flows', async () => {
     const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
+    const hasher = new Hasher()
     const noncer = new Noncer()
 
     const accessSigner = new Secp256r1()
@@ -280,7 +280,7 @@ describe('api', () => {
 
     const betterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: digester,
+        hasher: hasher,
         noncer: noncer,
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -304,16 +304,16 @@ describe('api', () => {
       },
     })
 
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    const accountId = await digester.sum(await noncer.generate128())
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(accountId, recoveryDigest)
+    await betterAuthClient.createAccount(identity, recoveryHash)
     await executeFlow(betterAuthClient, eccVerifier, responseSigner)
   })
 
   it('recovers from loss', async () => {
     const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
+    const hasher = new Hasher()
     const noncer = new Noncer()
 
     const accessSigner = new Secp256r1()
@@ -361,7 +361,7 @@ describe('api', () => {
 
     const betterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: digester,
+        hasher: hasher,
         noncer: noncer,
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -387,7 +387,7 @@ describe('api', () => {
 
     const recoveredBetterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: new Digester(),
+        hasher: new Hasher(),
         noncer: new Noncer(),
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -411,17 +411,17 @@ describe('api', () => {
       },
     })
 
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    const accountId = await digester.sum(await noncer.generate128())
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(accountId, recoveryDigest)
-    await recoveredBetterAuthClient.recoverAccount(accountId, recoverySigner)
+    await betterAuthClient.createAccount(identity, recoveryHash)
+    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseSigner)
   })
 
   it('links another device', async () => {
     const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
+    const hasher = new Hasher()
     const noncer = new Noncer()
 
     const accessSigner = new Secp256r1()
@@ -469,7 +469,7 @@ describe('api', () => {
 
     const betterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: digester,
+        hasher: hasher,
         noncer: noncer,
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -495,7 +495,7 @@ describe('api', () => {
 
     const linkedBetterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: new Digester(),
+        hasher: new Hasher(),
         noncer: new Noncer(),
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -519,13 +519,13 @@ describe('api', () => {
       },
     })
 
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    const accountId = await digester.sum(await noncer.generate128())
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(accountId, recoveryDigest)
+    await betterAuthClient.createAccount(identity, recoveryHash)
 
     // get link container from the new device
-    const linkContainer = await linkedBetterAuthClient.generateLinkContainer(accountId)
+    const linkContainer = await linkedBetterAuthClient.generateLinkContainer(identity)
     if (DEBUG_LOGGING) {
       console.log(linkContainer)
     }
@@ -537,7 +537,7 @@ describe('api', () => {
 
   it(('rejects expired authentication challenges'), async () => {
     const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
+    const hasher = new Hasher()
     const noncer = new Noncer()
 
     const accessSigner = new Secp256r1()
@@ -585,7 +585,7 @@ describe('api', () => {
 
     const betterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: digester,
+        hasher: hasher,
         noncer: noncer,
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -609,10 +609,10 @@ describe('api', () => {
       },
     })
 
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    const accountId = await digester.sum(await noncer.generate128())
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(accountId, recoveryDigest)
+    await betterAuthClient.createAccount(identity, recoveryHash)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -624,7 +624,7 @@ describe('api', () => {
 
   it(('rejects expired refresh tokens'), async () => {
     const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
+    const hasher = new Hasher()
     const noncer = new Noncer()
 
     const accessSigner = new Secp256r1()
@@ -672,7 +672,7 @@ describe('api', () => {
 
     const betterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: digester,
+        hasher: hasher,
         noncer: noncer,
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -696,10 +696,10 @@ describe('api', () => {
       },
     })
 
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    const accountId = await digester.sum(await noncer.generate128())
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(accountId, recoveryDigest)
+    await betterAuthClient.createAccount(identity, recoveryHash)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -711,7 +711,7 @@ describe('api', () => {
 
   it(('rejects expired access tokens'), async () => {
     const eccVerifier = new Secp256r1Verifier()
-    const digester = new Digester()
+    const hasher = new Hasher()
     const noncer = new Noncer()
 
     const accessSigner = new Secp256r1()
@@ -759,7 +759,7 @@ describe('api', () => {
 
     const betterAuthClient = new BetterAuthClient({
       crypto: {
-        digester: digester,
+        hasher: hasher,
         noncer: noncer,
         publicKey: {
           response: responseSigner, // this would only be a public key in production
@@ -783,10 +783,10 @@ describe('api', () => {
       },
     })
 
-    const recoveryDigest = await digester.sum(await recoverySigner.public())
-    const accountId = await digester.sum(await noncer.generate128())
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
 
-    await betterAuthClient.createAccount(accountId, recoveryDigest)
+    await betterAuthClient.createAccount(identity, recoveryHash)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)

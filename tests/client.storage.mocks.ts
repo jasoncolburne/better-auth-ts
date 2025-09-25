@@ -1,19 +1,19 @@
 import {
   IClientRotatingKeyStore,
   IClientValueStore,
-  IDigester,
+  IHasher,
   ISigningKey,
 } from '../src/interfaces'
-import { Digester } from './crypto/digest'
+import { Hasher } from './crypto/hash'
 import { Secp256r1 } from './crypto/secp256r1'
 
 export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
   private current?: ISigningKey
   private next?: ISigningKey
-  private readonly digester: IDigester
+  private readonly hasher: IHasher
 
   constructor() {
-    this.digester = new Digester()
+    this.hasher = new Hasher()
   }
 
   async initialize(): Promise<[string, string]> {
@@ -26,9 +26,9 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     this.current = current
     this.next = next
 
-    const rotationDigest = await this.digester.sum(await next.public())
+    const rotationHash = await this.hasher.sum(await next.public())
 
-    return [await current.public(), rotationDigest]
+    return [await current.public(), rotationHash]
   }
 
   async rotate(): Promise<[string, string]> {
@@ -42,9 +42,9 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     this.current = this.next
     this.next = next
 
-    const rotationDigest = await this.digester.sum(await next.public())
+    const rotationHash = await this.hasher.sum(await next.public())
 
-    return [await this.current.public(), rotationDigest]
+    return [await this.current.public(), rotationHash]
   }
 
   async signer(): Promise<ISigningKey> {

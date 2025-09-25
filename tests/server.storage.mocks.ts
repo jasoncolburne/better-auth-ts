@@ -1,55 +1,55 @@
 import {
-  IDigester,
+  IHasher,
   INoncer,
   IServerTimeLockStore,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
-  IServerRecoveryDigestStore,
+  IServerRecoveryHashStore,
 } from '../src/interfaces'
 import { Noncer } from './crypto/nonce'
-import { Digester } from './crypto/digest'
+import { Hasher } from './crypto/hash'
 
 export class ServerAuthenticationKeyStore implements IServerAuthenticationKeyStore {
   private readonly dataByToken: Map<string, [string, string]>
-  private readonly digester: IDigester
+  private readonly hasher: IHasher
 
   constructor() {
     this.dataByToken = new Map<string, [string, string]>()
-    this.digester = new Digester()
+    this.hasher = new Hasher()
   }
 
   async register(
-    accountId: string,
+    identity: string,
     deviceId: string,
     current: string,
-    rotationDigest: string
+    rotationHash: string
   ): Promise<void> {
-    this.dataByToken.set(accountId + deviceId, [current, rotationDigest])
+    this.dataByToken.set(identity + deviceId, [current, rotationHash])
   }
 
   async rotate(
-    accountId: string,
+    identity: string,
     deviceId: string,
     current: string,
-    rotationDigest: string
+    rotationHash: string
   ): Promise<void> {
-    const bundle = this.dataByToken.get(accountId + deviceId)
+    const bundle = this.dataByToken.get(identity + deviceId)
 
     if (typeof bundle === 'undefined') {
       throw 'not found'
     }
 
-    const cesrDigest = await this.digester.sum(current)
+    const cesrHash = await this.hasher.sum(current)
 
-    if (bundle[1] !== cesrDigest) {
+    if (bundle[1] !== cesrHash) {
       throw 'invalid forward secret'
     }
 
-    this.dataByToken.set(accountId + deviceId, [current, rotationDigest])
+    this.dataByToken.set(identity + deviceId, [current, rotationHash])
   }
 
-  async public(accountId: string, deviceId: string): Promise<string> {
-    const bundle = this.dataByToken.get(accountId + deviceId)
+  async public(identity: string, deviceId: string): Promise<string> {
+    const bundle = this.dataByToken.get(identity + deviceId)
 
     if (typeof bundle === 'undefined') {
       throw 'not found'
@@ -59,26 +59,26 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   }
 }
 
-export class ServerRecoveryDigestStore implements IServerRecoveryDigestStore {
+export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
   private readonly dataByAccount: Map<string, string>
 
   constructor() {
     this.dataByAccount = new Map<string, string>()
   }
 
-  async register(accountId: string, digest: string): Promise<void> {
-    this.dataByAccount.set(accountId, digest)
+  async register(identity: string, hash: string): Promise<void> {
+    this.dataByAccount.set(identity, hash)
   }
 
-  async validate(accountId: string, digest: string): Promise<void> {
-    const stored = this.dataByAccount.get(accountId)
+  async validate(identity: string, hash: string): Promise<void> {
+    const stored = this.dataByAccount.get(identity)
 
     if (typeof stored === 'undefined') {
       throw 'not found'
     }
 
-    if (stored !== digest) {
-      throw 'incorrect digest'
+    if (stored !== hash) {
+      throw 'incorrect hash'
     }
   }
 
@@ -95,22 +95,22 @@ export class ServerAuthenticationNonceStore implements IServerAuthenticationNonc
     this.noncer = new Noncer()
   }
 
-  async generate(accountId: string): Promise<string> {
+  async generate(identity: string): Promise<string> {
     const expiration = new Date()
     expiration.setSeconds(expiration.getSeconds() + this.lifetimeInSeconds)
 
     const nonce = await this.noncer.generate128()
-    this.dataByNonce.set(nonce, accountId)
+    this.dataByNonce.set(nonce, identity)
     this.nonceExpirations.set(nonce, expiration)
 
     return nonce
   }
 
   async validate(nonce: string): Promise<string> {
-    const accountId = this.dataByNonce.get(nonce)
+    const identity = this.dataByNonce.get(nonce)
     const expiration = this.nonceExpirations.get(nonce)
 
-    if (typeof accountId === 'undefined' || typeof expiration === 'undefined') {
+    if (typeof identity === 'undefined' || typeof expiration === 'undefined') {
       throw 'not found'
     }
 
@@ -120,7 +120,7 @@ export class ServerAuthenticationNonceStore implements IServerAuthenticationNonc
       throw 'expired nonce'
     }
 
-    return accountId
+    return identity
   }
 }
 
