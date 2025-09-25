@@ -3,14 +3,10 @@ import { ServerResponse } from './response'
 
 interface IRotateAuthenticationKeyRequest {
   authentication: {
-    publicKeys: {
-      current: string
-      nextDigest: string
-    }
-  }
-  identification: {
-    accountId: string
-    deviceId: string
+    device: string
+    identity: string
+    publicKey: string
+    rotationHash: string
   }
 }
 

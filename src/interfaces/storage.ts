@@ -11,13 +11,13 @@ export interface IClientValueStore {
 }
 
 export interface IClientRotatingKeyStore {
-  // returns: [current public key, next public key digest]
+  // returns: [current public key, next public key hash]
   initialize(): Promise<[string, string]>
 
   // throw an exception if:
   // - no keys exist
   //
-  // returns: [current public key, next public key digest]
+  // returns: [current public key, next public key hash]
   rotate(): Promise<[string, string]>
 
   // returns: effectively, a handle to a signing key
@@ -32,7 +32,7 @@ export interface IServerAuthenticationNonceStore {
   // probably want to implement exponential backoff delay on generation, per account
   //
   // returns: nonce
-  generate(accountId: string): Promise<string>
+  generate(identity: string): Promise<string>
 
   // throw an exception if:
   // - nonce is not in the store
@@ -41,45 +41,35 @@ export interface IServerAuthenticationNonceStore {
   validate(nonce: string): Promise<string>
 }
 
-export interface IServerCreationTokenStore {
-  lifetimeInMinutes: number
-
-  // returns: token
-  generate(): Promise<string>
-
-  // throw an exception if:
-  // - the token is not in the store
-  // - the token is more than `lifetimeInMinutes` minutes old
-  //
-  // returns: account id
-  validate(token: string): Promise<string>
-
-  // throw an exception if:
-  // - the token is not in the store
-  invalidate(token: string): Promise<void>
-}
-
 export interface IServerAuthenticationKeyStore {
-  // throw an exception for:
+  // throw exceptions for:
+  // - identity exists bool set and identity is not found in data store
+  // - identity exists bool unset and identity is found in data store
   // - account id and device id combination exists
-  register(accountId: string, deviceId: string, current: string, nextDigest: string): Promise<void>
+  register(
+    identity: string,
+    device: string,
+    current: string,
+    rotationHash: string,
+    existingIdentity: boolean
+  ): Promise<void>
 
   // throw exceptions for:
   // - account id and device id combination does not exist
-  // - previous next digest doesn't match current digest
-  rotate(accountId: string, deviceId: string, current: string, nextDigest: string): Promise<void>
+  // - previous next hash doesn't match current hash
+  rotate(identity: string, device: string, current: string, rotationHash: string): Promise<void>
 
   // returns: encoded key
-  public(accountId: string, deviceId: string): Promise<string>
+  public(identity: string, device: string): Promise<string>
 }
 
-export interface IServerRecoveryKeyDigestStore {
-  register(accountId: string, keyDigest: string): Promise<void>
+export interface IServerRecoveryHashStore {
+  register(identity: string, keyHash: string): Promise<void>
 
   // throw exceptions if:
   // - not found
-  // - digest does not match
-  validate(accountId: string, keyDigest: string): Promise<void>
+  // - hash does not match
+  validate(identity: string, keyHash: string): Promise<void>
 }
 
 export interface IServerTimeLockStore {

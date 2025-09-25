@@ -1,7 +1,7 @@
-import { ISigningKey, IVerifier } from '../../src/interfaces'
+import { ISigningKey, IVerifier } from '../../interfaces'
 import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
-import { Base64 } from '../../src/utils/base64'
+import { Base64 } from '../../utils/base64'
 
 function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
   if (uncompressedKey.length !== 65) {
@@ -26,7 +26,7 @@ function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
 }
 
 export class Secp256r1Verifier implements IVerifier {
-  async verify(message: string, signature: string, publicKey: string): Promise<boolean> {
+  async verify(message: string, signature: string, publicKey: string): Promise<void> {
     const params: webcrypto.EcKeyImportParams = {
       name: 'ECDSA',
       namedCurve: 'P-256',
@@ -47,12 +47,11 @@ export class Secp256r1Verifier implements IVerifier {
       hash: 'SHA-256',
     }
 
-    return await webcrypto.subtle.verify(
-      verifyParams,
-      publicCryptoKey,
-      signatureBytes,
-      messageBytes
-    )
+    if (
+      !(await webcrypto.subtle.verify(verifyParams, publicCryptoKey, signatureBytes, messageBytes))
+    ) {
+      throw 'invalid signature'
+    }
   }
 }
 
@@ -121,7 +120,7 @@ export class Secp256r1 implements ISigningKey {
     return this._verifier
   }
 
-  async verify(message: string, signature: string): Promise<boolean> {
-    return await this._verifier.verify(message, signature, await this.public())
+  async verify(message: string, signature: string): Promise<void> {
+    await this._verifier.verify(message, signature, await this.public())
   }
 }

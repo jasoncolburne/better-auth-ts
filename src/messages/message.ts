@@ -36,11 +36,11 @@ export abstract class SignableMessage extends SerializableMessage implements Sig
     this.signature = await signer.sign(this.composePayload())
   }
 
-  async verify(verifier: IVerifier, publicKey: string): Promise<boolean> {
+  async verify(verifier: IVerifier, publicKey: string): Promise<void> {
     if (this.signature === undefined) {
       throw 'null signature'
     }
 
-    return await verifier.verify(this.composePayload(), this.signature, publicKey)
+    await verifier.verify(this.composePayload(), this.signature, publicKey)
   }
 }

@@ -8,8 +8,8 @@ interface IBeginAuthenticationRequest {
       nonce: string
     }
     request: {
-      identification: {
-        accountId: string
+      authentication: {
+        identity: string
       }
     }
   }
@@ -25,8 +25,8 @@ export class BeginAuthenticationRequest
         nonce: string
       }
       request: {
-        identification: {
-          accountId: string
+        authentication: {
+          identity: string
         }
       }
     }
@@ -60,16 +60,12 @@ export class BeginAuthenticationResponse extends ServerResponse<IBeginAuthentica
 
 interface ICompleteAuthenticationRequest {
   access: {
-    publicKeys: {
-      current: string
-      nextDigest: string
-    }
+    publicKey: string
+    rotationHash: string
   }
   authentication: {
+    device: string
     nonce: string
-  }
-  identification: {
-    deviceId: string
   }
 }
 

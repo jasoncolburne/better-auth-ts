@@ -1,31 +1,13 @@
 import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
-interface ICreationContainer {
-  creation: {
-    token: string
-  }
-}
-
-export class CreationContainer extends ServerResponse<ICreationContainer> {
-  static parse(message: string): CreationContainer {
-    return ServerResponse._parse(message, CreationContainer)
-  }
-}
-
 export interface ICreationRequest {
   authentication: {
-    publicKeys: {
-      current: string
-      nextDigest: string
-    }
-  }
-  creation: {
-    token: string
-    recoveryKeyDigest: string
-  }
-  identification: {
-    deviceId: string
+    device: string
+    identity: string
+    publicKey: string
+    recoveryHash: string
+    rotationHash: string
   }
 }
 
@@ -35,11 +17,7 @@ export class CreationRequest extends ClientRequest<ICreationRequest> {
   }
 }
 
-interface ICreationResponse {
-  identification: {
-    accountId: string
-  }
-}
+interface ICreationResponse {}
 
 export class CreationResponse extends ServerResponse<ICreationResponse> {
   static parse(message: string): CreationResponse {

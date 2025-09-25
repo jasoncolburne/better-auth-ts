@@ -5,9 +5,9 @@ import { SignableMessage } from './message'
 import { TextDecoder, TextEncoder } from 'util'
 
 export interface IAccessToken<T> {
-  accountId: string
+  identity: string
   publicKey: string
-  nextDigest: string
+  rotationHash: string
   issuedAt: string
   expiry: string
   refreshExpiry: string
@@ -16,9 +16,9 @@ export interface IAccessToken<T> {
 
 export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
-    public accountId: string,
+    public identity: string,
     public publicKey: string,
-    public nextDigest: string,
+    public rotationHash: string,
     public issuedAt: string,
     public expiry: string,
     public refreshExpiry: string,
@@ -41,11 +41,11 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const decoder = new TextDecoder('utf-8')
     const tokenString = decoder.decode(tokenBytes)
 
-    const json = JSON.parse(tokenString)
+    const json = JSON.parse(tokenString) as IAccessToken<T>
     const result = new AccessToken<T>(
-      json.accountId,
+      json.identity,
       json.publicKey,
-      json.nextDigest,
+      json.rotationHash,
       json.issuedAt,
       json.expiry,
       json.refreshExpiry,
@@ -59,9 +59,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
   composePayload(): string {
     return JSON.stringify({
-      accountId: this.accountId,
+      identity: this.identity,
       publicKey: this.publicKey,
-      nextDigest: this.nextDigest,
+      rotationHash: this.rotationHash,
       issuedAt: this.issuedAt,
       expiry: this.expiry,
       refreshExpiry: this.refreshExpiry,
@@ -78,35 +78,31 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     return this.signature + token
   }
 
-  async verify(verifier: IVerifier, publicKey: string): Promise<boolean> {
-    if (!(await super.verify(verifier, publicKey))) {
-      return false
-    }
+  async verify(verifier: IVerifier, publicKey: string): Promise<void> {
+    await super.verify(verifier, publicKey)
 
     const now = new Date()
     const issuedAt = new Date(this.issuedAt)
     const expiry = new Date(this.expiry)
 
     if (now < issuedAt) {
-      return false
+      throw 'token from future'
     }
 
     if (now > expiry) {
-      return false
+      throw 'token expired'
     }
-
-    return true
   }
 }
 
 export interface IAccessRequest<T> {
   payload: {
     access: {
-      timestamp: string
       nonce: string
+      timestamp: string
+      token: string
     }
     request: T
-    token: string
   }
   signature?: string
 }
@@ -115,11 +111,11 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   constructor(
     public payload: {
       access: {
-        timestamp: string
         nonce: string
+        timestamp: string
+        token: string
       }
       request: T
-      token: string
     }
   ) {
     super()
@@ -130,16 +126,11 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
-  ): Promise<boolean> {
-    const accessToken = await AccessToken.parse<T>(this.payload.token)
+  ): Promise<string> {
+    const accessToken = await AccessToken.parse<T>(this.payload.access.token)
 
-    if (!(await accessToken.verify(tokenVerifier, serverAccessPublicKey))) {
-      return false
-    }
-
-    if (!(await super.verify(verifier, accessToken.publicKey))) {
-      return false
-    }
+    await accessToken.verify(tokenVerifier, serverAccessPublicKey)
+    await super.verify(verifier, accessToken.publicKey)
 
     const now = new Date()
     const accessTime = new Date(this.payload.access.timestamp)
@@ -147,16 +138,16 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds)
 
     if (now > expiry) {
-      return false
+      throw 'stale request'
     }
 
     if (now < accessTime) {
-      return false
+      throw 'request from future'
     }
 
     await nonceStore.reserve(this.payload.access.nonce)
 
-    return true
+    return accessToken.identity
   }
 
   static parse<T>(message: string): AccessRequest<T> {

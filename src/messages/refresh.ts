@@ -3,10 +3,8 @@ import { ServerResponse } from './response'
 
 interface IRefreshAccessTokenRequest {
   access: {
-    publicKeys: {
-      current: string
-      nextDigest: string
-    }
+    publicKey: string
+    rotationHash: string
     token: string
   }
 }
