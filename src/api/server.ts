@@ -70,14 +70,10 @@ export class BetterAuthServer {
 
   async createAccount(message: string): Promise<string> {
     const request = CreationRequest.parse(message)
-    if (
-      !(await request.verify(
-        this.args.crypto.verifier,
-        request.payload.request.authentication.publicKey
-      ))
-    ) {
-      throw 'invalid signature'
-    }
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
+    )
 
     const identity = request.payload.request.authentication.identity
 
@@ -114,9 +110,7 @@ export class BetterAuthServer {
       request.payload.request.authentication.device
     )
 
-    if (!(await request.verify(this.args.crypto.verifier, publicKey))) {
-      throw 'invalid signature'
-    }
+    await request.verify(this.args.crypto.verifier, publicKey)
 
     const linkContainer = new LinkContainer(request.payload.request.link.payload)
     linkContainer.signature = request.payload.request.link.signature
@@ -159,14 +153,10 @@ export class BetterAuthServer {
 
   async rotateAuthenticationKey(message: string): Promise<string> {
     const request = RotateAuthenticationKeyRequest.parse(message)
-    if (
-      !(await request.verify(
-        this.args.crypto.verifier,
-        request.payload.request.authentication.publicKey
-      ))
-    ) {
-      throw 'invalid signature'
-    }
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
+    )
 
     await this.args.store.authentication.key.rotate(
       request.payload.request.authentication.identity,
@@ -221,9 +211,7 @@ export class BetterAuthServer {
       identity,
       request.payload.request.authentication.device
     )
-    if (!(await request.verify(this.args.crypto.verifier, authenticationPublicKey))) {
-      throw 'invalid signature'
-    }
+    await request.verify(this.args.crypto.verifier, authenticationPublicKey)
 
     const now = new Date()
     const later = new Date(now)
@@ -266,17 +254,11 @@ export class BetterAuthServer {
 
   async refreshAccessToken<T>(message: string): Promise<string> {
     const request = RefreshAccessTokenRequest.parse(message)
-    if (
-      !(await request.verify(this.args.crypto.verifier, request.payload.request.access.publicKey))
-    ) {
-      throw 'invalid signature'
-    }
+    await request.verify(this.args.crypto.verifier, request.payload.request.access.publicKey)
 
     const tokenString = request.payload.request.access.token
     const token = await AccessToken.parse<T>(tokenString)
-    if (!token.verify(this.args.crypto.verifier, await this.args.crypto.keyPairs.access.public())) {
-      throw 'invalid token signature'
-    }
+    await token.verify(this.args.crypto.verifier, await this.args.crypto.keyPairs.access.public())
 
     const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)
     if (hash !== token.rotationHash) {
@@ -327,14 +309,10 @@ export class BetterAuthServer {
 
   async recoverAccount(message: string): Promise<string> {
     const request = RecoverAccountRequest.parse(message)
-    if (
-      !(await request.verify(
-        this.args.crypto.verifier,
-        request.payload.request.authentication.recoveryKey
-      ))
-    ) {
-      throw 'invalid signature'
-    }
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.recoveryKey
+    )
 
     const hash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.recoveryKey
@@ -380,7 +358,7 @@ export class AccessVerifier {
     }
   ) {}
 
-  async verify<T>(message: string): Promise<boolean> {
+  async verify<T>(message: string): Promise<string> {
     const request = AccessRequest.parse<T>(message)
     return await request._verify<T>(
       this.args.store.access.nonce,

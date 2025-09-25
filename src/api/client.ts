@@ -66,7 +66,7 @@ export class BetterAuthClient {
     return await this.args.store.identifier.device.get()
   }
 
-  private async verifyResponse(response: SignableMessage, publicKeyHash: string): Promise<boolean> {
+  private async verifyResponse(response: SignableMessage, publicKeyHash: string): Promise<void> {
     const publicKey = await this.args.crypto.publicKey.response.public()
     const hash = await this.args.crypto.hasher.sum(publicKey)
 
@@ -76,7 +76,7 @@ export class BetterAuthClient {
 
     const verifier = this.args.crypto.publicKey.response.verifier()
 
-    return await response.verify(verifier, publicKey)
+    await response.verify(verifier, publicKey)
   }
 
   async createAccount(identity: string, recoveryHash: string): Promise<void> {
@@ -103,9 +103,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest('/auth/creation/create', message)
 
     const response = CreationResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.responseKeyHash))) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(response, response.payload.access.responseKeyHash)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -161,9 +159,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest('/auth/linking/link', message)
 
     const response = LinkDeviceResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.responseKeyHash))) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(response, response.payload.access.responseKeyHash)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -192,9 +188,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest('/auth/rotation/rotate', message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.responseKeyHash))) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(response, response.payload.access.responseKeyHash)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -222,9 +216,7 @@ export class BetterAuthClient {
     )
 
     const startResponse = BeginAuthenticationResponse.parse(startReply)
-    if (!(await this.verifyResponse(startResponse, startResponse.payload.access.responseKeyHash))) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(startResponse, startResponse.payload.access.responseKeyHash)
 
     if (startResponse.payload.access.nonce !== startNonce) {
       throw 'incorrect nonce'
@@ -255,11 +247,7 @@ export class BetterAuthClient {
     )
 
     const finishResponse = CompleteAuthenticationResponse.parse(finishReply)
-    if (
-      !(await this.verifyResponse(finishResponse, finishResponse.payload.access.responseKeyHash))
-    ) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(finishResponse, finishResponse.payload.access.responseKeyHash)
 
     if (finishResponse.payload.access.nonce !== finishNonce) {
       throw 'incorrect nonce'
@@ -288,9 +276,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest('/auth/refresh/refresh', message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.responseKeyHash))) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(response, response.payload.access.responseKeyHash)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -322,9 +308,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest('/auth/recovery/recover', message)
 
     const response = RecoverAccountResponse.parse(reply)
-    if (!(await this.verifyResponse(response, response.payload.access.responseKeyHash))) {
-      throw 'invalid signature'
-    }
+    await this.verifyResponse(response, response.payload.access.responseKeyHash)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'

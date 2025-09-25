@@ -78,24 +78,20 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     return this.signature + token
   }
 
-  async verify(verifier: IVerifier, publicKey: string): Promise<boolean> {
-    if (!(await super.verify(verifier, publicKey))) {
-      return false
-    }
+  async verify(verifier: IVerifier, publicKey: string): Promise<void> {
+    await super.verify(verifier, publicKey)
 
     const now = new Date()
     const issuedAt = new Date(this.issuedAt)
     const expiry = new Date(this.expiry)
 
     if (now < issuedAt) {
-      return false
+      throw 'token from future'
     }
 
     if (now > expiry) {
-      return false
+      throw 'token expired'
     }
-
-    return true
   }
 }
 
@@ -130,16 +126,11 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
-  ): Promise<boolean> {
+  ): Promise<string> {
     const accessToken = await AccessToken.parse<T>(this.payload.access.token)
 
-    if (!(await accessToken.verify(tokenVerifier, serverAccessPublicKey))) {
-      return false
-    }
-
-    if (!(await super.verify(verifier, accessToken.publicKey))) {
-      return false
-    }
+    await accessToken.verify(tokenVerifier, serverAccessPublicKey)
+    await super.verify(verifier, accessToken.publicKey)
 
     const now = new Date()
     const accessTime = new Date(this.payload.access.timestamp)
@@ -147,16 +138,16 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds)
 
     if (now > expiry) {
-      return false
+      throw 'stale request'
     }
 
     if (now < accessTime) {
-      return false
+      throw 'request from future'
     }
 
     await nonceStore.reserve(this.payload.access.nonce)
 
-    return true
+    return accessToken.identity
   }
 
   static parse<T>(message: string): AccessRequest<T> {

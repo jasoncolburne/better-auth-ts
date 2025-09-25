@@ -9,7 +9,9 @@ export interface INoncer {
 
 export interface IVerifier {
   // this is typically just a verification algorithm
-  verify(message: string, signature: string, publicKey: string): Promise<boolean>
+  //
+  // throw exceptions when verification fails
+  verify(message: string, signature: string, publicKey: string): Promise<void>
 }
 
 export interface IVerificationKey {
@@ -20,7 +22,9 @@ export interface IVerificationKey {
   verifier(): IVerifier
 
   // verifies using the verifier and public key, this ia a convenience method
-  verify(message: string, signature: string): Promise<boolean>
+  //
+  // throw exceptions when verification fails
+  verify(message: string, signature: string): Promise<void>
 }
 
 export interface ISigningKey extends IVerificationKey {

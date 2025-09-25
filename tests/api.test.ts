@@ -85,8 +85,18 @@ class MockNetworkServer implements INetwork {
       case '/auth/refresh/refresh':
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
-        if (!(await this.accessVerifier.verify<IFakeRequest>(message))) {
-          throw 'access denied'
+        const accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
+
+        if (typeof accessIdentity === 'undefined') {
+          throw 'null identity'
+        }
+
+        if (!accessIdentity.startsWith('E')) {
+          throw 'unexpceted identity format'
+        }
+
+        if (accessIdentity.length != 44) {
+          throw 'unexpected identity length'
         }
 
         return await this.respondToAccessRequest(message)
@@ -136,9 +146,7 @@ async function testAccess(
     const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
     const response = FakeResponse.parse(reply)
 
-    if (!(await response.verify(eccVerifier, await responseSigner.public()))) {
-      throw 'invalid signature'
-    }
+    await response.verify(eccVerifier, await responseSigner.public())
 
     if (
       response.payload.response.wasFoo !== 'bar' ||
@@ -792,7 +800,7 @@ describe('api', () => {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
       throw 'unexpected failure'
     } catch(e: unknown) {
-      expect(e).toBe('access denied')
+      expect(e).toBe('token expired')
     }
   })
 })
