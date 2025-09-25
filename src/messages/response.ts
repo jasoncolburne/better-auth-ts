@@ -36,7 +36,7 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
     message: string,
     constructor: new (response: T, publicKeyHash: string, nonce: string) => U
   ): ServerResponse<T> {
-    const json = JSON.parse(message)
+    const json = JSON.parse(message) as IServerResponse<T>
     const result = new constructor(
       json.payload.response,
       json.payload.access.responseKeyHash,

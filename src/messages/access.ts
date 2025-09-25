@@ -41,7 +41,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const decoder = new TextDecoder('utf-8')
     const tokenString = decoder.decode(tokenBytes)
 
-    const json = JSON.parse(tokenString)
+    const json = JSON.parse(tokenString) as IAccessToken<T>
     const result = new AccessToken<T>(
       json.identity,
       json.publicKey,
