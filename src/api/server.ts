@@ -86,7 +86,8 @@ export class BetterAuthServer {
       identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationHash
+      request.payload.request.authentication.rotationHash,
+      false
     )
 
     const response = new CreationResponse(
@@ -135,7 +136,8 @@ export class BetterAuthServer {
       linkContainer.payload.authentication.identity,
       linkContainer.payload.authentication.device,
       linkContainer.payload.authentication.publicKey,
-      linkContainer.payload.authentication.rotationHash
+      linkContainer.payload.authentication.rotationHash,
+      true
     )
 
     const response = new LinkDeviceResponse(
@@ -326,7 +328,8 @@ export class BetterAuthServer {
       request.payload.request.authentication.identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationHash
+      request.payload.request.authentication.rotationHash,
+      true
     )
 
     const response = new RecoverAccountResponse(

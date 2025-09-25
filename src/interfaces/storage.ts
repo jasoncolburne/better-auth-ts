@@ -44,7 +44,13 @@ export interface IServerAuthenticationNonceStore {
 export interface IServerAuthenticationKeyStore {
   // throw an exception for:
   // - account id and device id combination exists
-  register(identity: string, device: string, current: string, rotationHash: string): Promise<void>
+  register(
+    identity: string,
+    device: string,
+    current: string,
+    rotationHash: string,
+    rejectExistingIdentity: boolean
+  ): Promise<void>
 
   // throw exceptions for:
   // - account id and device id combination does not exist

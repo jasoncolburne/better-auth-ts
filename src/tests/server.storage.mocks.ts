@@ -11,22 +11,30 @@ import { Hasher } from './crypto/hash'
 
 export class ServerAuthenticationKeyStore implements IServerAuthenticationKeyStore {
   private readonly dataByToken: Map<string, [string, string]>
-  private readonly identities: Set<string>
   private readonly hasher: IHasher
+  private readonly identities: Set<string>
 
   constructor() {
     this.dataByToken = new Map<string, [string, string]>()
     this.hasher = new Hasher()
+    this.identities = new Set<string>()
   }
 
   async register(
     identity: string,
     device: string,
     current: string,
-    rotationHash: string
+    rotationHash: string,
+    existingIdentity: boolean
   ): Promise<void> {
-    if (this.identities.has(identity)) {
+    const hasIdentity = this.identities.has(identity)
+
+    if (!existingIdentity && hasIdentity) {
       throw 'identity already registered'
+    }
+
+    if (existingIdentity && !hasIdentity) {
+      throw 'identity not found'
     }
 
     this.identities.add(identity)
