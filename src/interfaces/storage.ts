@@ -46,7 +46,7 @@ export interface IServerAuthenticationKeyStore {
   // - account id and device id combination exists
   register(
     identity: string,
-    deviceId: string,
+    device: string,
     current: string,
     rotationHash: string
   ): Promise<void>
@@ -54,10 +54,10 @@ export interface IServerAuthenticationKeyStore {
   // throw exceptions for:
   // - account id and device id combination does not exist
   // - previous next hash doesn't match current hash
-  rotate(identity: string, deviceId: string, current: string, rotationHash: string): Promise<void>
+  rotate(identity: string, device: string, current: string, rotationHash: string): Promise<void>
 
   // returns: encoded key
-  public(identity: string, deviceId: string): Promise<string>
+  public(identity: string, device: string): Promise<string>
 }
 
 export interface IServerRecoveryHashStore {

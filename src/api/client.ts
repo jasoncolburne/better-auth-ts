@@ -62,7 +62,7 @@ export class BetterAuthClient {
     return await this.args.store.identifier.account.get()
   }
 
-  async deviceId(): Promise<string> {
+  async device(): Promise<string> {
     return await this.args.store.identifier.device.get()
   }
 
@@ -82,13 +82,13 @@ export class BetterAuthClient {
   async createAccount(identity: string, recoveryHash: string): Promise<void> {
     const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyHash] =
       await this.args.store.key.authentication.initialize()
-    const deviceId = await this.args.crypto.hasher.sum(currentAuthenticationPublicKey)
+    const device = await this.args.crypto.hasher.sum(currentAuthenticationPublicKey)
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new CreationRequest(
       {
         authentication: {
-          device: deviceId,
+          device: device,
           identity: identity,
           publicKey: currentAuthenticationPublicKey,
           recoveryHash: recoveryHash,
@@ -112,21 +112,21 @@ export class BetterAuthClient {
     }
 
     await this.args.store.identifier.account.store(identity)
-    await this.args.store.identifier.device.store(deviceId)
+    await this.args.store.identifier.device.store(device)
   }
 
   // happens on the new device
   // send account id by qr code or network from the existing device
   async generateLinkContainer(identity: string): Promise<string> {
     const [current, rotationHash] = await this.args.store.key.authentication.initialize()
-    const deviceId = await this.args.crypto.hasher.sum(current)
+    const device = await this.args.crypto.hasher.sum(current)
 
     await this.args.store.identifier.account.store(identity)
-    await this.args.store.identifier.device.store(deviceId)
+    await this.args.store.identifier.device.store(device)
 
     const linkContainer = new LinkContainer({
       authentication: {
-        device: deviceId,
+        device: device,
         identity: identity,
         publicKey: current,
         rotationHash: rotationHash,
@@ -301,13 +301,13 @@ export class BetterAuthClient {
 
   async recoverAccount(identity: string, recoveryKey: ISigningKey): Promise<void> {
     const [current, rotationHash] = await this.args.store.key.authentication.initialize()
-    const deviceId = await this.args.crypto.hasher.sum(current)
+    const device = await this.args.crypto.hasher.sum(current)
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new RecoverAccountRequest(
       {
         authentication: {
-          device: deviceId,
+          device: device,
           identity: identity,
           publicKey: current,
           recoveryKey: await recoveryKey.public(),
@@ -331,7 +331,7 @@ export class BetterAuthClient {
     }
 
     await this.args.store.identifier.account.store(identity)
-    await this.args.store.identifier.device.store(deviceId)
+    await this.args.store.identifier.device.store(device)
   }
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {

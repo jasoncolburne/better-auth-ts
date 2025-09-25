@@ -20,20 +20,20 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
 
   async register(
     identity: string,
-    deviceId: string,
+    device: string,
     current: string,
     rotationHash: string
   ): Promise<void> {
-    this.dataByToken.set(identity + deviceId, [current, rotationHash])
+    this.dataByToken.set(identity + device, [current, rotationHash])
   }
 
   async rotate(
     identity: string,
-    deviceId: string,
+    device: string,
     current: string,
     rotationHash: string
   ): Promise<void> {
-    const bundle = this.dataByToken.get(identity + deviceId)
+    const bundle = this.dataByToken.get(identity + device)
 
     if (typeof bundle === 'undefined') {
       throw 'not found'
@@ -45,11 +45,11 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'invalid forward secret'
     }
 
-    this.dataByToken.set(identity + deviceId, [current, rotationHash])
+    this.dataByToken.set(identity + device, [current, rotationHash])
   }
 
-  async public(identity: string, deviceId: string): Promise<string> {
-    const bundle = this.dataByToken.get(identity + deviceId)
+  async public(identity: string, device: string): Promise<string> {
+    const bundle = this.dataByToken.get(identity + device)
 
     if (typeof bundle === 'undefined') {
       throw 'not found'
