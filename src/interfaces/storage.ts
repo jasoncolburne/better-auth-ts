@@ -42,14 +42,16 @@ export interface IServerAuthenticationNonceStore {
 }
 
 export interface IServerAuthenticationKeyStore {
-  // throw an exception for:
+  // throw exceptions for:
+  // - identity exists bool set and identity is not found in data store
+  // - identity exists bool unset and identity is found in data store
   // - account id and device id combination exists
   register(
     identity: string,
     device: string,
     current: string,
     rotationHash: string,
-    rejectExistingIdentity: boolean
+    existingIdentity: boolean
   ): Promise<void>
 
   // throw exceptions for:

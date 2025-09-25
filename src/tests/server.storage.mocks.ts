@@ -37,6 +37,12 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'identity not found'
     }
 
+    const bundle = this.dataByToken.get(identity + device)
+
+    if (typeof bundle !== 'undefined') {
+      throw 'already exists'
+    }
+
     this.identities.add(identity)
     this.dataByToken.set(identity + device, [current, rotationHash])
   }
