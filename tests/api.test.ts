@@ -19,7 +19,7 @@ import {
 } from './client.storage.mocks'
 import { AccessRequest, ServerResponse } from '../src/messages'
 
-const DEBUG_LOGGING = true
+const DEBUG_LOGGING = false
 
 interface IMockAccessAttributes {
   permissionsByRole: object
