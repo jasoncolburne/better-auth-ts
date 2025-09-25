@@ -217,11 +217,13 @@ export class BetterAuthServer {
 
     const now = new Date()
     const later = new Date(now)
+    const evenLater = new Date(now)
+
     later.setMinutes(later.getMinutes() + this.args.expiry.accessInMinutes)
+    evenLater.setHours(evenLater.getHours() + this.args.expiry.refreshInHours)
+
     const issuedAt = rfc3339Nano(now)
     const expiry = rfc3339Nano(later)
-    const evenLater = new Date(now)
-    evenLater.setHours(evenLater.getHours() + this.args.expiry.refreshInHours)
     const refreshExpiry = rfc3339Nano(evenLater)
 
     const accessToken = new AccessToken<T>(
