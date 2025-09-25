@@ -8,6 +8,8 @@ export interface INoncer {
 }
 
 export interface IVerifier {
+  signatureLength: number
+
   // this is typically just a verification algorithm
   //
   // throw exceptions when verification fails

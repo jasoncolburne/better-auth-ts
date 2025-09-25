@@ -26,6 +26,12 @@ function compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
 }
 
 export class Secp256r1Verifier implements IVerifier {
+  signatureLength: number
+
+  constructor() {
+    this.signatureLength = 88
+  }
+
   async verify(message: string, signature: string, publicKey: string): Promise<void> {
     const params: webcrypto.EcKeyImportParams = {
       name: 'ECDSA',

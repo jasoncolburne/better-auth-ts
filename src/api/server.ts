@@ -261,7 +261,10 @@ export class BetterAuthServer {
     await request.verify(this.args.crypto.verifier, request.payload.request.access.publicKey)
 
     const tokenString = request.payload.request.access.token
-    const token = await AccessToken.parse<T>(tokenString)
+    const token = await AccessToken.parse<T>(
+      tokenString,
+      this.args.crypto.keyPairs.access.verifier().signatureLength
+    )
     await token.verify(this.args.crypto.verifier, await this.args.crypto.keyPairs.access.public())
 
     const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)

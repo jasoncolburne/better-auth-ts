@@ -27,9 +27,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     super()
   }
 
-  static async parse<T>(message: string): Promise<AccessToken<T>> {
-    const signature = message.substring(0, 88)
-    let rest = message.substring(88)
+  static async parse<T>(message: string, publicKeyLength: number): Promise<AccessToken<T>> {
+    const signature = message.substring(0, publicKeyLength)
+    let rest = message.substring(publicKeyLength)
 
     while (rest.length % 4 !== 0) {
       rest += '='
@@ -127,7 +127,10 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string
   ): Promise<string> {
-    const accessToken = await AccessToken.parse<T>(this.payload.access.token)
+    const accessToken = await AccessToken.parse<T>(
+      this.payload.access.token,
+      tokenVerifier.signatureLength
+    )
 
     await accessToken.verify(tokenVerifier, serverAccessPublicKey)
     await super.verify(verifier, accessToken.publicKey)
