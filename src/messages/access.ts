@@ -42,7 +42,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const tokenString = decoder.decode(tokenBytes)
 
     const json = JSON.parse(tokenString) as IAccessToken<T>
-    const result = new AccessToken<T>(
+    const token = new AccessToken<T>(
       json.identity,
       json.publicKey,
       json.rotationHash,
@@ -52,9 +52,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
       json.attributes
     )
 
-    result.signature = signature
+    token.signature = signature
 
-    return result
+    return token
   }
 
   composePayload(): string {

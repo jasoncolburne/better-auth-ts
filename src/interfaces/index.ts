@@ -1,3 +1,4 @@
 export * from './crypto'
 export * from './storage'
 export * from './io'
+export * from './paths'
