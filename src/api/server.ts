@@ -62,7 +62,7 @@ export class BetterAuthServer {
           nonce: IServerAuthenticationNonceStore
         }
         recovery: {
-          key: IServerRecoveryHashStore
+          hash: IServerRecoveryHashStore
         }
       }
     }
@@ -100,7 +100,7 @@ export class BetterAuthServer {
       throw 'malformed device'
     }
 
-    await this.args.store.recovery.key.register(
+    await this.args.store.recovery.hash.register(
       identity,
       request.payload.request.authentication.recoveryHash
     )
@@ -352,7 +352,7 @@ export class BetterAuthServer {
     const hash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.recoveryKey
     )
-    await this.args.store.recovery.key.validate(
+    await this.args.store.recovery.hash.validate(
       request.payload.request.authentication.identity,
       hash
     )
