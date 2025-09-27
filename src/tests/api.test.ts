@@ -23,7 +23,7 @@ import {
 } from './implementation'
 import { AccessRequest, ServerResponse } from '../messages'
 
-const DEBUG_LOGGING = true
+const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
   create: '/auth/creation/create',
   link: '/auth/linking/link',
@@ -858,6 +858,107 @@ describe('api', () => {
       throw 'unexpected failure'
     } catch (e: unknown) {
       expect(e).toBe('token expired')
+    }
+  })
+
+  it('detects tampered access tokens', async () => {
+    const eccVerifier = new Secp256r1Verifier()
+    const hasher = new Hasher()
+    const noncer = new Noncer()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+    const recoverySigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+    await recoverySigner.generate()
+
+    const betterAuthServer = await createServer({
+      expiry: {
+        refreshLifetimeInHours: 12,
+        accessLifetimeInMinutes: 15,
+        authenticationChallengeLifetimeInSeconds: 60,
+      },
+      keys: {
+        accessSigner: accessSigner,
+        responseSigner: responseSigner,
+      },
+    })
+
+    const accessVerifier = await createVerifier({
+      expiry: {
+        accessWindowInSeconds: 30,
+      },
+      keys: {
+        // this would typically not be a signing key pair
+        //  instead, a verification key (the interface contract) is required
+        accessVerifier: accessSigner,
+      },
+    })
+
+    const map = {
+      admin: ['read', 'write'],
+    }
+    const attributes = new MockAccessAttributes(map)
+
+    const mockNetworkServer = new MockNetworkServer(
+      betterAuthServer,
+      accessVerifier,
+      responseSigner,
+      attributes,
+      authenticationPaths
+    )
+
+    const accessTokenStore = new ClientValueStore()
+    const betterAuthClient = new BetterAuthClient({
+      crypto: {
+        hasher: hasher,
+        noncer: noncer,
+        publicKey: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
+      io: {
+        network: mockNetworkServer,
+      },
+      paths: authenticationPaths,
+      store: {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+        },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
+        token: {
+          access: accessTokenStore,
+        },
+      },
+    })
+
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
+
+    await betterAuthClient.createAccount(identity, recoveryHash)
+
+    const tokenizer = new Tokenizer()
+    try {
+      await betterAuthClient.authenticate()
+      const token = await accessTokenStore.get()
+      const tokenString = await tokenizer.decode(token.substring(88))
+      const tamperedTokenString = tokenString.replace('"identity":"E', '"identity":"X')
+      const tamperedToken = await tokenizer.encode(tamperedTokenString)
+      await accessTokenStore.store(token.substring(0, 88) + tamperedToken)
+      await testAccess(betterAuthClient, eccVerifier, responseSigner)
+
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toBe('invalid signature')
     }
   })
 })
