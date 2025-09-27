@@ -5,9 +5,9 @@ import {
   IServerAuthenticationNonceStore,
   IServerRecoveryHashStore,
   IServerTimeLockStore,
-} from '../interfaces'
-import { Noncer } from './crypto/nonce'
-import { Hasher } from './crypto/hash'
+} from '../../../interfaces'
+import { Noncer } from '../crypto/nonce'
+import { Hasher } from '../crypto/hash'
 
 export class ServerAuthenticationKeyStore implements IServerAuthenticationKeyStore {
   private readonly dataByToken: Map<string, [string, string]>

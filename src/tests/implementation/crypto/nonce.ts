@@ -1,5 +1,5 @@
-import { INoncer } from '../../interfaces'
-import { Base64 } from '../../utils/base64'
+import { INoncer } from '../../../interfaces'
+import { Base64 } from '../../../utils/base64'
 import { getEntropy } from './entropy'
 
 export class Noncer implements INoncer {

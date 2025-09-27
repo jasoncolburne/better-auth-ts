@@ -1,4 +1,5 @@
 import {
+  IAuthenticationPaths,
   IClientRotatingKeyStore,
   IClientValueStore,
   IHasher,
@@ -32,6 +33,7 @@ import { rfc3339Nano } from '../utils'
 export class BetterAuthClient {
   constructor(
     private readonly args: {
+      paths: IAuthenticationPaths
       crypto: {
         hasher: IHasher
         noncer: INoncer
@@ -100,7 +102,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/creation/create', message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.create, message)
 
     const response = CreationResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -156,7 +158,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/linking/link', message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.link, message)
 
     const response = LinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -185,7 +187,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/rotation/rotate', message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate, message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -211,7 +213,7 @@ export class BetterAuthClient {
 
     const startMessage = await startRequest.serialize()
     const startReply = await this.args.io.network.sendRequest(
-      '/auth/authentication/start',
+      this.args.paths.startAuthentication,
       startMessage
     )
 
@@ -242,7 +244,7 @@ export class BetterAuthClient {
     await finishRequest.sign(await this.args.store.key.authentication.signer())
     const finishMessage = await finishRequest.serialize()
     const finishReply = await this.args.io.network.sendRequest(
-      '/auth/authentication/finish',
+      this.args.paths.finishAuthentication,
       finishMessage
     )
 
@@ -273,7 +275,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.access.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/refresh/refresh', message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.refresh, message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -305,7 +307,7 @@ export class BetterAuthClient {
 
     await request.sign(recoveryKey)
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest('/auth/recovery/recover', message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.recover, message)
 
     const response = RecoverAccountResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)

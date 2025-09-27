@@ -1,17 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
-import { INetwork, ISigningKey, IVerificationKey, IVerifier } from '../interfaces'
+import {
+  IAuthenticationPaths,
+  INetwork,
+  ISigningKey,
+  IVerificationKey,
+  IVerifier,
+} from '../interfaces'
 import {
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerRecoveryHashStore,
   ServerTimeLockStore,
-} from './server.storage.mocks'
-import { Hasher, Noncer, Secp256r1, Secp256r1Verifier } from './crypto'
-import { ClientRotatingKeyStore, ClientValueStore } from './client.storage.mocks'
+} from './implementation/storage/server'
+import { Hasher, Noncer, Secp256r1, Secp256r1Verifier } from './implementation/crypto'
+import { ClientRotatingKeyStore, ClientValueStore } from './implementation/storage/client'
 import { AccessRequest, ServerResponse } from '../messages'
 
 const DEBUG_LOGGING = false
+const authenticationPaths: IAuthenticationPaths = {
+  create: '/auth/creation/create',
+  link: '/auth/linking/link',
+  recover: '/auth/recovery/recover',
+  rotate: '/auth/rotation/rotate',
+  startAuthentication: '/auth/authentication/start',
+  finishAuthentication: '/auth/authentication/finish',
+  refresh: '/auth/refresh/refresh',
+}
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -26,7 +41,8 @@ class MockNetworkServer implements INetwork {
     private readonly betterAuthServer: BetterAuthServer,
     private readonly accessVerifier: AccessVerifier,
     private readonly responseSigner: ISigningKey,
-    private readonly attributes: IMockAccessAttributes
+    private readonly attributes: IMockAccessAttributes,
+    private readonly paths: IAuthenticationPaths
   ) {}
 
   async respondToAccessRequest(message: string): Promise<string> {
@@ -63,19 +79,19 @@ class MockNetworkServer implements INetwork {
     let accessIdentity: string
 
     switch (path) {
-      case '/auth/creation/create':
+      case this.paths.create:
         return await this.betterAuthServer.createAccount(message)
-      case '/auth/recovery/recover':
+      case this.paths.recover:
         return await this.betterAuthServer.recoverAccount(message)
-      case '/auth/linking/link':
+      case this.paths.link:
         return await this.betterAuthServer.linkDevice(message)
-      case '/auth/rotation/rotate':
+      case this.paths.rotate:
         return await this.betterAuthServer.rotateAuthenticationKey(message)
-      case '/auth/authentication/start':
+      case this.paths.startAuthentication:
         return await this.betterAuthServer.beginAuthentication(message)
-      case '/auth/authentication/finish':
+      case this.paths.finishAuthentication:
         return await this.betterAuthServer.completeAuthentication(message, this.attributes)
-      case '/auth/refresh/refresh':
+      case this.paths.refresh:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
         accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
@@ -272,10 +288,12 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      attributes
+      attributes,
+      authenticationPaths
     )
 
     const betterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -353,10 +371,12 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      attributes
+      attributes,
+      authenticationPaths
     )
 
     const betterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -383,6 +403,7 @@ describe('api', () => {
     })
 
     const recoveredBetterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: new Hasher(),
         noncer: new Noncer(),
@@ -461,10 +482,12 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      attributes
+      attributes,
+      authenticationPaths
     )
 
     const betterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -491,6 +514,7 @@ describe('api', () => {
     })
 
     const linkedBetterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: new Hasher(),
         noncer: new Noncer(),
@@ -577,10 +601,12 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      attributes
+      attributes,
+      authenticationPaths
     )
 
     const betterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -664,10 +690,12 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      attributes
+      attributes,
+      authenticationPaths
     )
 
     const betterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -751,10 +779,12 @@ describe('api', () => {
       betterAuthServer,
       accessVerifier,
       responseSigner,
-      attributes
+      attributes,
+      authenticationPaths
     )
 
     const betterAuthClient = new BetterAuthClient({
+      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
