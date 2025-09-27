@@ -1,4 +1,4 @@
-import { IServerTimeLockStore, ITimestamper, ITokenizer, IVerifier } from '../interfaces'
+import { IServerTimeLockStore, ITimestamper, ITokenEncoder, IVerifier } from '../interfaces'
 import { SignableMessage } from './message'
 
 export interface IAccessToken<T> {
@@ -27,12 +27,12 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   static async parse<T>(
     message: string,
     publicKeyLength: number,
-    tokenizer: ITokenizer
+    tokenEncoder: ITokenEncoder
   ): Promise<AccessToken<T>> {
     const signature = message.substring(0, publicKeyLength)
     let rest = message.substring(publicKeyLength)
 
-    const tokenString = await tokenizer.decode(rest)
+    const tokenString = await tokenEncoder.decode(rest)
 
     const json = JSON.parse(tokenString) as IAccessToken<T>
     const token = new AccessToken<T>(
@@ -62,12 +62,12 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     })
   }
 
-  async serializeToken(tokenizer: ITokenizer): Promise<string> {
+  async serializeToken(tokenEncoder: ITokenEncoder): Promise<string> {
     if (typeof this.signature === 'undefined') {
       throw 'missing signature'
     }
 
-    const token = await tokenizer.encode(this.composePayload())
+    const token = await tokenEncoder.encode(this.composePayload())
     return this.signature + token
   }
 
@@ -123,13 +123,13 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     verifier: IVerifier,
     tokenVerifier: IVerifier,
     serverAccessPublicKey: string,
-    tokenizer: ITokenizer,
+    tokenEncoder: ITokenEncoder,
     timestamper: ITimestamper
   ): Promise<string> {
     const accessToken = await AccessToken.parse<T>(
       this.payload.access.token,
       tokenVerifier.signatureLength,
-      tokenizer
+      tokenEncoder
     )
 
     await accessToken.verifyToken(tokenVerifier, serverAccessPublicKey, timestamper)
