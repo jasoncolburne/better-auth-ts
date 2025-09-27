@@ -338,7 +338,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(path, message)
     const response = ScannableResponse.parse(reply)
     if (response.payload.access.nonce !== accessRequest.payload.access.nonce) {
-      throw 'invalid reply nonce'
+      throw 'incorrect nonce'
     }
 
     return reply
