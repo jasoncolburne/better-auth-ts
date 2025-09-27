@@ -1,9 +1,9 @@
 import Pako from 'pako'
-import { ITokenizer } from '../../../interfaces'
+import { ITokenEncoder } from '../../../interfaces'
 import { Base64 } from './base64'
 import { TextDecoder, TextEncoder } from 'util'
 
-export class Tokenizer implements ITokenizer {
+export class TokenEncoder implements ITokenEncoder {
   async encode(object: string): Promise<string> {
     const encoder = new TextEncoder()
     const tokenBytes = encoder.encode(object)

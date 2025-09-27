@@ -4,7 +4,7 @@ export interface ITimestamper {
   now(): Date
 }
 
-export interface ITokenizer {
+export interface ITokenEncoder {
   encode(object: string): Promise<string>
   decode(rawToken: string): Promise<string>
 }

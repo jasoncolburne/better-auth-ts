@@ -20,7 +20,7 @@ import {
   ServerAuthenticationNonceStore,
   ServerRecoveryHashStore,
   ServerTimeLockStore,
-  Tokenizer,
+  TokenEncoder,
 } from './implementation'
 import { AccessRequest, ServerResponse } from '../messages'
 
@@ -223,7 +223,7 @@ async function createServer(args: {
     encoding: {
       identityVerifier: new IdentityVerifier(),
       timestamper: new Rfc3339Nano(),
-      tokenizer: new Tokenizer(),
+      tokenEncoder: new TokenEncoder(),
     },
     expiry: {
       accessInMinutes: args.expiry.accessLifetimeInMinutes,
@@ -266,7 +266,7 @@ async function createVerifier(args: {
       verifier: eccVerifier,
     },
     encoding: {
-      tokenizer: new Tokenizer(),
+      tokenEncoder: new TokenEncoder(),
       timestamper: new Rfc3339Nano(),
     },
     store: {
@@ -957,13 +957,13 @@ describe('api', () => {
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
 
-    const tokenizer = new Tokenizer()
+    const tokenEncoder = new TokenEncoder()
     try {
       await betterAuthClient.authenticate()
       const token = await accessTokenStore.get()
-      const tokenString = await tokenizer.decode(token.substring(88))
+      const tokenString = await tokenEncoder.decode(token.substring(88))
       const tamperedTokenString = tokenString.replace('"identity":"E', '"identity":"X')
-      const tamperedToken = await tokenizer.encode(tamperedTokenString)
+      const tamperedToken = await tokenEncoder.encode(tamperedTokenString)
       await accessTokenStore.store(token.substring(0, 88) + tamperedToken)
       await testAccess(betterAuthClient, eccVerifier, responseSigner)
 

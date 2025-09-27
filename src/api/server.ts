@@ -8,7 +8,7 @@ import {
   IServerTimeLockStore,
   ISigningKey,
   ITimestamper,
-  ITokenizer,
+  ITokenEncoder,
   IVerificationKey,
   IVerifier,
 } from '../interfaces'
@@ -47,7 +47,7 @@ export class BetterAuthServer {
       encoding: {
         identityVerifier: IIdentityVerifier
         timestamper: ITimestamper
-        tokenizer: ITokenizer
+        tokenEncoder: ITokenEncoder
       }
       expiry: {
         accessInMinutes: number
@@ -260,7 +260,7 @@ export class BetterAuthServer {
     )
 
     await accessToken.sign(this.args.crypto.keyPairs.access)
-    const token = await accessToken.serializeToken(this.args.encoding.tokenizer)
+    const token = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
     const response = new CompleteAuthenticationResponse(
       {
@@ -287,7 +287,7 @@ export class BetterAuthServer {
     const token = await AccessToken.parse<T>(
       tokenString,
       this.args.crypto.keyPairs.access.verifier().signatureLength,
-      this.args.encoding.tokenizer
+      this.args.encoding.tokenEncoder
     )
     await token.verifyToken(
       this.args.crypto.verifier,
@@ -325,7 +325,7 @@ export class BetterAuthServer {
     )
 
     await accessToken.sign(this.args.crypto.keyPairs.access)
-    const serializedToken = await accessToken.serializeToken(this.args.encoding.tokenizer)
+    const serializedToken = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
     const response = new RefreshAccessTokenResponse(
       {
@@ -387,7 +387,7 @@ export class AccessVerifier {
         verifier: IVerifier
       }
       encoding: {
-        tokenizer: ITokenizer
+        tokenEncoder: ITokenEncoder
         timestamper: ITimestamper
       }
       store: {
@@ -405,7 +405,7 @@ export class AccessVerifier {
       this.args.crypto.verifier,
       this.args.crypto.verifier,
       await this.args.crypto.publicKey.access.public(),
-      this.args.encoding.tokenizer,
+      this.args.encoding.tokenEncoder,
       this.args.encoding.timestamper
     )
   }

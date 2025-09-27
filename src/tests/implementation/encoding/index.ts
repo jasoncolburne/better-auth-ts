@@ -1,4 +1,4 @@
 export * from './base64'
-export * from './tokenizer'
+export * from './token_encoder'
 export * from './timestamper'
 export * from './identity'
