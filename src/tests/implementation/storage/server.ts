@@ -80,18 +80,18 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
 }
 
 export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
-  private readonly dataByAccount: Map<string, string>
+  private readonly dataByIdentity: Map<string, string>
 
   constructor() {
-    this.dataByAccount = new Map<string, string>()
+    this.dataByIdentity = new Map<string, string>()
   }
 
   async register(identity: string, hash: string): Promise<void> {
-    this.dataByAccount.set(identity, hash)
+    this.dataByIdentity.set(identity, hash)
   }
 
   async validate(identity: string, hash: string): Promise<void> {
-    const stored = this.dataByAccount.get(identity)
+    const stored = this.dataByIdentity.get(identity)
 
     if (typeof stored === 'undefined') {
       throw 'not found'
