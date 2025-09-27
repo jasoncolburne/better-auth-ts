@@ -51,8 +51,13 @@ class MockNetworkServer implements INetwork {
     private readonly paths: IAuthenticationPaths
   ) {}
 
-  async respondToAccessRequest(message: string): Promise<string> {
+  async respondToAccessRequest(message: string, nonce?: string): Promise<string> {
     const request = AccessRequest.parse<IFakeRequest>(message)
+
+    let replyNonce = request.payload.access.nonce
+    if (typeof nonce !== 'undefined') {
+      replyNonce = nonce
+    }
 
     const response = new FakeResponse(
       {
@@ -60,7 +65,7 @@ class MockNetworkServer implements INetwork {
         wasBar: request.payload.request.bar,
       },
       await this.responseSigner.public(),
-      request.payload.access.nonce
+      replyNonce
     )
 
     await response.sign(this.responseSigner)
@@ -107,7 +112,7 @@ class MockNetworkServer implements INetwork {
         }
 
         if (!accessIdentity.startsWith('E')) {
-          throw 'unexpceted identity format'
+          throw 'unexpected identity format'
         }
 
         if (accessIdentity.length !== 44) {
@@ -115,6 +120,22 @@ class MockNetworkServer implements INetwork {
         }
 
         return await this.respondToAccessRequest(message)
+      case '/bad/nonce':
+        accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
+
+        if (typeof accessIdentity === 'undefined') {
+          throw 'null identity'
+        }
+
+        if (!accessIdentity.startsWith('E')) {
+          throw 'unexpected identity format'
+        }
+
+        if (accessIdentity.length !== 44) {
+          throw 'unexpected identity length'
+        }
+
+        return await this.respondToAccessRequest(message, '0A0123456789abcdefghijkl')
       default:
         throw 'unexpected message'
     }
@@ -671,7 +692,7 @@ describe('api', () => {
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
-      throw 'unexpected failure'
+      throw 'expected a failure'
     } catch (e: unknown) {
       expect(e).toBe('expired nonce')
     }
@@ -763,7 +784,7 @@ describe('api', () => {
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
-      throw 'unexpected failure'
+      throw 'expected a failure'
     } catch (e: unknown) {
       expect(e).toBe('refresh has expired')
     }
@@ -855,7 +876,7 @@ describe('api', () => {
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
-      throw 'unexpected failure'
+      throw 'expected a failure'
     } catch (e: unknown) {
       expect(e).toBe('token expired')
     }
@@ -959,6 +980,104 @@ describe('api', () => {
       throw 'expected a failure'
     } catch (e: unknown) {
       expect(e).toBe('invalid signature')
+    }
+  })
+
+  it('detects mismatched access nonce', async () => {
+    const hasher = new Hasher()
+    const noncer = new Noncer()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+    const recoverySigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+    await recoverySigner.generate()
+
+    const betterAuthServer = await createServer({
+      expiry: {
+        refreshLifetimeInHours: 12,
+        accessLifetimeInMinutes: 15,
+        authenticationChallengeLifetimeInSeconds: 60,
+      },
+      keys: {
+        accessSigner: accessSigner,
+        responseSigner: responseSigner,
+      },
+    })
+
+    const accessVerifier = await createVerifier({
+      expiry: {
+        accessWindowInSeconds: 30,
+      },
+      keys: {
+        // this would typically not be a signing key pair
+        //  instead, a verification key (the interface contract) is required
+        accessVerifier: accessSigner,
+      },
+    })
+
+    const map = {
+      admin: ['read', 'write'],
+    }
+    const attributes = new MockAccessAttributes(map)
+
+    const mockNetworkServer = new MockNetworkServer(
+      betterAuthServer,
+      accessVerifier,
+      responseSigner,
+      attributes,
+      authenticationPaths
+    )
+
+    const accessTokenStore = new ClientValueStore()
+    const betterAuthClient = new BetterAuthClient({
+      crypto: {
+        hasher: hasher,
+        noncer: noncer,
+        publicKey: {
+          response: responseSigner, // this would only be a public key in production
+        },
+      },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
+      io: {
+        network: mockNetworkServer,
+      },
+      paths: authenticationPaths,
+      store: {
+        identifier: {
+          account: new ClientValueStore(),
+          device: new ClientValueStore(),
+        },
+        key: {
+          access: new ClientRotatingKeyStore(),
+          authentication: new ClientRotatingKeyStore(),
+        },
+        token: {
+          access: accessTokenStore,
+        },
+      },
+    })
+
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    const identity = await hasher.sum(await noncer.generate128())
+
+    await betterAuthClient.createAccount(identity, recoveryHash)
+
+    try {
+      await betterAuthClient.authenticate()
+      const message = {
+        foo: 'bar',
+        bar: 'foo',
+      }
+      await betterAuthClient.makeAccessRequest<IFakeRequest>('/bad/nonce', message)
+
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toBe('incorrect nonce')
     }
   })
 })
