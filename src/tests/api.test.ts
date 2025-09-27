@@ -344,8 +344,8 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
           device: new ClientValueStore(),
+          identity: new ClientValueStore(),
         },
         key: {
           access: new ClientRotatingKeyStore(),
@@ -430,7 +430,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -460,7 +460,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -547,7 +547,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -577,7 +577,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -672,7 +672,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -764,7 +764,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -856,7 +856,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -949,7 +949,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {
@@ -1049,7 +1049,7 @@ describe('api', () => {
       paths: authenticationPaths,
       store: {
         identifier: {
-          account: new ClientValueStore(),
+          identity: new ClientValueStore(),
           device: new ClientValueStore(),
         },
         key: {

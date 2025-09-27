@@ -29,7 +29,7 @@ export interface IClientRotatingKeyStore {
 export interface IServerAuthenticationNonceStore {
   lifetimeInSeconds: number
 
-  // probably want to implement exponential backoff delay on generation, per account
+  // probably want to implement exponential backoff delay on generation, per identity
   //
   // returns: nonce
   generate(identity: string): Promise<string>
@@ -37,7 +37,7 @@ export interface IServerAuthenticationNonceStore {
   // throw an exception if:
   // - nonce is not in the store
   //
-  // returns: account id
+  // returns: identity
   validate(nonce: string): Promise<string>
 }
 
@@ -45,7 +45,7 @@ export interface IServerAuthenticationKeyStore {
   // throw exceptions for:
   // - identity exists bool set and identity is not found in data store
   // - identity exists bool unset and identity is found in data store
-  // - account id and device id combination exists
+  // - identity and device combination exists
   register(
     identity: string,
     device: string,
@@ -55,7 +55,7 @@ export interface IServerAuthenticationKeyStore {
   ): Promise<void>
 
   // throw exceptions for:
-  // - account id and device id combination does not exist
+  // - identity and device combination does not exist
   // - previous next hash doesn't match current hash
   rotate(identity: string, device: string, current: string, rotationHash: string): Promise<void>
 

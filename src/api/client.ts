@@ -49,8 +49,8 @@ export class BetterAuthClient {
       paths: IAuthenticationPaths
       store: {
         identifier: {
-          account: IClientValueStore
           device: IClientValueStore
+          identity: IClientValueStore
         }
         key: {
           access: IClientRotatingKeyStore
@@ -64,7 +64,7 @@ export class BetterAuthClient {
   ) {}
 
   async identity(): Promise<string> {
-    return await this.args.store.identifier.account.get()
+    return await this.args.store.identifier.identity.get()
   }
 
   async device(): Promise<string> {
@@ -114,17 +114,17 @@ export class BetterAuthClient {
       throw 'incorrect nonce'
     }
 
-    await this.args.store.identifier.account.store(identity)
+    await this.args.store.identifier.identity.store(identity)
     await this.args.store.identifier.device.store(device)
   }
 
   // happens on the new device
-  // send account id by qr code or network from the existing device
+  // send identity by qr code or network from the existing device
   async generateLinkContainer(identity: string): Promise<string> {
     const [current, rotationHash] = await this.args.store.key.authentication.initialize()
     const device = await this.args.crypto.hasher.sum(current)
 
-    await this.args.store.identifier.account.store(identity)
+    await this.args.store.identifier.identity.store(identity)
     await this.args.store.identifier.device.store(device)
 
     const linkContainer = new LinkContainer({
@@ -152,7 +152,7 @@ export class BetterAuthClient {
       {
         authentication: {
           device: await this.args.store.identifier.device.get(),
-          identity: await this.args.store.identifier.account.get(),
+          identity: await this.args.store.identifier.identity.get(),
         },
         link: container,
       },
@@ -180,7 +180,7 @@ export class BetterAuthClient {
       {
         authentication: {
           device: await this.args.store.identifier.device.get(),
-          identity: await this.args.store.identifier.account.get(),
+          identity: await this.args.store.identifier.identity.get(),
           publicKey: currentAuthenticationPublicKey,
           rotationHash: nextAuthenticationPublicKeyHash,
         },
@@ -209,7 +209,7 @@ export class BetterAuthClient {
       },
       request: {
         authentication: {
-          identity: await this.args.store.identifier.account.get(),
+          identity: await this.args.store.identifier.identity.get(),
         },
       },
     })
@@ -319,7 +319,7 @@ export class BetterAuthClient {
       throw 'incorrect nonce'
     }
 
-    await this.args.store.identifier.account.store(identity)
+    await this.args.store.identifier.identity.store(identity)
     await this.args.store.identifier.device.store(device)
   }
 
