@@ -122,8 +122,8 @@ export class BetterAuthClient {
   // happens on the new device
   // send identity by qr code or network from the existing device
   async generateLinkContainer(identity: string): Promise<string> {
-    const [current, rotationHash] = await this.args.store.key.authentication.initialize()
-    const device = await this.args.crypto.hasher.sum(current)
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const device = await this.args.crypto.hasher.sum(publicKey)
 
     await this.args.store.identifier.identity.store(identity)
     await this.args.store.identifier.device.store(device)
@@ -132,7 +132,7 @@ export class BetterAuthClient {
       authentication: {
         device: device,
         identity: identity,
-        publicKey: current,
+        publicKey: publicKey,
         rotationHash: rotationHash,
       },
     })
@@ -173,8 +173,7 @@ export class BetterAuthClient {
   }
 
   async rotateAuthenticationKey(): Promise<void> {
-    const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyHash] =
-      await this.args.store.key.authentication.rotate()
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new RotateAuthenticationKeyRequest(
@@ -182,8 +181,8 @@ export class BetterAuthClient {
         authentication: {
           device: await this.args.store.identifier.device.get(),
           identity: await this.args.store.identifier.identity.get(),
-          publicKey: currentAuthenticationPublicKey,
-          rotationHash: nextAuthenticationPublicKeyHash,
+          publicKey: publicKey,
+          rotationHash: rotationHash,
         },
       },
       nonce
@@ -263,14 +262,14 @@ export class BetterAuthClient {
   }
 
   async refreshAccessToken(): Promise<void> {
-    const [currentKey, nextKeyHash] = await this.args.store.key.access.rotate()
+    const [publicKey, rotationHash] = await this.args.store.key.access.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new RefreshAccessTokenRequest(
       {
         access: {
-          publicKey: currentKey,
-          rotationHash: nextKeyHash,
+          publicKey: publicKey,
+          rotationHash: rotationHash,
           token: await this.args.store.token.access.get(),
         },
       },
