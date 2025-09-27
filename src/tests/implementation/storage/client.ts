@@ -16,7 +16,7 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     this.hasher = new Hasher()
   }
 
-  async initialize(): Promise<[string, string]> {
+  async initialize(extraData?: string): Promise<[string, string, string]> {
     const current = new Secp256r1()
     const next = new Secp256r1()
 
@@ -26,9 +26,16 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     this.current = current
     this.next = next
 
-    const rotationHash = await this.hasher.sum(await next.public())
+    let suffix = ''
+    if (typeof extraData !== 'undefined') {
+      suffix = extraData
+    }
 
-    return [await current.public(), rotationHash]
+    const publicKey = await current.public()
+    const rotationHash = await this.hasher.sum(await next.public())
+    const identity = await this.hasher.sum(publicKey + rotationHash + suffix)
+
+    return [identity, publicKey, rotationHash]
   }
 
   async rotate(): Promise<[string, string]> {

@@ -1,5 +1,6 @@
 import {
   IHasher,
+  IIdentityVerifier,
   INoncer,
   IServerAuthenticationKeyStore,
   IServerAuthenticationNonceStore,
@@ -44,6 +45,7 @@ export class BetterAuthServer {
         verifier: IVerifier
       }
       encoding: {
+        identityVerifier: IIdentityVerifier
         timestamper: ITimestamper
         tokenizer: ITokenizer
       }
@@ -83,15 +85,12 @@ export class BetterAuthServer {
 
     const identity = request.payload.request.authentication.identity
 
-    const identityHash = await this.args.crypto.hasher.sum(
-      request.payload.request.authentication.publicKey +
-        request.payload.request.authentication.rotationHash +
-        request.payload.request.authentication.recoveryHash
+    await this.args.encoding.identityVerifier.verify(
+      identity,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash,
+      request.payload.request.authentication.recoveryHash
     )
-
-    if (identityHash !== identity) {
-      throw 'malformed identity'
-    }
 
     const deviceHash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.publicKey

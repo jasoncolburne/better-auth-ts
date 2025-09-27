@@ -85,9 +85,9 @@ export class BetterAuthClient {
   }
 
   async createAccount(recoveryHash: string): Promise<void> {
-    const [publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const [identity, publicKey, rotationHash] =
+      await this.args.store.key.authentication.initialize(recoveryHash)
     const device = await this.args.crypto.hasher.sum(publicKey)
-    const identity = await this.args.crypto.hasher.sum(publicKey + rotationHash + recoveryHash)
 
     const nonce = await this.args.crypto.noncer.generate128()
 
@@ -122,7 +122,7 @@ export class BetterAuthClient {
   // happens on the new device
   // send identity by qr code or network from the existing device
   async generateLinkContainer(identity: string): Promise<string> {
-    const [publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const [, publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
     const device = await this.args.crypto.hasher.sum(publicKey)
 
     await this.args.store.identifier.identity.store(identity)
@@ -227,7 +227,7 @@ export class BetterAuthClient {
       throw 'incorrect nonce'
     }
 
-    const [currentKey, nextKeyHash] = await this.args.store.key.access.initialize()
+    const [, currentKey, nextKeyHash] = await this.args.store.key.access.initialize()
     const finishNonce = await this.args.crypto.noncer.generate128()
 
     const finishRequest = new CompleteAuthenticationRequest(
@@ -291,7 +291,7 @@ export class BetterAuthClient {
   }
 
   async recoverAccount(identity: string, recoveryKey: ISigningKey): Promise<void> {
-    const [current, rotationHash] = await this.args.store.key.authentication.initialize()
+    const [, current, rotationHash] = await this.args.store.key.authentication.initialize()
     const device = await this.args.crypto.hasher.sum(current)
     const nonce = await this.args.crypto.noncer.generate128()
 
