@@ -237,7 +237,7 @@ async function createServer(args: {
         nonce: authenticationNonceStore,
       },
       recovery: {
-        key: new ServerRecoveryHashStore(),
+        hash: new ServerRecoveryHashStore(),
       },
     },
   })
