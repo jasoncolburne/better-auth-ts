@@ -84,10 +84,11 @@ export class BetterAuthClient {
     await response.verify(verifier, publicKey)
   }
 
-  async createAccount(identity: string, recoveryHash: string): Promise<void> {
-    const [currentAuthenticationPublicKey, nextAuthenticationPublicKeyHash] =
-      await this.args.store.key.authentication.initialize()
-    const device = await this.args.crypto.hasher.sum(currentAuthenticationPublicKey)
+  async createAccount(recoveryHash: string): Promise<void> {
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const device = await this.args.crypto.hasher.sum(publicKey)
+    const identity = await this.args.crypto.hasher.sum(publicKey + rotationHash + recoveryHash)
+
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new CreationRequest(
@@ -95,9 +96,9 @@ export class BetterAuthClient {
         authentication: {
           device: device,
           identity: identity,
-          publicKey: currentAuthenticationPublicKey,
+          publicKey: publicKey,
           recoveryHash: recoveryHash,
-          rotationHash: nextAuthenticationPublicKeyHash,
+          rotationHash: rotationHash,
         },
       },
       nonce

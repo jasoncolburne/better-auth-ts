@@ -83,6 +83,24 @@ export class BetterAuthServer {
 
     const identity = request.payload.request.authentication.identity
 
+    const identityHash = await this.args.crypto.hasher.sum(
+      request.payload.request.authentication.publicKey +
+        request.payload.request.authentication.rotationHash +
+        request.payload.request.authentication.recoveryHash
+    )
+
+    if (identityHash !== identity) {
+      throw 'malformed identity'
+    }
+
+    const deviceHash = await this.args.crypto.hasher.sum(
+      request.payload.request.authentication.publicKey
+    )
+
+    if (deviceHash !== request.payload.request.authentication.device) {
+      throw 'malformed device'
+    }
+
     await this.args.store.recovery.key.register(
       identity,
       request.payload.request.authentication.recoveryHash

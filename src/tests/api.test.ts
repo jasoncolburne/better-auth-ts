@@ -358,9 +358,7 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
     await executeFlow(betterAuthClient, eccVerifier, responseSigner)
   })
 
@@ -474,9 +472,8 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
+    const identity = await betterAuthClient.identity()
     await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseSigner)
   })
@@ -591,9 +588,8 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
+    const identity = await betterAuthClient.identity()
 
     // get link container from the new device
     const linkContainer = await linkedBetterAuthClient.generateLinkContainer(identity)
@@ -686,9 +682,7 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -778,9 +772,7 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -870,9 +862,7 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
 
     try {
       await executeFlow(betterAuthClient, eccVerifier, responseSigner)
@@ -963,9 +953,7 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
 
     const tokenizer = new Tokenizer()
     try {
@@ -1063,9 +1051,7 @@ describe('api', () => {
     })
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
-    const identity = await hasher.sum(await noncer.generate128())
-
-    await betterAuthClient.createAccount(identity, recoveryHash)
+    await betterAuthClient.createAccount(recoveryHash)
 
     try {
       await betterAuthClient.authenticate()
