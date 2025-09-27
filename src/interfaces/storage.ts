@@ -11,13 +11,13 @@ export interface IClientValueStore {
 }
 
 export interface IClientRotatingKeyStore {
-  // returns: [current public key, next public key hash]
-  initialize(): Promise<[string, string]>
+  // returns: [identity, publicKey, rotationHash]
+  initialize(extraData?: string): Promise<[string, string, string]>
 
   // throw an exception if:
   // - no keys exist
   //
-  // returns: [current public key, next public key hash]
+  // returns: [publicKey, rotationHash]
   rotate(): Promise<[string, string]>
 
   // returns: effectively, a handle to a signing key
@@ -49,7 +49,7 @@ export interface IServerAuthenticationKeyStore {
   register(
     identity: string,
     device: string,
-    current: string,
+    publicKey: string,
     rotationHash: string,
     existingIdentity: boolean
   ): Promise<void>

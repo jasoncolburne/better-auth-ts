@@ -11,6 +11,7 @@ import {
   ClientRotatingKeyStore,
   ClientValueStore,
   Hasher,
+  IdentityVerifier,
   Noncer,
   Rfc3339Nano,
   Secp256r1,
@@ -220,6 +221,7 @@ async function createServer(args: {
       verifier: eccVerifier,
     },
     encoding: {
+      identityVerifier: new IdentityVerifier(),
       timestamper: new Rfc3339Nano(),
       tokenizer: new Tokenizer(),
     },
