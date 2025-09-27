@@ -8,16 +8,22 @@ import {
   IVerifier,
 } from '../interfaces'
 import {
+  ClientRotatingKeyStore,
+  ClientValueStore,
+  Hasher,
+  Noncer,
+  Rfc3339Nano,
+  Secp256r1,
+  Secp256r1Verifier,
   ServerAuthenticationKeyStore,
   ServerAuthenticationNonceStore,
   ServerRecoveryHashStore,
   ServerTimeLockStore,
-} from './implementation/storage/server'
-import { Hasher, Noncer, Secp256r1, Secp256r1Verifier } from './implementation/crypto'
-import { ClientRotatingKeyStore, ClientValueStore } from './implementation/storage/client'
+  Tokenizer,
+} from './implementation'
 import { AccessRequest, ServerResponse } from '../messages'
 
-const DEBUG_LOGGING = false
+const DEBUG_LOGGING = true
 const authenticationPaths: IAuthenticationPaths = {
   create: '/auth/creation/create',
   link: '/auth/linking/link',
@@ -192,6 +198,10 @@ async function createServer(args: {
       noncer: noncer,
       verifier: eccVerifier,
     },
+    encoding: {
+      timestamper: new Rfc3339Nano(),
+      tokenizer: new Tokenizer(),
+    },
     expiry: {
       accessInMinutes: args.expiry.accessLifetimeInMinutes,
       refreshInHours: args.expiry.refreshLifetimeInHours,
@@ -231,6 +241,10 @@ async function createVerifier(args: {
         access: args.keys.accessVerifier,
       },
       verifier: eccVerifier,
+    },
+    encoding: {
+      tokenizer: new Tokenizer(),
+      timestamper: new Rfc3339Nano(),
     },
     store: {
       access: {
@@ -293,7 +307,6 @@ describe('api', () => {
     )
 
     const betterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -301,9 +314,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -376,7 +393,6 @@ describe('api', () => {
     )
 
     const betterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -384,9 +400,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -403,7 +423,6 @@ describe('api', () => {
     })
 
     const recoveredBetterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: new Hasher(),
         noncer: new Noncer(),
@@ -411,9 +430,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -487,7 +510,6 @@ describe('api', () => {
     )
 
     const betterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -495,9 +517,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -514,7 +540,6 @@ describe('api', () => {
     })
 
     const linkedBetterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: new Hasher(),
         noncer: new Noncer(),
@@ -522,9 +547,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -606,7 +635,6 @@ describe('api', () => {
     )
 
     const betterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -614,9 +642,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -695,7 +727,6 @@ describe('api', () => {
     )
 
     const betterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -703,9 +734,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),
@@ -784,7 +819,6 @@ describe('api', () => {
     )
 
     const betterAuthClient = new BetterAuthClient({
-      paths: authenticationPaths,
       crypto: {
         hasher: hasher,
         noncer: noncer,
@@ -792,9 +826,13 @@ describe('api', () => {
           response: responseSigner, // this would only be a public key in production
         },
       },
+      encoding: {
+        timestamper: new Rfc3339Nano(),
+      },
       io: {
         network: mockNetworkServer,
       },
+      paths: authenticationPaths,
       store: {
         identifier: {
           account: new ClientValueStore(),

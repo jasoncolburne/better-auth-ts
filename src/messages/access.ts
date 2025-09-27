@@ -1,8 +1,5 @@
-import { IServerTimeLockStore, IVerifier } from '../interfaces'
-import { Base64, Gzip } from '../utils'
+import { IServerTimeLockStore, ITimestamper, ITokenizer, IVerifier } from '../interfaces'
 import { SignableMessage } from './message'
-
-import { TextDecoder, TextEncoder } from 'util'
 
 export interface IAccessToken<T> {
   identity: string
@@ -27,19 +24,15 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     super()
   }
 
-  static async parse<T>(message: string, publicKeyLength: number): Promise<AccessToken<T>> {
+  static async parse<T>(
+    message: string,
+    publicKeyLength: number,
+    tokenizer: ITokenizer
+  ): Promise<AccessToken<T>> {
     const signature = message.substring(0, publicKeyLength)
     let rest = message.substring(publicKeyLength)
 
-    while (rest.length % 4 !== 0) {
-      rest += '='
-    }
-
-    const compressedToken = Base64.decode(rest)
-    const tokenBytes = await Gzip.inflate(compressedToken)
-
-    const decoder = new TextDecoder('utf-8')
-    const tokenString = decoder.decode(tokenBytes)
+    const tokenString = await tokenizer.decode(rest)
 
     const json = JSON.parse(tokenString) as IAccessToken<T>
     const token = new AccessToken<T>(
@@ -69,21 +62,25 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     })
   }
 
-  async serialize(): Promise<string> {
-    const encoder = new TextEncoder()
-    const tokenBytes = encoder.encode(this.composePayload())
-    const compressedToken = await Gzip.deflate(tokenBytes)
-    const token = Base64.encode(compressedToken).replaceAll('=', '')
+  async serializeToken(tokenizer: ITokenizer): Promise<string> {
+    if (typeof this.signature === 'undefined') {
+      throw 'missing signature'
+    }
 
+    const token = await tokenizer.encode(this.composePayload())
     return this.signature + token
   }
 
-  async verify(verifier: IVerifier, publicKey: string): Promise<void> {
+  async verifyToken(
+    verifier: IVerifier,
+    publicKey: string,
+    timestamper: ITimestamper
+  ): Promise<void> {
     await super.verify(verifier, publicKey)
 
-    const now = new Date()
-    const issuedAt = new Date(this.issuedAt)
-    const expiry = new Date(this.expiry)
+    const now = timestamper.now()
+    const issuedAt = timestamper.parse(this.issuedAt)
+    const expiry = timestamper.parse(this.expiry)
 
     if (now < issuedAt) {
       throw 'token from future'
@@ -125,19 +122,22 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     nonceStore: IServerTimeLockStore,
     verifier: IVerifier,
     tokenVerifier: IVerifier,
-    serverAccessPublicKey: string
+    serverAccessPublicKey: string,
+    tokenizer: ITokenizer,
+    timestamper: ITimestamper
   ): Promise<string> {
     const accessToken = await AccessToken.parse<T>(
       this.payload.access.token,
-      tokenVerifier.signatureLength
+      tokenVerifier.signatureLength,
+      tokenizer
     )
 
-    await accessToken.verify(tokenVerifier, serverAccessPublicKey)
+    await accessToken.verifyToken(tokenVerifier, serverAccessPublicKey, timestamper)
     await super.verify(verifier, accessToken.publicKey)
 
-    const now = new Date()
-    const accessTime = new Date(this.payload.access.timestamp)
-    const expiry = new Date(accessTime)
+    const now = timestamper.now()
+    const accessTime = timestamper.parse(this.payload.access.timestamp)
+    const expiry = timestamper.parse(accessTime)
     expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds)
 
     if (now > expiry) {

@@ -6,6 +6,7 @@ import {
   INetwork,
   INoncer,
   ISigningKey,
+  ITimestamper,
   IVerificationKey,
 } from '../interfaces'
 import {
@@ -28,12 +29,10 @@ import {
   ScannableResponse,
   SignableMessage,
 } from '../messages'
-import { rfc3339Nano } from '../utils'
 
 export class BetterAuthClient {
   constructor(
     private readonly args: {
-      paths: IAuthenticationPaths
       crypto: {
         hasher: IHasher
         noncer: INoncer
@@ -41,9 +40,13 @@ export class BetterAuthClient {
           response: IVerificationKey
         }
       }
+      encoding: {
+        timestamper: ITimestamper
+      }
       io: {
         network: INetwork
       }
+      paths: IAuthenticationPaths
       store: {
         identifier: {
           account: IClientValueStore
@@ -324,7 +327,7 @@ export class BetterAuthClient {
     const accessRequest = new AccessRequest<T>({
       access: {
         nonce: await this.args.crypto.noncer.generate128(),
-        timestamp: rfc3339Nano(new Date()),
+        timestamp: this.args.encoding.timestamper.format(this.args.encoding.timestamper.now()),
         token: await this.args.store.token.access.get(),
       },
       request: request,

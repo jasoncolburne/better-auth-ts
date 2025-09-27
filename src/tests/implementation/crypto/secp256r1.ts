@@ -1,7 +1,7 @@
 import { ISigningKey, IVerifier } from '../../../interfaces'
 import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
-import { Base64 } from '../../../utils/base64'
+import { Base64 } from '../encoding/base64'
 
 export class Secp256r1Verifier implements IVerifier {
   signatureLength: number = 88

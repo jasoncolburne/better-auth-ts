@@ -6,6 +6,8 @@ import {
   IServerRecoveryHashStore,
   IServerTimeLockStore,
   ISigningKey,
+  ITimestamper,
+  ITokenizer,
   IVerificationKey,
   IVerifier,
 } from '../interfaces'
@@ -21,13 +23,13 @@ import {
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
+  RecoverAccountRequest,
+  RecoverAccountResponse,
   RefreshAccessTokenRequest,
   RefreshAccessTokenResponse,
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
 } from '../messages'
-import { RecoverAccountRequest, RecoverAccountResponse } from '../messages/recovery'
-import { rfc3339Nano } from '../utils'
 
 export class BetterAuthServer {
   constructor(
@@ -40,6 +42,10 @@ export class BetterAuthServer {
         }
         noncer: INoncer
         verifier: IVerifier
+      }
+      encoding: {
+        timestamper: ITimestamper
+        tokenizer: ITokenizer
       }
       expiry: {
         accessInMinutes: number
@@ -215,16 +221,16 @@ export class BetterAuthServer {
     )
     await request.verify(this.args.crypto.verifier, authenticationPublicKey)
 
-    const now = new Date()
-    const later = new Date(now)
-    const evenLater = new Date(now)
+    const now = this.args.encoding.timestamper.now()
+    const later = this.args.encoding.timestamper.parse(now)
+    const evenLater = this.args.encoding.timestamper.parse(now)
 
     later.setMinutes(later.getMinutes() + this.args.expiry.accessInMinutes)
     evenLater.setHours(evenLater.getHours() + this.args.expiry.refreshInHours)
 
-    const issuedAt = rfc3339Nano(now)
-    const expiry = rfc3339Nano(later)
-    const refreshExpiry = rfc3339Nano(evenLater)
+    const issuedAt = this.args.encoding.timestamper.format(now)
+    const expiry = this.args.encoding.timestamper.format(later)
+    const refreshExpiry = this.args.encoding.timestamper.format(evenLater)
 
     const accessToken = new AccessToken<T>(
       identity,
@@ -237,7 +243,7 @@ export class BetterAuthServer {
     )
 
     await accessToken.sign(this.args.crypto.keyPairs.access)
-    const token = await accessToken.serialize()
+    const token = await accessToken.serializeToken(this.args.encoding.tokenizer)
 
     const response = new CompleteAuthenticationResponse(
       {
@@ -263,17 +269,22 @@ export class BetterAuthServer {
     const tokenString = request.payload.request.access.token
     const token = await AccessToken.parse<T>(
       tokenString,
-      this.args.crypto.keyPairs.access.verifier().signatureLength
+      this.args.crypto.keyPairs.access.verifier().signatureLength,
+      this.args.encoding.tokenizer
     )
-    await token.verify(this.args.crypto.verifier, await this.args.crypto.keyPairs.access.public())
+    await token.verifyToken(
+      this.args.crypto.verifier,
+      await this.args.crypto.keyPairs.access.public(),
+      this.args.encoding.timestamper
+    )
 
     const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)
     if (hash !== token.rotationHash) {
       throw 'hash mismatch'
     }
 
-    const now = new Date()
-    const refreshExpiry = new Date(token.refreshExpiry)
+    const now = this.args.encoding.timestamper.now()
+    const refreshExpiry = this.args.encoding.timestamper.parse(token.refreshExpiry)
 
     if (now > refreshExpiry) {
       throw 'refresh has expired'
@@ -281,10 +292,10 @@ export class BetterAuthServer {
 
     await this.args.store.access.keyHash.reserve(hash)
 
-    const later = new Date(now)
+    const later = this.args.encoding.timestamper.parse(now)
     later.setMinutes(later.getMinutes() + this.args.expiry.accessInMinutes)
-    const issuedAt = rfc3339Nano(now)
-    const expiry = rfc3339Nano(later)
+    const issuedAt = this.args.encoding.timestamper.format(now)
+    const expiry = this.args.encoding.timestamper.format(later)
 
     const accessToken = new AccessToken(
       token.identity,
@@ -297,7 +308,7 @@ export class BetterAuthServer {
     )
 
     await accessToken.sign(this.args.crypto.keyPairs.access)
-    const serializedToken = await accessToken.serialize()
+    const serializedToken = await accessToken.serializeToken(this.args.encoding.tokenizer)
 
     const response = new RefreshAccessTokenResponse(
       {
@@ -358,6 +369,10 @@ export class AccessVerifier {
         }
         verifier: IVerifier
       }
+      encoding: {
+        tokenizer: ITokenizer
+        timestamper: ITimestamper
+      }
       store: {
         access: {
           nonce: IServerTimeLockStore
@@ -372,7 +387,9 @@ export class AccessVerifier {
       this.args.store.access.nonce,
       this.args.crypto.verifier,
       this.args.crypto.verifier,
-      await this.args.crypto.publicKey.access.public()
+      await this.args.crypto.publicKey.access.public(),
+      this.args.encoding.tokenizer,
+      this.args.encoding.timestamper
     )
   }
 }
