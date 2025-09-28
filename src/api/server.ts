@@ -37,7 +37,7 @@ export class BetterAuthServer {
     private readonly args: {
       crypto: {
         hasher: IHasher
-        keyPairs: {
+        keyPair: {
           response: ISigningKey
           access: ISigningKey
         }
@@ -70,7 +70,7 @@ export class BetterAuthServer {
 
   // we fetch this every time since the keypair implementation may rotate behind the scenes
   private async responseKeyHash(): Promise<string> {
-    const responsePublicKey = await this.args.crypto.keyPairs.response.public()
+    const responsePublicKey = await this.args.crypto.keyPair.response.public()
     return await this.args.crypto.hasher.sum(responsePublicKey)
   }
 
@@ -119,7 +119,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return await response.serialize()
   }
@@ -169,7 +169,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return response.serialize()
   }
@@ -197,7 +197,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return await response.serialize()
   }
@@ -221,7 +221,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return await response.serialize()
   }
@@ -259,7 +259,7 @@ export class BetterAuthServer {
       attributes
     )
 
-    await accessToken.sign(this.args.crypto.keyPairs.access)
+    await accessToken.sign(this.args.crypto.keyPair.access)
     const token = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
     const response = new CompleteAuthenticationResponse(
@@ -272,7 +272,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return await response.serialize()
   }
@@ -286,12 +286,12 @@ export class BetterAuthServer {
     const tokenString = request.payload.request.access.token
     const token = await AccessToken.parse<T>(
       tokenString,
-      this.args.crypto.keyPairs.access.verifier().signatureLength,
+      this.args.crypto.keyPair.access.verifier().signatureLength,
       this.args.encoding.tokenEncoder
     )
     await token.verifyToken(
       this.args.crypto.verifier,
-      await this.args.crypto.keyPairs.access.public(),
+      await this.args.crypto.keyPair.access.public(),
       this.args.encoding.timestamper
     )
 
@@ -324,7 +324,7 @@ export class BetterAuthServer {
       token.attributes
     )
 
-    await accessToken.sign(this.args.crypto.keyPairs.access)
+    await accessToken.sign(this.args.crypto.keyPair.access)
     const serializedToken = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
     const response = new RefreshAccessTokenResponse(
@@ -337,7 +337,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return await response.serialize()
   }
@@ -371,7 +371,7 @@ export class BetterAuthServer {
       request.payload.access.nonce
     )
 
-    await response.sign(this.args.crypto.keyPairs.response)
+    await response.sign(this.args.crypto.keyPair.response)
 
     return await response.serialize()
   }

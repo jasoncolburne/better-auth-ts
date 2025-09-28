@@ -213,7 +213,7 @@ async function createServer(args: {
   const betterAuthServer = new BetterAuthServer({
     crypto: {
       hasher: hasher,
-      keyPairs: {
+      keyPair: {
         access: args.keys.accessSigner,
         response: args.keys.responseSigner,
       },
