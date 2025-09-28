@@ -32,7 +32,7 @@ export class ClientRequest<T> extends SignableMessage implements IClientRequest<
 
   static _parse<T, U extends ClientRequest<T>>(
     message: string,
-    constructor: new (response: T, nonce: string) => U
+    constructor: new (request: T, nonce: string) => U
   ): ClientRequest<T> {
     const json = JSON.parse(message)
     const result = new constructor(json.payload.request, json.payload.access.nonce)
