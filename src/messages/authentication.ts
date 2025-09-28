@@ -41,7 +41,7 @@ export class BeginAuthenticationRequest
   }
 
   static parse(message: string): BeginAuthenticationRequest {
-    const json = JSON.parse(message)
+    const json = JSON.parse(message) as BeginAuthenticationRequest
     return new BeginAuthenticationRequest(json.payload)
   }
 }
