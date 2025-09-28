@@ -33,7 +33,7 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
   }
 
   static parse(message: string): LinkContainer {
-    const json = JSON.parse(message)
+    const json = JSON.parse(message) as LinkContainer
     const result = new LinkContainer(json.payload)
     result.signature = json.signature
 

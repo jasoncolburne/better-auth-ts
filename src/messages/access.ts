@@ -154,7 +154,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   }
 
   static parse<T>(message: string): AccessRequest<T> {
-    const json = JSON.parse(message)
+    const json = JSON.parse(message) as AccessRequest<T>
     const result = new AccessRequest<T>(json.payload)
     result.signature = json.signature
 
