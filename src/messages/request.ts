@@ -34,7 +34,7 @@ export class ClientRequest<T> extends SignableMessage implements IClientRequest<
     message: string,
     constructor: new (request: T, nonce: string) => U
   ): ClientRequest<T> {
-    const json = JSON.parse(message) as ClientRequest<T>
+    const json = JSON.parse(message) as IClientRequest<T>
     const result = new constructor(json.payload.request, json.payload.access.nonce)
     result.signature = json.signature
 
