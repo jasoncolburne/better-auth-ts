@@ -139,14 +139,10 @@ export class BetterAuthServer {
     const linkContainer = new LinkContainer(request.payload.request.link.payload)
     linkContainer.signature = request.payload.request.link.signature
 
-    if (
-      !linkContainer.verify(
-        this.args.crypto.verifier,
-        linkContainer.payload.authentication.publicKey
-      )
-    ) {
-      throw 'invalid signature'
-    }
+    await linkContainer.verify(
+      this.args.crypto.verifier,
+      linkContainer.payload.authentication.publicKey
+    )
 
     if (
       linkContainer.payload.authentication.identity !==
