@@ -204,7 +204,7 @@ export class BetterAuthServer {
 
   // authentication
 
-  async beginAuthentication(message: string): Promise<string> {
+  async startAuthentication(message: string): Promise<string> {
     const request = BeginAuthenticationRequest.parse(message)
 
     const nonce = await this.args.store.authentication.nonce.generate(
@@ -226,7 +226,7 @@ export class BetterAuthServer {
     return await response.serialize()
   }
 
-  async completeAuthentication<T>(message: string, attributes: T): Promise<string> {
+  async finishAuthentication<T>(message: string, attributes: T): Promise<string> {
     const request = CompleteAuthenticationRequest.parse(message)
     const identity = await this.args.store.authentication.nonce.validate(
       request.payload.request.authentication.nonce

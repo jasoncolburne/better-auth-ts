@@ -100,9 +100,9 @@ class MockNetworkServer implements INetwork {
       case this.paths.rotate:
         return await this.betterAuthServer.rotateAuthenticationKey(message)
       case this.paths.startAuthentication:
-        return await this.betterAuthServer.beginAuthentication(message)
+        return await this.betterAuthServer.startAuthentication(message)
       case this.paths.finishAuthentication:
-        return await this.betterAuthServer.completeAuthentication(message, this.attributes)
+        return await this.betterAuthServer.finishAuthentication(message, this.attributes)
       case this.paths.refresh:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
