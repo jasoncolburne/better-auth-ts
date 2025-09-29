@@ -87,6 +87,12 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
   }
 
   async register(identity: string, hash: string): Promise<void> {
+    const stored = this.dataByIdentity.get(identity)
+
+    if (typeof stored !== 'undefined') {
+      throw 'already exists'
+    }
+
     this.dataByIdentity.set(identity, hash)
   }
 

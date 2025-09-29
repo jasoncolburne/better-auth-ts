@@ -26,13 +26,19 @@ import { AccessRequest, ServerResponse } from '../messages'
 
 const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
-  create: '/auth/creation/create',
-  link: '/auth/linking/link',
-  recover: '/auth/recovery/recover',
-  rotate: '/auth/rotation/rotate',
-  startAuthentication: '/auth/authentication/start',
-  finishAuthentication: '/auth/authentication/finish',
-  refresh: '/auth/refresh/refresh',
+  register: {
+    create: '/register/create',
+    link: '/register/link',
+    recover: '/register/recover',
+  },
+  authenticate: {
+    start: '/authenticate/start',
+    finish: '/authenticate/finish',
+  },
+  rotate: {
+    authentication: '/rotate/authentication',
+    access: '/rotate/access',
+  },
 }
 
 interface IMockAccessAttributes {
@@ -92,19 +98,19 @@ class MockNetworkServer implements INetwork {
     let attributes: MockAccessAttributes
 
     switch (path) {
-      case this.paths.create:
+      case this.paths.register.create:
         return await this.betterAuthServer.createAccount(message)
-      case this.paths.recover:
+      case this.paths.register.recover:
         return await this.betterAuthServer.recoverAccount(message)
-      case this.paths.link:
+      case this.paths.register.link:
         return await this.betterAuthServer.linkDevice(message)
-      case this.paths.rotate:
+      case this.paths.rotate.authentication:
         return await this.betterAuthServer.rotateAuthenticationKey(message)
-      case this.paths.startAuthentication:
+      case this.paths.authenticate.start:
         return await this.betterAuthServer.startAuthentication(message)
-      case this.paths.finishAuthentication:
+      case this.paths.authenticate.finish:
         return await this.betterAuthServer.finishAuthentication(message, this.attributes)
-      case this.paths.refresh:
+      case this.paths.rotate.access:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
         ;[accessIdentity, attributes] = await this.accessVerifier.verify<
