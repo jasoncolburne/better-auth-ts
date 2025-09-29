@@ -89,6 +89,7 @@ class MockNetworkServer implements INetwork {
 
   async _sendRequest(path: string, message: string): Promise<string> {
     let accessIdentity: string
+    let attributes: MockAccessAttributes
 
     switch (path) {
       case this.paths.create:
@@ -106,7 +107,10 @@ class MockNetworkServer implements INetwork {
       case this.paths.refresh:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
       case '/foo/bar':
-        accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
+        ;[accessIdentity, attributes] = await this.accessVerifier.verify<
+          IFakeRequest,
+          IMockAccessAttributes
+        >(message)
 
         if (typeof accessIdentity === 'undefined') {
           throw 'null identity'
@@ -118,11 +122,18 @@ class MockNetworkServer implements INetwork {
 
         if (accessIdentity.length !== 44) {
           throw 'unexpected identity length'
+        }
+
+        if (JSON.stringify(attributes) !== JSON.stringify(this.attributes)) {
+          throw 'attributes do not match'
         }
 
         return await this.respondToAccessRequest(message)
       case '/bad/nonce':
-        accessIdentity = await this.accessVerifier.verify<IFakeRequest>(message)
+        ;[accessIdentity, attributes] = await this.accessVerifier.verify<
+          IFakeRequest,
+          IMockAccessAttributes
+        >(message)
 
         if (typeof accessIdentity === 'undefined') {
           throw 'null identity'
@@ -134,6 +145,10 @@ class MockNetworkServer implements INetwork {
 
         if (accessIdentity.length !== 44) {
           throw 'unexpected identity length'
+        }
+
+        if (JSON.stringify(attributes) !== JSON.stringify(this.attributes)) {
+          throw 'attributes do not match'
         }
 
         return await this.respondToAccessRequest(message, '0A0123456789abcdefghijkl')

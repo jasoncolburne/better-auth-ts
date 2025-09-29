@@ -11,12 +11,10 @@ import {
 } from '../interfaces'
 import {
   AccessRequest,
-  BeginAuthenticationRequest,
-  BeginAuthenticationResponse,
-  CompleteAuthenticationRequest,
-  CompleteAuthenticationResponse,
   CreationRequest,
   CreationResponse,
+  FinishAuthenticationRequest,
+  FinishAuthenticationResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
@@ -28,6 +26,8 @@ import {
   RotateAuthenticationKeyResponse,
   ScannableResponse,
   SignableMessage,
+  StartAuthenticationRequest,
+  StartAuthenticationResponse,
 } from '../messages'
 
 export class BetterAuthClient {
@@ -203,7 +203,7 @@ export class BetterAuthClient {
   async authenticate(): Promise<void> {
     const startNonce = await this.args.crypto.noncer.generate128()
 
-    const startRequest = new BeginAuthenticationRequest({
+    const startRequest = new StartAuthenticationRequest({
       access: {
         nonce: startNonce,
       },
@@ -220,7 +220,7 @@ export class BetterAuthClient {
       startMessage
     )
 
-    const startResponse = BeginAuthenticationResponse.parse(startReply)
+    const startResponse = StartAuthenticationResponse.parse(startReply)
     await this.verifyResponse(startResponse, startResponse.payload.access.responseKeyHash)
 
     if (startResponse.payload.access.nonce !== startNonce) {
@@ -230,7 +230,7 @@ export class BetterAuthClient {
     const [, currentKey, nextKeyHash] = await this.args.store.key.access.initialize()
     const finishNonce = await this.args.crypto.noncer.generate128()
 
-    const finishRequest = new CompleteAuthenticationRequest(
+    const finishRequest = new FinishAuthenticationRequest(
       {
         access: {
           publicKey: currentKey,
@@ -251,7 +251,7 @@ export class BetterAuthClient {
       finishMessage
     )
 
-    const finishResponse = CompleteAuthenticationResponse.parse(finishReply)
+    const finishResponse = FinishAuthenticationResponse.parse(finishReply)
     await this.verifyResponse(finishResponse, finishResponse.payload.access.responseKeyHash)
 
     if (finishResponse.payload.access.nonce !== finishNonce) {

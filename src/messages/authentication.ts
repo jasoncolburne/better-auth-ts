@@ -2,7 +2,7 @@ import { SerializableMessage } from './message'
 import { ClientRequest } from './request'
 import { ServerResponse } from './response'
 
-interface IBeginAuthenticationRequest {
+interface IStartAuthenticationRequest {
   payload: {
     access: {
       nonce: string
@@ -15,9 +15,9 @@ interface IBeginAuthenticationRequest {
   }
 }
 
-export class BeginAuthenticationRequest
+export class StartAuthenticationRequest
   extends SerializableMessage
-  implements IBeginAuthenticationRequest
+  implements IStartAuthenticationRequest
 {
   constructor(
     public payload: {
@@ -40,25 +40,25 @@ export class BeginAuthenticationRequest
     })
   }
 
-  static parse(message: string): BeginAuthenticationRequest {
-    const json = JSON.parse(message) as BeginAuthenticationRequest
-    return new BeginAuthenticationRequest(json.payload)
+  static parse(message: string): StartAuthenticationRequest {
+    const json = JSON.parse(message) as StartAuthenticationRequest
+    return new StartAuthenticationRequest(json.payload)
   }
 }
 
-interface IBeginAuthenticationResponse {
+interface IStartAuthenticationResponse {
   authentication: {
     nonce: string
   }
 }
 
-export class BeginAuthenticationResponse extends ServerResponse<IBeginAuthenticationResponse> {
-  static parse(message: string): BeginAuthenticationResponse {
-    return ServerResponse._parse(message, BeginAuthenticationResponse)
+export class StartAuthenticationResponse extends ServerResponse<IStartAuthenticationResponse> {
+  static parse(message: string): StartAuthenticationResponse {
+    return ServerResponse._parse(message, StartAuthenticationResponse)
   }
 }
 
-interface ICompleteAuthenticationRequest {
+interface IFinishAuthenticationRequest {
   access: {
     publicKey: string
     rotationHash: string
@@ -69,20 +69,20 @@ interface ICompleteAuthenticationRequest {
   }
 }
 
-export class CompleteAuthenticationRequest extends ClientRequest<ICompleteAuthenticationRequest> {
-  static parse(message: string): CompleteAuthenticationRequest {
-    return ClientRequest._parse(message, CompleteAuthenticationRequest)
+export class FinishAuthenticationRequest extends ClientRequest<IFinishAuthenticationRequest> {
+  static parse(message: string): FinishAuthenticationRequest {
+    return ClientRequest._parse(message, FinishAuthenticationRequest)
   }
 }
 
-interface ICompleteAuthenticationResponse {
+interface IFinishAuthenticationResponse {
   access: {
     token: string
   }
 }
 
-export class CompleteAuthenticationResponse extends ServerResponse<ICompleteAuthenticationResponse> {
-  static parse(message: string): CompleteAuthenticationResponse {
-    return ServerResponse._parse(message, CompleteAuthenticationResponse)
+export class FinishAuthenticationResponse extends ServerResponse<IFinishAuthenticationResponse> {
+  static parse(message: string): FinishAuthenticationResponse {
+    return ServerResponse._parse(message, FinishAuthenticationResponse)
   }
 }
