@@ -399,7 +399,7 @@ export class AccessVerifier {
     return await request._verify<U>(
       this.args.store.access.nonce,
       this.args.crypto.verifier,
-      this.args.crypto.verifier,
+      this.args.crypto.publicKey.access.verifier(),
       await this.args.crypto.publicKey.access.public(),
       this.args.encoding.tokenEncoder,
       this.args.encoding.timestamper
