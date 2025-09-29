@@ -125,7 +125,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     serverAccessPublicKey: string,
     tokenEncoder: ITokenEncoder,
     timestamper: ITimestamper
-  ): Promise<string> {
+  ): Promise<[string, T]> {
     const accessToken = await AccessToken.parse<T>(
       this.payload.access.token,
       tokenVerifier.signatureLength,
@@ -150,7 +150,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
 
     await nonceStore.reserve(this.payload.access.nonce)
 
-    return accessToken.identity
+    return [accessToken.identity, accessToken.attributes]
   }
 
   static parse<T>(message: string): AccessRequest<T> {

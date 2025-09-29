@@ -11,12 +11,10 @@ import {
 } from '../interfaces'
 import {
   AccessRequest,
-  StartAuthenticationRequest,
-  StartAuthenticationResponse,
-  FinishAuthenticationRequest,
-  FinishAuthenticationResponse,
   CreationRequest,
   CreationResponse,
+  FinishAuthenticationRequest,
+  FinishAuthenticationResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
@@ -28,6 +26,8 @@ import {
   RotateAuthenticationKeyResponse,
   ScannableResponse,
   SignableMessage,
+  StartAuthenticationRequest,
+  StartAuthenticationResponse,
 } from '../messages'
 
 export class BetterAuthClient {

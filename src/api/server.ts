@@ -15,12 +15,10 @@ import {
 import {
   AccessRequest,
   AccessToken,
-  StartAuthenticationRequest,
-  StartAuthenticationResponse,
-  FinishAuthenticationRequest,
-  FinishAuthenticationResponse,
   CreationRequest,
   CreationResponse,
+  FinishAuthenticationRequest,
+  FinishAuthenticationResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
@@ -30,6 +28,8 @@ import {
   RefreshAccessTokenResponse,
   RotateAuthenticationKeyRequest,
   RotateAuthenticationKeyResponse,
+  StartAuthenticationRequest,
+  StartAuthenticationResponse,
 } from '../messages'
 
 export class BetterAuthServer {
@@ -394,9 +394,9 @@ export class AccessVerifier {
     }
   ) {}
 
-  async verify<T>(message: string): Promise<string> {
+  async verify<T, U>(message: string): Promise<[string, U]> {
     const request = AccessRequest.parse<T>(message)
-    return await request._verify<T>(
+    return await request._verify<U>(
       this.args.store.access.nonce,
       this.args.crypto.verifier,
       this.args.crypto.verifier,
