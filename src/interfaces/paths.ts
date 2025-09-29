@@ -1,9 +1,15 @@
 export interface IAuthenticationPaths {
-  create: string
-  link: string
-  recover: string
-  rotate: string
-  startAuthentication: string
-  finishAuthentication: string
-  refresh: string
+  authenticate: {
+    start: string
+    finish: string
+  }
+  register: {
+    create: string
+    link: string
+    recover: string
+  }
+  rotate: {
+    authentication: string
+    access: string
+  }
 }
