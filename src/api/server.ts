@@ -15,10 +15,10 @@ import {
 import {
   AccessRequest,
   AccessToken,
-  BeginAuthenticationRequest,
-  BeginAuthenticationResponse,
-  CompleteAuthenticationRequest,
-  CompleteAuthenticationResponse,
+  StartAuthenticationRequest,
+  StartAuthenticationResponse,
+  FinishAuthenticationRequest,
+  FinishAuthenticationResponse,
   CreationRequest,
   CreationResponse,
   LinkContainer,
@@ -201,13 +201,13 @@ export class BetterAuthServer {
   // authentication
 
   async startAuthentication(message: string): Promise<string> {
-    const request = BeginAuthenticationRequest.parse(message)
+    const request = StartAuthenticationRequest.parse(message)
 
     const nonce = await this.args.store.authentication.nonce.generate(
       request.payload.request.authentication.identity
     )
 
-    const response = new BeginAuthenticationResponse(
+    const response = new StartAuthenticationResponse(
       {
         authentication: {
           nonce: nonce,
@@ -223,7 +223,7 @@ export class BetterAuthServer {
   }
 
   async finishAuthentication<T>(message: string, attributes: T): Promise<string> {
-    const request = CompleteAuthenticationRequest.parse(message)
+    const request = FinishAuthenticationRequest.parse(message)
     const identity = await this.args.store.authentication.nonce.validate(
       request.payload.request.authentication.nonce
     )
@@ -258,7 +258,7 @@ export class BetterAuthServer {
     await accessToken.sign(this.args.crypto.keyPair.access)
     const token = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
-    const response = new CompleteAuthenticationResponse(
+    const response = new FinishAuthenticationResponse(
       {
         access: {
           token: token,
