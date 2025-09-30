@@ -52,7 +52,10 @@ const authenticationPaths: IAuthenticationPaths = {
 
 class Network implements INetwork {
   async sendRequest(path: string, message: string): Promise<string> {
-    console.log(message)
+    if (DEBUG_LOGGING) {
+      console.log(message)
+    }
+
     // eslint-disable-next-line no-undef
     const response = await fetch(`http://localhost:8080${path}`, {
       method: 'POST',
@@ -61,7 +64,10 @@ class Network implements INetwork {
     })
 
     const reply = await response.text()
-    console.log(reply)
+
+    if (DEBUG_LOGGING) {
+      console.log(reply)
+    }
 
     return reply
   }
