@@ -14,6 +14,6 @@ if you don't have a server running at http://localhost:8080.
 
 To run the example server in golang, for example, check out the
 [golang](https://github.com/jasoncolburne/better-auth-go) implementation and start with
-`go run examples/server.go`.
+`go run examples/server.go`. In python, it's `python examples/server.py`.
 
 After starting the golang server, run the integration tests in another shell.
