@@ -120,7 +120,7 @@ async function testAccess(
   }
 }
 
-describe('api', () => {
+describe('integration', () => {
   it('completes auth flows', async () => {
     const eccVerifier = new Secp256r1Verifier()
     const hasher = new Hasher()
