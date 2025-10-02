@@ -391,9 +391,10 @@ export class BetterAuthServer {
     const hash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.recoveryKey
     )
-    await this.args.store.recovery.hash.validate(
+    await this.args.store.recovery.hash.rotate(
       request.payload.request.authentication.identity,
-      hash
+      hash,
+      request.payload.request.authentication.recoveryHash
     )
 
     await this.args.store.authentication.key.revokeDevices(

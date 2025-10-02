@@ -35,10 +35,8 @@ class Secp256r1VerificationKey implements IVerificationKey {
 }
 
 const authenticationPaths: IAuthenticationPaths = {
-  register: {
+  account: {
     create: '/register/create',
-    link: '/register/link',
-    recover: '/register/recover',
   },
   authenticate: {
     start: '/authenticate/start',
@@ -47,7 +45,9 @@ const authenticationPaths: IAuthenticationPaths = {
   rotate: {
     authentication: '/rotate/authentication',
     access: '/rotate/access',
+    link: '/register/link',
     unlink: '/rotate/unlink',
+    recover: '/register/recover',
   },
 }
 
@@ -245,8 +245,13 @@ describe('integration', () => {
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
+
     const identity = await betterAuthClient.identity()
-    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner)
+    const nextRecoverySigner = new Secp256r1()
+    await nextRecoverySigner.generate()
+    const nextRecoveryHash = await hasher.sum(await nextRecoverySigner.public())
+
+    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner, nextRecoveryHash)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseVerificationKey)
   })
 

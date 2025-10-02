@@ -118,16 +118,18 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
     this.dataByIdentity.set(identity, hash)
   }
 
-  async validate(identity: string, hash: string): Promise<void> {
+  async rotate(identity: string, oldHash: string, newHash: string): Promise<void> {
     const stored = this.dataByIdentity.get(identity)
 
     if (typeof stored === 'undefined') {
       throw 'not found'
     }
 
-    if (stored !== hash) {
+    if (stored !== oldHash) {
       throw 'incorrect hash'
     }
+
+    this.dataByIdentity.set(identity, newHash)
   }
 }
 

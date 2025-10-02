@@ -108,7 +108,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.register.create, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.account.create, message)
 
     const response = CreationResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -164,7 +164,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.register.link, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.link, message)
 
     const response = LinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -324,7 +324,11 @@ export class BetterAuthClient {
     await this.args.store.token.access.store(response.payload.response.access.token)
   }
 
-  async recoverAccount(identity: string, recoveryKey: ISigningKey): Promise<void> {
+  async recoverAccount(
+    identity: string,
+    recoveryKey: ISigningKey,
+    recoveryHash: string
+  ): Promise<void> {
     const [, current, rotationHash] = await this.args.store.key.authentication.initialize()
     const device = await this.args.crypto.hasher.sum(current)
     const nonce = await this.args.crypto.noncer.generate128()
@@ -335,6 +339,7 @@ export class BetterAuthClient {
           device: device,
           identity: identity,
           publicKey: current,
+          recoveryHash: recoveryHash,
           recoveryKey: await recoveryKey.public(),
           rotationHash: rotationHash,
         },
@@ -344,7 +349,7 @@ export class BetterAuthClient {
 
     await request.sign(recoveryKey)
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.register.recover, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.recover, message)
 
     const response = RecoverAccountResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)

@@ -6,6 +6,7 @@ interface IRecoverAccountRequest {
     device: string
     identity: string
     publicKey: string
+    recoveryHash: string
     recoveryKey: string
     rotationHash: string
   }

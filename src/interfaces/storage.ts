@@ -78,7 +78,7 @@ export interface IServerRecoveryHashStore {
   // throw exceptions if:
   // - not found
   // - hash does not match
-  validate(identity: string, keyHash: string): Promise<void>
+  rotate(identity: string, oldHash: string, newHash: string): Promise<void>
 }
 
 export interface IServerTimeLockStore {
