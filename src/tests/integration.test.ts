@@ -36,7 +36,7 @@ class Secp256r1VerificationKey implements IVerificationKey {
 
 const authenticationPaths: IAuthenticationPaths = {
   account: {
-    create: '/register/create',
+    create: '/account/create',
   },
   authenticate: {
     start: '/authenticate/start',
@@ -45,9 +45,9 @@ const authenticationPaths: IAuthenticationPaths = {
   rotate: {
     authentication: '/rotate/authentication',
     access: '/rotate/access',
-    link: '/register/link',
+    link: '/rotate/link',
     unlink: '/rotate/unlink',
-    recover: '/register/recover',
+    recover: '/rotate/recover',
   },
 }
 
@@ -340,6 +340,10 @@ describe('integration', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+
+    // unlink the original device
+    await betterAuthClient.unlinkDevice()
+
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKey)
   })
 
