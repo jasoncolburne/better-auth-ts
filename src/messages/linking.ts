@@ -45,6 +45,8 @@ interface ILinkDeviceRequest {
   authentication: {
     device: string
     identity: string
+    publicKey: string
+    rotationHash: string
   }
   link: ILinkContainer
 }
@@ -60,5 +62,27 @@ interface ILinkDeviceResponse {}
 export class LinkDeviceResponse extends ServerResponse<ILinkDeviceResponse> {
   static parse(message: string): LinkDeviceResponse {
     return ServerResponse._parse(message, LinkDeviceResponse)
+  }
+}
+
+interface IUnlinkDeviceRequest {
+  authentication: {
+    device: string
+    identity: string
+    publicKey: string
+  }
+}
+
+export class UnlinkDeviceRequest extends ClientRequest<IUnlinkDeviceRequest> {
+  static parse(message: string): UnlinkDeviceRequest {
+    return ClientRequest._parse(message, UnlinkDeviceRequest)
+  }
+}
+
+interface IUnlinkDeviceResponse {}
+
+export class UnlinkDeviceResponse extends ServerResponse<IUnlinkDeviceResponse> {
+  static parse(message: string): UnlinkDeviceResponse {
+    return ServerResponse._parse(message, UnlinkDeviceResponse)
   }
 }

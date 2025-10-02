@@ -38,6 +38,7 @@ const authenticationPaths: IAuthenticationPaths = {
   rotate: {
     authentication: '/rotate/authentication',
     access: '/rotate/access',
+    unlink: '/rotate/unlink',
   },
 }
 
@@ -112,6 +113,8 @@ class MockNetworkServer implements INetwork {
         return await this.betterAuthServer.finishAuthentication(message, this.attributes)
       case this.paths.rotate.access:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
+      case this.paths.rotate.unlink:
+        return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
         ;[accessIdentity, attributes] = await this.accessVerifier.verify<
           IFakeRequest,
@@ -622,6 +625,10 @@ describe('api', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+
+    // unlink the original device
+    await betterAuthClient.unlinkDevice()
+
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseSigner)
   })
 

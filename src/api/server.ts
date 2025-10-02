@@ -30,6 +30,8 @@ import {
   RotateAuthenticationKeyResponse,
   StartAuthenticationRequest,
   StartAuthenticationResponse,
+  UnlinkDeviceRequest,
+  UnlinkDeviceResponse,
 } from '../messages'
 
 export class BetterAuthServer {
@@ -129,6 +131,13 @@ export class BetterAuthServer {
   async linkDevice(message: string): Promise<string> {
     const request = LinkDeviceRequest.parse(message)
 
+    await this.args.store.authentication.key.rotate(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash
+    )
+
     const publicKey = await this.args.store.authentication.key.public(
       request.payload.request.authentication.identity,
       request.payload.request.authentication.device
@@ -168,6 +177,40 @@ export class BetterAuthServer {
     await response.sign(this.args.crypto.keyPair.response)
 
     return response.serialize()
+  }
+
+  async unlinkDevice(message: string): Promise<string> {
+    const request = UnlinkDeviceRequest.parse(message)
+
+    await this.args.store.authentication.key.rotate(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      'nil'
+    )
+
+    const publicKey = await this.args.store.authentication.key.public(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device
+    )
+
+    await request.verify(this.args.crypto.verifier, publicKey)
+
+    await this.args.store.authentication.key.revokeDevice(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device
+    )
+
+    const response = new UnlinkDeviceResponse(
+      {},
+      await this.responseKeyHash(),
+      request.payload.access.nonce
+    )
+
+    await response.sign(this.args.crypto.keyPair.response)
+    const reply = await response.serialize()
+
+    return reply
   }
 
   // rotation
@@ -351,6 +394,10 @@ export class BetterAuthServer {
     await this.args.store.recovery.hash.validate(
       request.payload.request.authentication.identity,
       hash
+    )
+
+    await this.args.store.authentication.key.revokeDevices(
+      request.payload.request.authentication.identity
     )
 
     await this.args.store.authentication.key.register(

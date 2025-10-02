@@ -20,6 +20,28 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     this.identities = new Set<string>()
   }
 
+  async revokeDevice(identity: string, device: string): Promise<void> {
+    const hasIdentity = this.identities.has(identity)
+    if (!hasIdentity) {
+      throw 'not found'
+    }
+
+    this.dataByToken.delete(identity + device)
+  }
+
+  async revokeDevices(identity: string): Promise<void> {
+    const hasIdentity = this.identities.has(identity)
+    if (!hasIdentity) {
+      throw 'not found'
+    }
+
+    this.dataByToken.forEach((_value, key): void => {
+      if (key.startsWith(identity)) {
+        this.dataByToken.delete(key)
+      }
+    })
+  }
+
   async register(
     identity: string,
     device: string,

@@ -14,6 +14,9 @@ export interface IClientRotatingKeyStore {
   // returns: [identity, publicKey, rotationHash]
   initialize(extraData?: string): Promise<[string, string, string]>
 
+  // deletes the rotating key store
+  destroy(): Promise<void>
+
   // throw an exception if:
   // - no keys exist
   //
@@ -61,6 +64,12 @@ export interface IServerAuthenticationKeyStore {
 
   // returns: encoded key
   public(identity: string, device: string): Promise<string>
+
+  // revokes access for one device
+  revokeDevice(identity: string, device: string): Promise<void>
+
+  // revokes access for all devices
+  revokeDevices(identity: string): Promise<void>
 }
 
 export interface IServerRecoveryHashStore {

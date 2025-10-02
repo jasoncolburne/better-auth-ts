@@ -47,6 +47,7 @@ const authenticationPaths: IAuthenticationPaths = {
   rotate: {
     authentication: '/rotate/authentication',
     access: '/rotate/access',
+    unlink: '/rotate/unlink',
   },
 }
 

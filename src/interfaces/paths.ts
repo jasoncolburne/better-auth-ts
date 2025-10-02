@@ -11,5 +11,6 @@ export interface IAuthenticationPaths {
   rotate: {
     authentication: string
     access: string
+    unlink: string
   }
 }
