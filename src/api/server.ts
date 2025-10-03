@@ -189,12 +189,10 @@ export class BetterAuthServer {
       request.payload.request.authentication.rotationHash
     )
 
-    const publicKey = await this.args.store.authentication.key.public(
-      request.payload.request.authentication.identity,
-      request.payload.request.authentication.device
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
     )
-
-    await request.verify(this.args.crypto.verifier, publicKey)
 
     await this.args.store.authentication.key.revokeDevice(
       request.payload.request.authentication.identity,
