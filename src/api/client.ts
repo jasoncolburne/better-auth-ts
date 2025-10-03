@@ -210,8 +210,6 @@ export class BetterAuthClient {
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
     }
-
-    await this.args.store.key.authentication.destroy()
   }
 
   async rotateAuthenticationKey(): Promise<void> {

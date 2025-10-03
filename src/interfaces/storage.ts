@@ -14,9 +14,6 @@ export interface IClientRotatingKeyStore {
   // returns: [identity, publicKey, rotationHash]
   initialize(extraData?: string): Promise<[string, string, string]>
 
-  // deletes the rotating key store
-  destroy(): Promise<void>
-
   // throw an exception if:
   // - no keys exist
   //
