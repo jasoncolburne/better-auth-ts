@@ -38,11 +38,6 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     return [identity, publicKey, rotationHash]
   }
 
-  async destroy(): Promise<void> {
-    this.current = undefined
-    this.next = undefined
-  }
-
   async rotate(): Promise<[string, string]> {
     if (typeof this.next === 'undefined') {
       throw 'call initialize() first'
