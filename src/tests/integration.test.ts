@@ -341,10 +341,10 @@ describe('integration', () => {
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
 
-    // unlink the original device
-    await betterAuthClient.unlinkDevice()
-
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKey)
+
+    // unlink the original device
+    await linkedBetterAuthClient.unlinkDevice(await betterAuthClient.device())
   })
 
   it('detects mismatched access nonce', async () => {

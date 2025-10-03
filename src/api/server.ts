@@ -186,7 +186,7 @@ export class BetterAuthServer {
       request.payload.request.authentication.identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
-      'nil'
+      request.payload.request.authentication.rotationHash
     )
 
     const publicKey = await this.args.store.authentication.key.public(
@@ -198,7 +198,7 @@ export class BetterAuthServer {
 
     await this.args.store.authentication.key.revokeDevice(
       request.payload.request.authentication.identity,
-      request.payload.request.authentication.device
+      request.payload.request.link.device
     )
 
     const response = new UnlinkDeviceResponse(

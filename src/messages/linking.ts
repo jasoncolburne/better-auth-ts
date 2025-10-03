@@ -70,6 +70,10 @@ interface IUnlinkDeviceRequest {
     device: string
     identity: string
     publicKey: string
+    rotationHash: string
+  }
+  link: {
+    device: string
   }
 }
 

@@ -174,9 +174,16 @@ export class BetterAuthClient {
     }
   }
 
-  async unlinkDevice(): Promise<void> {
-    const [publicKey] = await this.args.store.key.authentication.rotate()
+  async unlinkDevice(device: string): Promise<void> {
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
+
+    let hash = rotationHash
+    if (device === (await this.args.store.identifier.device.get())) {
+      // if we know we are disabling the current device, hash again to prevent a rotation
+      // through the standard means while allowing verification of the key should the need arise
+      hash = await this.args.crypto.hasher.sum(rotationHash)
+    }
 
     const request = new UnlinkDeviceRequest(
       {
@@ -184,6 +191,10 @@ export class BetterAuthClient {
           device: await this.args.store.identifier.device.get(),
           identity: await this.args.store.identifier.identity.get(),
           publicKey: publicKey,
+          rotationHash: hash,
+        },
+        link: {
+          device: device,
         },
       },
       nonce
