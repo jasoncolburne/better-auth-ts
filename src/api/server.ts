@@ -131,13 +131,6 @@ export class BetterAuthServer {
   async linkDevice(message: string): Promise<string> {
     const request = LinkDeviceRequest.parse(message)
 
-    await this.args.store.authentication.key.rotate(
-      request.payload.request.authentication.identity,
-      request.payload.request.authentication.device,
-      request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationHash
-    )
-
     await request.verify(
       this.args.crypto.verifier,
       request.payload.request.authentication.publicKey
@@ -157,6 +150,13 @@ export class BetterAuthServer {
     ) {
       throw 'mismatched identities'
     }
+
+    await this.args.store.authentication.key.rotate(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash
+    )
 
     await this.args.store.authentication.key.register(
       linkContainer.payload.authentication.identity,
@@ -180,16 +180,16 @@ export class BetterAuthServer {
   async unlinkDevice(message: string): Promise<string> {
     const request = UnlinkDeviceRequest.parse(message)
 
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
+    )
+
     await this.args.store.authentication.key.rotate(
       request.payload.request.authentication.identity,
       request.payload.request.authentication.device,
       request.payload.request.authentication.publicKey,
       request.payload.request.authentication.rotationHash
-    )
-
-    await request.verify(
-      this.args.crypto.verifier,
-      request.payload.request.authentication.publicKey
     )
 
     await this.args.store.authentication.key.revokeDevice(
