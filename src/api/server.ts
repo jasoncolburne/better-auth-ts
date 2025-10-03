@@ -30,6 +30,8 @@ import {
   RotateAuthenticationKeyResponse,
   StartAuthenticationRequest,
   StartAuthenticationResponse,
+  UnlinkDeviceRequest,
+  UnlinkDeviceResponse,
 } from '../messages'
 
 export class BetterAuthServer {
@@ -129,12 +131,10 @@ export class BetterAuthServer {
   async linkDevice(message: string): Promise<string> {
     const request = LinkDeviceRequest.parse(message)
 
-    const publicKey = await this.args.store.authentication.key.public(
-      request.payload.request.authentication.identity,
-      request.payload.request.authentication.device
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
     )
-
-    await request.verify(this.args.crypto.verifier, publicKey)
 
     const linkContainer = new LinkContainer(request.payload.request.link.payload)
     linkContainer.signature = request.payload.request.link.signature
@@ -150,6 +150,13 @@ export class BetterAuthServer {
     ) {
       throw 'mismatched identities'
     }
+
+    await this.args.store.authentication.key.rotate(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash
+    )
 
     await this.args.store.authentication.key.register(
       linkContainer.payload.authentication.identity,
@@ -168,6 +175,38 @@ export class BetterAuthServer {
     await response.sign(this.args.crypto.keyPair.response)
 
     return response.serialize()
+  }
+
+  async unlinkDevice(message: string): Promise<string> {
+    const request = UnlinkDeviceRequest.parse(message)
+
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
+    )
+
+    await this.args.store.authentication.key.rotate(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash
+    )
+
+    await this.args.store.authentication.key.revokeDevice(
+      request.payload.request.authentication.identity,
+      request.payload.request.link.device
+    )
+
+    const response = new UnlinkDeviceResponse(
+      {},
+      await this.responseKeyHash(),
+      request.payload.access.nonce
+    )
+
+    await response.sign(this.args.crypto.keyPair.response)
+    const reply = await response.serialize()
+
+    return reply
   }
 
   // rotation
@@ -348,9 +387,14 @@ export class BetterAuthServer {
     const hash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.recoveryKey
     )
-    await this.args.store.recovery.hash.validate(
+    await this.args.store.recovery.hash.rotate(
       request.payload.request.authentication.identity,
-      hash
+      hash,
+      request.payload.request.authentication.recoveryHash
+    )
+
+    await this.args.store.authentication.key.revokeDevices(
+      request.payload.request.authentication.identity
     )
 
     await this.args.store.authentication.key.register(

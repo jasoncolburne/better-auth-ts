@@ -26,10 +26,8 @@ import { AccessRequest, ServerResponse } from '../messages'
 
 const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
-  register: {
-    create: '/register/create',
-    link: '/register/link',
-    recover: '/register/recover',
+  account: {
+    create: '/account/create',
   },
   authenticate: {
     start: '/authenticate/start',
@@ -38,6 +36,9 @@ const authenticationPaths: IAuthenticationPaths = {
   rotate: {
     authentication: '/rotate/authentication',
     access: '/rotate/access',
+    link: '/register/link',
+    unlink: '/rotate/unlink',
+    recover: '/register/recover',
   },
 }
 
@@ -98,11 +99,11 @@ class MockNetworkServer implements INetwork {
     let attributes: MockAccessAttributes
 
     switch (path) {
-      case this.paths.register.create:
+      case this.paths.account.create:
         return await this.betterAuthServer.createAccount(message)
-      case this.paths.register.recover:
+      case this.paths.rotate.recover:
         return await this.betterAuthServer.recoverAccount(message)
-      case this.paths.register.link:
+      case this.paths.rotate.link:
         return await this.betterAuthServer.linkDevice(message)
       case this.paths.rotate.authentication:
         return await this.betterAuthServer.rotateAuthenticationKey(message)
@@ -112,6 +113,8 @@ class MockNetworkServer implements INetwork {
         return await this.betterAuthServer.finishAuthentication(message, this.attributes)
       case this.paths.rotate.access:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
+      case this.paths.rotate.unlink:
+        return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
         ;[accessIdentity, attributes] = await this.accessVerifier.verify<
           IFakeRequest,
@@ -496,8 +499,13 @@ describe('api', () => {
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
+
     const identity = await betterAuthClient.identity()
-    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner)
+    const nextRecoverySigner = new Secp256r1()
+    await nextRecoverySigner.generate()
+    const nextRecoveryHash = await hasher.sum(await nextRecoverySigner.public())
+
+    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner, nextRecoveryHash)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseSigner)
   })
 
@@ -622,7 +630,11 @@ describe('api', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseSigner)
+
+    // unlink the original device
+    await linkedBetterAuthClient.unlinkDevice(await betterAuthClient.device())
   })
 
   it('rejects expired authentication challenges', async () => {

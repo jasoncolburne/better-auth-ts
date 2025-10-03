@@ -20,10 +20,32 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     this.identities = new Set<string>()
   }
 
+  async revokeDevice(identity: string, device: string): Promise<void> {
+    const hasIdentity = this.identities.has(identity)
+    if (!hasIdentity) {
+      throw 'not found'
+    }
+
+    this.dataByToken.delete(identity + device)
+  }
+
+  async revokeDevices(identity: string): Promise<void> {
+    const hasIdentity = this.identities.has(identity)
+    if (!hasIdentity) {
+      throw 'not found'
+    }
+
+    this.dataByToken.forEach((_value, key): void => {
+      if (key.startsWith(identity)) {
+        this.dataByToken.delete(key)
+      }
+    })
+  }
+
   async register(
     identity: string,
     device: string,
-    current: string,
+    publicKey: string,
     rotationHash: string,
     existingIdentity: boolean
   ): Promise<void> {
@@ -44,13 +66,13 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     }
 
     this.identities.add(identity)
-    this.dataByToken.set(identity + device, [current, rotationHash])
+    this.dataByToken.set(identity + device, [publicKey, rotationHash])
   }
 
   async rotate(
     identity: string,
     device: string,
-    current: string,
+    publicKey: string,
     rotationHash: string
   ): Promise<void> {
     const bundle = this.dataByToken.get(identity + device)
@@ -59,13 +81,13 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'not found'
     }
 
-    const cesrHash = await this.hasher.sum(current)
+    const cesrHash = await this.hasher.sum(publicKey)
 
     if (bundle[1] !== cesrHash) {
       throw 'invalid forward secret'
     }
 
-    this.dataByToken.set(identity + device, [current, rotationHash])
+    this.dataByToken.set(identity + device, [publicKey, rotationHash])
   }
 
   async public(identity: string, device: string): Promise<string> {
@@ -96,16 +118,18 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
     this.dataByIdentity.set(identity, hash)
   }
 
-  async validate(identity: string, hash: string): Promise<void> {
+  async rotate(identity: string, oldHash: string, newHash: string): Promise<void> {
     const stored = this.dataByIdentity.get(identity)
 
     if (typeof stored === 'undefined') {
       throw 'not found'
     }
 
-    if (stored !== hash) {
+    if (stored !== oldHash) {
       throw 'incorrect hash'
     }
+
+    this.dataByIdentity.set(identity, newHash)
   }
 }
 

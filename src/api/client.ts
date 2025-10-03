@@ -28,6 +28,8 @@ import {
   SignableMessage,
   StartAuthenticationRequest,
   StartAuthenticationResponse,
+  UnlinkDeviceRequest,
+  UnlinkDeviceResponse,
 } from '../messages'
 
 export class BetterAuthClient {
@@ -106,7 +108,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.register.create, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.account.create, message)
 
     const response = CreationResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
@@ -120,7 +122,6 @@ export class BetterAuthClient {
   }
 
   // happens on the new device
-  // send identity by qr code or network from the existing device
   async generateLinkContainer(identity: string): Promise<string> {
     const [, publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
     const device = await this.args.crypto.hasher.sum(publicKey)
@@ -142,18 +143,19 @@ export class BetterAuthClient {
     return await linkContainer.serialize()
   }
 
-  // happens on the existing device (share with qr code + camera)
-  // use a 61x61 module layout and a 53x53 module code, centered on the new device, at something
-  // like 244x244px (61*4x61*4)
+  // happens on the existing device
   async linkDevice(linkContainer: string): Promise<void> {
     const container = LinkContainer.parse(linkContainer)
     const nonce = await this.args.crypto.noncer.generate128()
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
 
     const request = new LinkDeviceRequest(
       {
         authentication: {
           device: await this.args.store.identifier.device.get(),
           identity: await this.args.store.identifier.identity.get(),
+          publicKey: publicKey,
+          rotationHash: rotationHash,
         },
         link: container,
       },
@@ -162,9 +164,47 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.register.link, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.link, message)
 
     const response = LinkDeviceResponse.parse(reply)
+    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
+  }
+
+  async unlinkDevice(device: string): Promise<void> {
+    const nonce = await this.args.crypto.noncer.generate128()
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
+
+    let hash = rotationHash
+    if (device === (await this.args.store.identifier.device.get())) {
+      // if we know we are disabling the current device, hash again to prevent a rotation
+      // through the standard means while allowing verification of the key should the need arise
+      hash = await this.args.crypto.hasher.sum(rotationHash)
+    }
+
+    const request = new UnlinkDeviceRequest(
+      {
+        authentication: {
+          device: await this.args.store.identifier.device.get(),
+          identity: await this.args.store.identifier.identity.get(),
+          publicKey: publicKey,
+          rotationHash: hash,
+        },
+        link: {
+          device: device,
+        },
+      },
+      nonce
+    )
+
+    await request.sign(await this.args.store.key.authentication.signer())
+    const message = await request.serialize()
+    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.unlink, message)
+
+    const response = UnlinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)
 
     if (response.payload.access.nonce !== nonce) {
@@ -293,9 +333,13 @@ export class BetterAuthClient {
     await this.args.store.token.access.store(response.payload.response.access.token)
   }
 
-  async recoverAccount(identity: string, recoveryKey: ISigningKey): Promise<void> {
-    const [, current, rotationHash] = await this.args.store.key.authentication.initialize()
-    const device = await this.args.crypto.hasher.sum(current)
+  async recoverAccount(
+    identity: string,
+    recoveryKey: ISigningKey,
+    recoveryHash: string
+  ): Promise<void> {
+    const [, publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const device = await this.args.crypto.hasher.sum(publicKey)
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new RecoverAccountRequest(
@@ -303,7 +347,8 @@ export class BetterAuthClient {
         authentication: {
           device: device,
           identity: identity,
-          publicKey: current,
+          publicKey: publicKey,
+          recoveryHash: recoveryHash,
           recoveryKey: await recoveryKey.public(),
           rotationHash: rotationHash,
         },
@@ -313,7 +358,7 @@ export class BetterAuthClient {
 
     await request.sign(recoveryKey)
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.register.recover, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.recover, message)
 
     const response = RecoverAccountResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.responseKeyHash)

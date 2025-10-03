@@ -35,10 +35,8 @@ class Secp256r1VerificationKey implements IVerificationKey {
 }
 
 const authenticationPaths: IAuthenticationPaths = {
-  register: {
-    create: '/register/create',
-    link: '/register/link',
-    recover: '/register/recover',
+  account: {
+    create: '/account/create',
   },
   authenticate: {
     start: '/authenticate/start',
@@ -47,6 +45,9 @@ const authenticationPaths: IAuthenticationPaths = {
   rotate: {
     authentication: '/rotate/authentication',
     access: '/rotate/access',
+    link: '/rotate/link',
+    unlink: '/rotate/unlink',
+    recover: '/rotate/recover',
   },
 }
 
@@ -244,8 +245,13 @@ describe('integration', () => {
 
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
+
     const identity = await betterAuthClient.identity()
-    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner)
+    const nextRecoverySigner = new Secp256r1()
+    await nextRecoverySigner.generate()
+    const nextRecoveryHash = await hasher.sum(await nextRecoverySigner.public())
+
+    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner, nextRecoveryHash)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseVerificationKey)
   })
 
@@ -334,7 +340,11 @@ describe('integration', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKey)
+
+    // unlink the original device
+    await linkedBetterAuthClient.unlinkDevice(await betterAuthClient.device())
   })
 
   it('detects mismatched access nonce', async () => {
