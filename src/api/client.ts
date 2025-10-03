@@ -175,8 +175,8 @@ export class BetterAuthClient {
   }
 
   async unlinkDevice(device: string): Promise<void> {
-    const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
+    const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
 
     let hash = rotationHash
     if (device === (await this.args.store.identifier.device.get())) {
