@@ -45,7 +45,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   async register(
     identity: string,
     device: string,
-    current: string,
+    publicKey: string,
     rotationHash: string,
     existingIdentity: boolean
   ): Promise<void> {
@@ -66,13 +66,13 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     }
 
     this.identities.add(identity)
-    this.dataByToken.set(identity + device, [current, rotationHash])
+    this.dataByToken.set(identity + device, [publicKey, rotationHash])
   }
 
   async rotate(
     identity: string,
     device: string,
-    current: string,
+    publicKey: string,
     rotationHash: string
   ): Promise<void> {
     const bundle = this.dataByToken.get(identity + device)
@@ -81,13 +81,13 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
       throw 'not found'
     }
 
-    const cesrHash = await this.hasher.sum(current)
+    const cesrHash = await this.hasher.sum(publicKey)
 
     if (bundle[1] !== cesrHash) {
       throw 'invalid forward secret'
     }
 
-    this.dataByToken.set(identity + device, [current, rotationHash])
+    this.dataByToken.set(identity + device, [publicKey, rotationHash])
   }
 
   async public(identity: string, device: string): Promise<string> {

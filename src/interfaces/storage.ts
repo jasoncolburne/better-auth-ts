@@ -57,7 +57,7 @@ export interface IServerAuthenticationKeyStore {
   // throw exceptions for:
   // - identity and device combination does not exist
   // - previous next hash doesn't match current hash
-  rotate(identity: string, device: string, current: string, rotationHash: string): Promise<void>
+  rotate(identity: string, device: string, publicKey: string, rotationHash: string): Promise<void>
 
   // returns: encoded key
   public(identity: string, device: string): Promise<string>

@@ -338,8 +338,8 @@ export class BetterAuthClient {
     recoveryKey: ISigningKey,
     recoveryHash: string
   ): Promise<void> {
-    const [, current, rotationHash] = await this.args.store.key.authentication.initialize()
-    const device = await this.args.crypto.hasher.sum(current)
+    const [, publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const device = await this.args.crypto.hasher.sum(publicKey)
     const nonce = await this.args.crypto.noncer.generate128()
 
     const request = new RecoverAccountRequest(
@@ -347,7 +347,7 @@ export class BetterAuthClient {
         authentication: {
           device: device,
           identity: identity,
-          publicKey: current,
+          publicKey: publicKey,
           recoveryHash: recoveryHash,
           recoveryKey: await recoveryKey.public(),
           rotationHash: rotationHash,
