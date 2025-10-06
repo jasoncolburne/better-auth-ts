@@ -4,6 +4,7 @@ import { IAuthenticationPaths, INetwork, IVerificationKey, IVerifier } from '../
 import {
   ClientRotatingKeyStore,
   ClientValueStore,
+  ClientVerificationKeyStore,
   Hasher,
   Noncer,
   Rfc3339Nano,
@@ -135,13 +136,16 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
+    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    await responseVerificationKeyStore.add(
+      await responseVerificationKey.public(),
+      responseVerificationKey
+    )
+
     const betterAuthClient = new BetterAuthClient({
       crypto: {
         hasher: hasher,
         noncer: noncer,
-        publicKey: {
-          response: responseVerificationKey,
-        },
       },
       encoding: {
         timestamper: new Rfc3339Nano(),
@@ -158,6 +162,7 @@ describe('integration', () => {
         key: {
           access: new ClientRotatingKeyStore(),
           authentication: new ClientRotatingKeyStore(),
+          response: responseVerificationKeyStore,
         },
         token: {
           access: new ClientValueStore(),
@@ -183,13 +188,16 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
+    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    await responseVerificationKeyStore.add(
+      await responseVerificationKey.public(),
+      responseVerificationKey
+    )
+
     const betterAuthClient = new BetterAuthClient({
       crypto: {
         hasher: hasher,
         noncer: noncer,
-        publicKey: {
-          response: responseVerificationKey,
-        },
       },
       encoding: {
         timestamper: new Rfc3339Nano(),
@@ -206,6 +214,7 @@ describe('integration', () => {
         key: {
           access: new ClientRotatingKeyStore(),
           authentication: new ClientRotatingKeyStore(),
+          response: responseVerificationKeyStore,
         },
         token: {
           access: new ClientValueStore(),
@@ -217,9 +226,6 @@ describe('integration', () => {
       crypto: {
         hasher: new Hasher(),
         noncer: new Noncer(),
-        publicKey: {
-          response: responseVerificationKey,
-        },
       },
       encoding: {
         timestamper: new Rfc3339Nano(),
@@ -236,6 +242,7 @@ describe('integration', () => {
         key: {
           access: new ClientRotatingKeyStore(),
           authentication: new ClientRotatingKeyStore(),
+          response: responseVerificationKeyStore,
         },
         token: {
           access: new ClientValueStore(),
@@ -268,13 +275,16 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
+    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    await responseVerificationKeyStore.add(
+      await responseVerificationKey.public(),
+      responseVerificationKey
+    )
+
     const betterAuthClient = new BetterAuthClient({
       crypto: {
         hasher: hasher,
         noncer: noncer,
-        publicKey: {
-          response: responseVerificationKey,
-        },
       },
       encoding: {
         timestamper: new Rfc3339Nano(),
@@ -291,6 +301,7 @@ describe('integration', () => {
         key: {
           access: new ClientRotatingKeyStore(),
           authentication: new ClientRotatingKeyStore(),
+          response: responseVerificationKeyStore,
         },
         token: {
           access: new ClientValueStore(),
@@ -302,9 +313,6 @@ describe('integration', () => {
       crypto: {
         hasher: new Hasher(),
         noncer: new Noncer(),
-        publicKey: {
-          response: responseVerificationKey,
-        },
       },
       encoding: {
         timestamper: new Rfc3339Nano(),
@@ -321,6 +329,7 @@ describe('integration', () => {
         key: {
           access: new ClientRotatingKeyStore(),
           authentication: new ClientRotatingKeyStore(),
+          response: responseVerificationKeyStore,
         },
         token: {
           access: new ClientValueStore(),
@@ -359,14 +368,17 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
+    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    await responseVerificationKeyStore.add(
+      await responseVerificationKey.public(),
+      responseVerificationKey
+    )
+
     const accessTokenStore = new ClientValueStore()
     const betterAuthClient = new BetterAuthClient({
       crypto: {
         hasher: hasher,
         noncer: noncer,
-        publicKey: {
-          response: responseVerificationKey, // this would only be a public key in production
-        },
       },
       encoding: {
         timestamper: new Rfc3339Nano(),
@@ -383,6 +395,7 @@ describe('integration', () => {
         key: {
           access: new ClientRotatingKeyStore(),
           authentication: new ClientRotatingKeyStore(),
+          response: responseVerificationKeyStore,
         },
         token: {
           access: accessTokenStore,

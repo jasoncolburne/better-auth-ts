@@ -4,6 +4,18 @@ import { Base64 } from './base64'
 import { TextDecoder, TextEncoder } from 'util'
 
 export class TokenEncoder implements ITokenEncoder {
+  async signatureLength(token: string): Promise<number> {
+    if (token.length < 2) {
+      throw 'token too short'
+    }
+
+    if (!token.startsWith('0I')) {
+      throw 'incorrect token format'
+    }
+
+    return 88
+  }
+
   async encode(object: string): Promise<string> {
     const encoder = new TextEncoder()
     const tokenBytes = encoder.encode(object)

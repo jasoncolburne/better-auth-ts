@@ -2,7 +2,7 @@ import { SignableMessage } from './message'
 
 interface IServerAccess {
   nonce: string
-  responseKeyHash: string
+  serverIdentity: string
 }
 
 interface IServerPayload<T> {
@@ -18,12 +18,12 @@ interface IServerResponse<T> {
 export class ServerResponse<T> extends SignableMessage implements IServerResponse<T> {
   payload: IServerPayload<T>
 
-  constructor(response: T, responseKeyHash: string, nonce: string) {
+  constructor(response: T, serverIdentity: string, nonce: string) {
     super()
 
     const access: IServerAccess = {
       nonce: nonce,
-      responseKeyHash: responseKeyHash,
+      serverIdentity: serverIdentity,
     }
 
     this.payload = {
@@ -39,7 +39,7 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
     const json = JSON.parse(message) as IServerResponse<T>
     const result = new constructor(
       json.payload.response,
-      json.payload.access.responseKeyHash,
+      json.payload.access.serverIdentity,
       json.payload.access.nonce
     )
     result.signature = json.signature
