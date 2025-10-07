@@ -3,8 +3,6 @@ import {
   IClientValueStore,
   IHasher,
   ISigningKey,
-  IVerificationKey,
-  IVerificationKeyStore,
 } from '../../../interfaces'
 import { Hasher } from '../crypto/hash'
 import { Secp256r1 } from '../crypto/secp256r1'
@@ -78,27 +76,5 @@ export class ClientValueStore implements IClientValueStore {
     }
 
     return this.value
-  }
-}
-
-export class ClientVerificationKeyStore implements IVerificationKeyStore {
-  private readonly keysByIdentity: Map<string, IVerificationKey>
-
-  constructor() {
-    this.keysByIdentity = new Map()
-  }
-
-  async add(identity: string, key: IVerificationKey): Promise<void> {
-    this.keysByIdentity.set(identity, key)
-  }
-
-  async get(identity: string): Promise<IVerificationKey> {
-    const key = this.keysByIdentity.get(identity)
-
-    if (typeof key === 'undefined') {
-      throw 'not found'
-    }
-
-    return key
   }
 }

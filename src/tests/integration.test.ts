@@ -4,12 +4,12 @@ import { IAuthenticationPaths, INetwork, IVerificationKey, IVerifier } from '../
 import {
   ClientRotatingKeyStore,
   ClientValueStore,
-  ClientVerificationKeyStore,
   Hasher,
   Noncer,
   Rfc3339Nano,
   Secp256r1,
   Secp256r1Verifier,
+  VerificationKeyStore,
 } from './implementation'
 import { ServerResponse } from '../messages'
 
@@ -136,7 +136,7 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
-    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    const responseVerificationKeyStore = new VerificationKeyStore()
     await responseVerificationKeyStore.add(
       await responseVerificationKey.public(),
       responseVerificationKey
@@ -188,7 +188,7 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
-    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    const responseVerificationKeyStore = new VerificationKeyStore()
     await responseVerificationKeyStore.add(
       await responseVerificationKey.public(),
       responseVerificationKey
@@ -275,7 +275,7 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
-    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    const responseVerificationKeyStore = new VerificationKeyStore()
     await responseVerificationKeyStore.add(
       await responseVerificationKey.public(),
       responseVerificationKey
@@ -368,7 +368,7 @@ describe('integration', () => {
     const responsePublicKey = await network.sendRequest('/key/response', '')
     const responseVerificationKey = new Secp256r1VerificationKey(responsePublicKey)
 
-    const responseVerificationKeyStore = new ClientVerificationKeyStore()
+    const responseVerificationKeyStore = new VerificationKeyStore()
     await responseVerificationKeyStore.add(
       await responseVerificationKey.public(),
       responseVerificationKey

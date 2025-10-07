@@ -14,7 +14,6 @@ import {
   Base64,
   ClientRotatingKeyStore,
   ClientValueStore,
-  ClientVerificationKeyStore,
   Hasher,
   IdentityVerifier,
   Noncer,
@@ -26,6 +25,7 @@ import {
   ServerRecoveryHashStore,
   ServerTimeLockStore,
   TokenEncoder,
+  VerificationKeyStore,
 } from './implementation'
 import { AccessRequest, ServerResponse } from '../messages'
 import { randomInt } from 'crypto'
@@ -301,7 +301,7 @@ async function createServer(args: IServerArgs): Promise<BetterAuthServer> {
 async function createVerifier(args: IVerifierArgs): Promise<AccessVerifier> {
   const eccVerifier = new Secp256r1Verifier()
   const accessNonceStore = new ServerTimeLockStore(args.expiry.accessWindowInSeconds)
-  const accessVerificationKeyStore = new ClientVerificationKeyStore()
+  const accessVerificationKeyStore = new VerificationKeyStore()
   await accessVerificationKeyStore.add(
     await args.keys.accessSigner.identity(),
     args.keys.accessSigner
@@ -350,7 +350,7 @@ async function createClient(args: {
     authenticationPaths
   )
 
-  const responseKeyStore = new ClientVerificationKeyStore()
+  const responseKeyStore = new VerificationKeyStore()
   await responseKeyStore.add(
     await args.server.keys.responseSigner.identity(),
     args.server.keys.responseSigner
@@ -396,7 +396,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const betterAuthClient = await createClient({
@@ -436,7 +436,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const authenticationKeyStore = new ServerAuthenticationKeyStore()
@@ -513,7 +513,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const authenticationKeyStore = new ServerAuthenticationKeyStore()
@@ -595,7 +595,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const betterAuthClient = await createClient({
@@ -644,7 +644,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const betterAuthClient = await createClient({
@@ -693,7 +693,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const betterAuthClient = await createClient({
@@ -742,7 +742,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const accessTokenStore = new ClientValueStore()
@@ -799,7 +799,7 @@ describe('api', () => {
     await accessSigner.generate()
     await responseSigner.generate()
 
-    const responseKeyStore = new ClientVerificationKeyStore()
+    const responseKeyStore = new VerificationKeyStore()
     await responseKeyStore.add(await responseSigner.identity(), responseSigner)
 
     const betterAuthClient = await createClient({
