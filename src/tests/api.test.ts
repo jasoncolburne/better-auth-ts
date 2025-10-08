@@ -73,7 +73,7 @@ class MockNetworkServer implements INetwork {
       replyNonce = nonce
     }
 
-    const response = new FakeRequest(
+    const response = new FakeResponse(
       {
         wasFoo: request.payload.request.foo,
         wasBar: request.payload.request.bar,
@@ -101,7 +101,7 @@ class MockNetworkServer implements INetwork {
   }
 
   async _sendRequest(path: string, message: string): Promise<string> {
-    let request: FakeRequest
+    let request: FakeResponse
     let token: AccessToken<MockAccessAttributes>
 
     switch (path) {
@@ -122,7 +122,7 @@ class MockNetworkServer implements INetwork {
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
-        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
+        ;[request, token] = await this.accessVerifier.verify<FakeResponse, MockAccessAttributes>(
           message
         )
 
@@ -148,7 +148,7 @@ class MockNetworkServer implements INetwork {
 
         return await this.respondToAccessRequest(message)
       case '/bad/nonce':
-        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
+        ;[request, token] = await this.accessVerifier.verify<FakeResponse, MockAccessAttributes>(
           message
         )
 
@@ -189,9 +189,9 @@ interface IFakeResponse {
   wasBar: string
 }
 
-class FakeRequest extends ServerResponse<IFakeResponse> {
-  static parse(message: string): FakeRequest {
-    return ServerResponse._parse(message, FakeRequest)
+class FakeResponse extends ServerResponse<IFakeResponse> {
+  static parse(message: string): FakeResponse {
+    return ServerResponse._parse(message, FakeResponse)
   }
 }
 
@@ -220,7 +220,7 @@ async function testAccess(
     bar: 'foo',
   }
   const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
-  const response = FakeRequest.parse(reply)
+  const response = FakeResponse.parse(reply)
 
   const responseKey = await responseVerificationKeyStore.get(response.payload.access.serverIdentity)
   await response.verify(eccVerifier, await responseKey.public())
