@@ -27,10 +27,11 @@ import {
   TokenEncoder,
   VerificationKeyStore,
 } from './implementation'
-import { AccessRequest, ServerResponse } from '../messages'
+import { AccessRequest, AccessToken, ServerResponse } from '../messages'
 import { randomInt } from 'crypto'
+import { ClientRequest } from '../messages/request'
 
-const DEBUG_LOGGING = false
+const DEBUG_LOGGING = true
 const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
@@ -52,7 +53,7 @@ interface IMockAccessAttributes {
   permissionsByRole: object
 }
 
-class MockAccessAttributes implements IMockAccessAttributes {
+class MockAccessAttributes {
   constructor(public permissionsByRole: object) {}
 }
 
@@ -101,8 +102,8 @@ class MockNetworkServer implements INetwork {
   }
 
   async _sendRequest(path: string, message: string): Promise<string> {
-    let accessIdentity: string
-    let attributes: MockAccessAttributes
+    let request: FakeRequest
+    let token: AccessToken<MockAccessAttributes>
 
     switch (path) {
       case this.paths.account.create:
@@ -118,51 +119,57 @@ class MockNetworkServer implements INetwork {
       case this.paths.session.create:
         return await this.betterAuthServer.createSession(message, this.attributes)
       case this.paths.session.refresh:
-        return await this.betterAuthServer.refreshSession<IMockAccessAttributes>(message)
+        return await this.betterAuthServer.refreshSession<MockAccessAttributes>(message)
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
-        ;[accessIdentity, attributes] = await this.accessVerifier.verify<
-          IFakeRequest,
-          IMockAccessAttributes
-        >(message)
+        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
+          message
+        )
 
-        if (typeof accessIdentity === 'undefined') {
+        if (typeof request === 'undefined') {
           throw 'null identity'
         }
 
-        if (!accessIdentity.startsWith('E')) {
+        if (typeof token === 'undefined') {
+          throw 'null token'
+        }
+
+        if (!token.identity.startsWith('E')) {
           throw 'unexpected identity format'
         }
 
-        if (accessIdentity.length !== 44) {
+        if (token.identity.length !== 44) {
           throw 'unexpected identity length'
         }
 
-        if (JSON.stringify(attributes) !== JSON.stringify(this.attributes)) {
+        if (JSON.stringify(token.attributes) !== JSON.stringify(this.attributes)) {
           throw 'attributes do not match'
         }
 
         return await this.respondToAccessRequest(message)
       case '/bad/nonce':
-        ;[accessIdentity, attributes] = await this.accessVerifier.verify<
-          IFakeRequest,
-          IMockAccessAttributes
-        >(message)
+        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
+          message
+        )
 
-        if (typeof accessIdentity === 'undefined') {
-          throw 'null identity'
+        if (typeof request === 'undefined') {
+          throw 'null response'
         }
 
-        if (!accessIdentity.startsWith('E')) {
+        if (typeof token === 'undefined') {
+          throw 'null token'
+        }
+
+        if (!token.identity.startsWith('E')) {
           throw 'unexpected identity format'
         }
 
-        if (accessIdentity.length !== 44) {
+        if (token.identity.length !== 44) {
           throw 'unexpected identity length'
         }
 
-        if (JSON.stringify(attributes) !== JSON.stringify(this.attributes)) {
+        if (JSON.stringify(token.attributes) !== JSON.stringify(this.attributes)) {
           throw 'attributes do not match'
         }
 
@@ -182,6 +189,8 @@ interface IFakeResponse {
   wasFoo: string
   wasBar: string
 }
+
+class FakeRequest extends ClientRequest<IFakeRequest> {}
 
 class FakeResponse extends ServerResponse<IFakeResponse> {
   static parse(message: string): FakeResponse {

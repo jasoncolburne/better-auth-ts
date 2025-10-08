@@ -9,6 +9,7 @@ import { SignableMessage } from './message'
 
 export interface IAccessToken<T> {
   serverIdentity: string
+  device: string
   identity: string
   publicKey: string
   rotationHash: string
@@ -21,6 +22,7 @@ export interface IAccessToken<T> {
 export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
     public serverIdentity: string,
+    public device: string,
     public identity: string,
     public publicKey: string,
     public rotationHash: string,
@@ -43,6 +45,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const json = JSON.parse(tokenString) as IAccessToken<T>
     const token = new AccessToken<T>(
       json.serverIdentity,
+      json.device,
       json.identity,
       json.publicKey,
       json.rotationHash,
@@ -60,6 +63,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   composePayload(): string {
     return JSON.stringify({
       serverIdentity: this.serverIdentity,
+      device: this.device,
       identity: this.identity,
       publicKey: this.publicKey,
       rotationHash: this.rotationHash,
@@ -132,7 +136,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     accessKeyStore: IVerificationKeyStore,
     tokenEncoder: ITokenEncoder,
     timestamper: ITimestamper
-  ): Promise<[string, T]> {
+  ): Promise<AccessToken<T>> {
     const accessToken = await AccessToken.parse<T>(this.payload.access.token, tokenEncoder)
 
     const accessKey = await accessKeyStore.get(accessToken.serverIdentity)
@@ -155,7 +159,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
 
     await nonceStore.reserve(this.payload.access.nonce)
 
-    return [accessToken.identity, accessToken.attributes]
+    return accessToken
   }
 
   static parse<T>(message: string): AccessRequest<T> {
