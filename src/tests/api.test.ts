@@ -34,17 +34,17 @@ const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
+    recover: '/account/recover',
   },
-  authenticate: {
-    start: '/authenticate/start',
-    finish: '/authenticate/finish',
+  session: {
+    request: '/session/request',
+    connect: '/session/connect',
+    refresh: '/session/refresh',
   },
-  rotate: {
-    authentication: '/rotate/authentication',
-    access: '/rotate/access',
-    link: '/register/link',
-    unlink: '/rotate/unlink',
-    recover: '/register/recover',
+  device: {
+    rotate: '/device/rotate',
+    link: '/device/link',
+    unlink: '/device/unlink',
   },
 }
 
@@ -107,19 +107,19 @@ class MockNetworkServer implements INetwork {
     switch (path) {
       case this.paths.account.create:
         return await this.betterAuthServer.createAccount(message)
-      case this.paths.rotate.recover:
+      case this.paths.account.recover:
         return await this.betterAuthServer.recoverAccount(message)
-      case this.paths.rotate.link:
+      case this.paths.device.link:
         return await this.betterAuthServer.linkDevice(message)
-      case this.paths.rotate.authentication:
+      case this.paths.device.rotate:
         return await this.betterAuthServer.rotateAuthenticationKey(message)
-      case this.paths.authenticate.start:
+      case this.paths.session.request:
         return await this.betterAuthServer.startAuthentication(message)
-      case this.paths.authenticate.finish:
+      case this.paths.session.connect:
         return await this.betterAuthServer.finishAuthentication(message, this.attributes)
-      case this.paths.rotate.access:
+      case this.paths.session.refresh:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
-      case this.paths.rotate.unlink:
+      case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
         ;[accessIdentity, attributes] = await this.accessVerifier.verify<

@@ -156,7 +156,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.link, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.device.link, message)
 
     const response = LinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
@@ -194,7 +194,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.unlink, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.device.unlink, message)
 
     const response = UnlinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
@@ -222,10 +222,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(
-      this.args.paths.rotate.authentication,
-      message
-    )
+    const reply = await this.args.io.network.sendRequest(this.args.paths.device.rotate, message)
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
@@ -251,7 +248,7 @@ export class BetterAuthClient {
 
     const startMessage = await startRequest.serialize()
     const startReply = await this.args.io.network.sendRequest(
-      this.args.paths.authenticate.start,
+      this.args.paths.session.request,
       startMessage
     )
 
@@ -282,7 +279,7 @@ export class BetterAuthClient {
     await finishRequest.sign(await this.args.store.key.authentication.signer())
     const finishMessage = await finishRequest.serialize()
     const finishReply = await this.args.io.network.sendRequest(
-      this.args.paths.authenticate.finish,
+      this.args.paths.session.connect,
       finishMessage
     )
 
@@ -313,7 +310,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.access.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.access, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.session.refresh, message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
@@ -350,7 +347,7 @@ export class BetterAuthClient {
 
     await request.sign(recoveryKey)
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.recover, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.account.recover, message)
 
     const response = RecoverAccountResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)

@@ -38,17 +38,17 @@ class Secp256r1VerificationKey implements IVerificationKey {
 const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
+    recover: '/account/recover',
   },
-  authenticate: {
-    start: '/authenticate/start',
-    finish: '/authenticate/finish',
+  session: {
+    request: '/session/request',
+    connect: '/session/connect',
+    refresh: '/session/refresh',
   },
-  rotate: {
-    authentication: '/rotate/authentication',
-    access: '/rotate/access',
-    link: '/rotate/link',
-    unlink: '/rotate/unlink',
-    recover: '/rotate/recover',
+  device: {
+    rotate: '/device/rotate',
+    link: '/device/link',
+    unlink: '/device/unlink',
   },
 }
 

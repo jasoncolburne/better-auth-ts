@@ -1,16 +1,16 @@
 export interface IAuthenticationPaths {
   account: {
     create: string
+    recover: string
   }
-  authenticate: {
-    start: string
-    finish: string
+  session: {
+    request: string
+    connect: string
+    refresh: string
   }
-  rotate: {
-    authentication: string
-    access: string
+  device: {
+    rotate: string
     link: string
     unlink: string
-    recover: string
   }
 }
