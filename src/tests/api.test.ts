@@ -38,7 +38,7 @@ const authenticationPaths: IAuthenticationPaths = {
   },
   session: {
     request: '/session/request',
-    connect: '/session/connect',
+    create: '/session/create',
     refresh: '/session/refresh',
   },
   device: {
@@ -115,7 +115,7 @@ class MockNetworkServer implements INetwork {
         return await this.betterAuthServer.rotateAuthenticationKey(message)
       case this.paths.session.request:
         return await this.betterAuthServer.startAuthentication(message)
-      case this.paths.session.connect:
+      case this.paths.session.create:
         return await this.betterAuthServer.finishAuthentication(message, this.attributes)
       case this.paths.session.refresh:
         return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)

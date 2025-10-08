@@ -5,7 +5,7 @@ export interface IAuthenticationPaths {
   }
   session: {
     request: string
-    connect: string
+    create: string
     refresh: string
   }
   device: {

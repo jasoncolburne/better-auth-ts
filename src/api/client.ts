@@ -279,7 +279,7 @@ export class BetterAuthClient {
     await finishRequest.sign(await this.args.store.key.authentication.signer())
     const finishMessage = await finishRequest.serialize()
     const finishReply = await this.args.io.network.sendRequest(
-      this.args.paths.session.connect,
+      this.args.paths.session.create,
       finishMessage
     )
 
