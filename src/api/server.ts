@@ -319,6 +319,7 @@ export class BetterAuthServer {
 
     const accessToken = new AccessToken<T>(
       await this.args.crypto.keyPair.access.identity(),
+      request.payload.request.authentication.device,
       identity,
       request.payload.request.access.publicKey,
       request.payload.request.access.rotationHash,
@@ -381,6 +382,7 @@ export class BetterAuthServer {
 
     const accessToken = new AccessToken(
       await this.args.crypto.keyPair.access.identity(),
+      token.device,
       token.identity,
       request.payload.request.access.publicKey,
       request.payload.request.access.rotationHash,
@@ -428,15 +430,18 @@ export class AccessVerifier {
     }
   ) {}
 
-  async verify<T, U>(message: string): Promise<[string, U]> {
+  async verify<T, U>(message: string): Promise<[T, AccessToken<U>]> {
     const request = AccessRequest.parse<T>(message)
 
-    return await request._verify<U>(
-      this.args.store.access.nonce,
-      this.args.crypto.verifier,
-      this.args.store.access.key,
-      this.args.encoding.tokenEncoder,
-      this.args.encoding.timestamper
-    )
+    return [
+      request.payload.request,
+      await request._verify<U>(
+        this.args.store.access.nonce,
+        this.args.crypto.verifier,
+        this.args.store.access.key,
+        this.args.encoding.tokenEncoder,
+        this.args.encoding.timestamper
+      ),
+    ]
   }
 }

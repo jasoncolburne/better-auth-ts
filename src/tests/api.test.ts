@@ -27,7 +27,7 @@ import {
   TokenEncoder,
   VerificationKeyStore,
 } from './implementation'
-import { AccessRequest, ServerResponse } from '../messages'
+import { AccessRequest, AccessToken, ServerResponse } from '../messages'
 import { randomInt } from 'crypto'
 
 const DEBUG_LOGGING = false
@@ -52,7 +52,7 @@ interface IMockAccessAttributes {
   permissionsByRole: object
 }
 
-class MockAccessAttributes implements IMockAccessAttributes {
+class MockAccessAttributes {
   constructor(public permissionsByRole: object) {}
 }
 
@@ -73,7 +73,7 @@ class MockNetworkServer implements INetwork {
       replyNonce = nonce
     }
 
-    const response = new FakeResponse(
+    const response = new FakeRequest(
       {
         wasFoo: request.payload.request.foo,
         wasBar: request.payload.request.bar,
@@ -101,8 +101,8 @@ class MockNetworkServer implements INetwork {
   }
 
   async _sendRequest(path: string, message: string): Promise<string> {
-    let accessIdentity: string
-    let attributes: MockAccessAttributes
+    let request: FakeRequest
+    let token: AccessToken<MockAccessAttributes>
 
     switch (path) {
       case this.paths.account.create:
@@ -118,51 +118,57 @@ class MockNetworkServer implements INetwork {
       case this.paths.session.create:
         return await this.betterAuthServer.createSession(message, this.attributes)
       case this.paths.session.refresh:
-        return await this.betterAuthServer.refreshSession<IMockAccessAttributes>(message)
+        return await this.betterAuthServer.refreshSession<MockAccessAttributes>(message)
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
-        ;[accessIdentity, attributes] = await this.accessVerifier.verify<
-          IFakeRequest,
-          IMockAccessAttributes
-        >(message)
+        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
+          message
+        )
 
-        if (typeof accessIdentity === 'undefined') {
+        if (typeof request === 'undefined') {
           throw 'null identity'
         }
 
-        if (!accessIdentity.startsWith('E')) {
+        if (typeof token === 'undefined') {
+          throw 'null token'
+        }
+
+        if (!token.identity.startsWith('E')) {
           throw 'unexpected identity format'
         }
 
-        if (accessIdentity.length !== 44) {
+        if (token.identity.length !== 44) {
           throw 'unexpected identity length'
         }
 
-        if (JSON.stringify(attributes) !== JSON.stringify(this.attributes)) {
+        if (JSON.stringify(token.attributes) !== JSON.stringify(this.attributes)) {
           throw 'attributes do not match'
         }
 
         return await this.respondToAccessRequest(message)
       case '/bad/nonce':
-        ;[accessIdentity, attributes] = await this.accessVerifier.verify<
-          IFakeRequest,
-          IMockAccessAttributes
-        >(message)
+        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
+          message
+        )
 
-        if (typeof accessIdentity === 'undefined') {
-          throw 'null identity'
+        if (typeof request === 'undefined') {
+          throw 'null response'
         }
 
-        if (!accessIdentity.startsWith('E')) {
+        if (typeof token === 'undefined') {
+          throw 'null token'
+        }
+
+        if (!token.identity.startsWith('E')) {
           throw 'unexpected identity format'
         }
 
-        if (accessIdentity.length !== 44) {
+        if (token.identity.length !== 44) {
           throw 'unexpected identity length'
         }
 
-        if (JSON.stringify(attributes) !== JSON.stringify(this.attributes)) {
+        if (JSON.stringify(token.attributes) !== JSON.stringify(this.attributes)) {
           throw 'attributes do not match'
         }
 
@@ -183,9 +189,9 @@ interface IFakeResponse {
   wasBar: string
 }
 
-class FakeResponse extends ServerResponse<IFakeResponse> {
-  static parse(message: string): FakeResponse {
-    return ServerResponse._parse(message, FakeResponse)
+class FakeRequest extends ServerResponse<IFakeResponse> {
+  static parse(message: string): FakeRequest {
+    return ServerResponse._parse(message, FakeRequest)
   }
 }
 
@@ -214,7 +220,7 @@ async function testAccess(
     bar: 'foo',
   }
   const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
-  const response = FakeResponse.parse(reply)
+  const response = FakeRequest.parse(reply)
 
   const responseKey = await responseVerificationKeyStore.get(response.payload.access.serverIdentity)
   await response.verify(eccVerifier, await responseKey.public())
