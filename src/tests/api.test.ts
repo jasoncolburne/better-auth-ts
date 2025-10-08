@@ -112,13 +112,13 @@ class MockNetworkServer implements INetwork {
       case this.paths.device.link:
         return await this.betterAuthServer.linkDevice(message)
       case this.paths.device.rotate:
-        return await this.betterAuthServer.rotateAuthenticationKey(message)
+        return await this.betterAuthServer.rotateDevice(message)
       case this.paths.session.request:
-        return await this.betterAuthServer.startAuthentication(message)
+        return await this.betterAuthServer.requestSession(message)
       case this.paths.session.create:
-        return await this.betterAuthServer.finishAuthentication(message, this.attributes)
+        return await this.betterAuthServer.createSession(message, this.attributes)
       case this.paths.session.refresh:
-        return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
+        return await this.betterAuthServer.refreshSession<IMockAccessAttributes>(message)
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
@@ -194,12 +194,12 @@ async function executeFlow(
   eccVerifier: IVerifier,
   responseVerificationKeyStore: IVerificationKeyStore
 ) {
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.authenticate()
-  await betterAuthClient.refreshAccessToken()
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.refreshAccessToken()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.createSession()
+  await betterAuthClient.refreshSession()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.refreshSession()
 
   await testAccess(betterAuthClient, eccVerifier, responseVerificationKeyStore)
 }
@@ -774,7 +774,7 @@ describe('api', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     try {
-      await betterAuthClient.authenticate()
+      await betterAuthClient.createSession()
       const token = await accessTokenStore.get()
       const signature = token.substring(0, 88)
       const bytes = Base64.decode(signature)
@@ -829,7 +829,7 @@ describe('api', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     try {
-      await betterAuthClient.authenticate()
+      await betterAuthClient.createSession()
       const message = {
         foo: 'bar',
         bar: 'foo',

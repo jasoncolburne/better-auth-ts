@@ -96,9 +96,9 @@ async function executeFlow(
   eccVerifier: IVerifier,
   responseVerificationKey: IVerificationKey
 ) {
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.authenticate()
-  await betterAuthClient.refreshAccessToken()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.createSession()
+  await betterAuthClient.refreshSession()
 
   await testAccess(betterAuthClient, eccVerifier, responseVerificationKey)
 }
@@ -407,7 +407,7 @@ describe('integration', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     try {
-      await betterAuthClient.authenticate()
+      await betterAuthClient.createSession()
       const message = {
         foo: 'bar',
         bar: 'foo',
