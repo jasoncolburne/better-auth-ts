@@ -63,6 +63,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   composePayload(): string {
     return JSON.stringify({
       serverIdentity: this.serverIdentity,
+      device: this.device,
       identity: this.identity,
       publicKey: this.publicKey,
       rotationHash: this.rotationHash,
