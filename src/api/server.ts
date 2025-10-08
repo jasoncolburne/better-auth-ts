@@ -15,21 +15,21 @@ import {
 import {
   AccessRequest,
   AccessToken,
-  CreationRequest,
-  CreationResponse,
-  FinishAuthenticationRequest,
-  FinishAuthenticationResponse,
+  CreateAccountRequest,
+  CreateAccountResponse,
+  CreateSessionRequest,
+  CreateSessionResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
   RecoverAccountRequest,
   RecoverAccountResponse,
-  RefreshAccessTokenRequest,
-  RefreshAccessTokenResponse,
-  RotateAuthenticationKeyRequest,
-  RotateAuthenticationKeyResponse,
-  StartAuthenticationRequest,
-  StartAuthenticationResponse,
+  RefreshSessionRequest,
+  RefreshSessionResponse,
+  RequestSessionRequest,
+  RequestSessionResponse,
+  RotateDeviceRequest,
+  RotateDeviceResponse,
   UnlinkDeviceRequest,
   UnlinkDeviceResponse,
 } from '../messages'
@@ -73,7 +73,7 @@ export class BetterAuthServer {
   // account creation
 
   async createAccount(message: string): Promise<string> {
-    const request = CreationRequest.parse(message)
+    const request = CreateAccountRequest.parse(message)
     await request.verify(
       this.args.crypto.verifier,
       request.payload.request.authentication.publicKey
@@ -109,7 +109,46 @@ export class BetterAuthServer {
       false
     )
 
-    const response = new CreationResponse(
+    const response = new CreateAccountResponse(
+      {},
+      await this.args.crypto.keyPair.response.identity(),
+      request.payload.access.nonce
+    )
+
+    await response.sign(this.args.crypto.keyPair.response)
+
+    return await response.serialize()
+  }
+
+  async recoverAccount(message: string): Promise<string> {
+    const request = RecoverAccountRequest.parse(message)
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.recoveryKey
+    )
+
+    const hash = await this.args.crypto.hasher.sum(
+      request.payload.request.authentication.recoveryKey
+    )
+    await this.args.store.recovery.hash.rotate(
+      request.payload.request.authentication.identity,
+      hash,
+      request.payload.request.authentication.recoveryHash
+    )
+
+    await this.args.store.authentication.key.revokeDevices(
+      request.payload.request.authentication.identity
+    )
+
+    await this.args.store.authentication.key.register(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash,
+      true
+    )
+
+    const response = new RecoverAccountResponse(
       {},
       await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
@@ -205,8 +244,8 @@ export class BetterAuthServer {
 
   // rotation
 
-  async rotateAuthenticationKey(message: string): Promise<string> {
-    const request = RotateAuthenticationKeyRequest.parse(message)
+  async rotateDevice(message: string): Promise<string> {
+    const request = RotateDeviceRequest.parse(message)
     await request.verify(
       this.args.crypto.verifier,
       request.payload.request.authentication.publicKey
@@ -220,7 +259,7 @@ export class BetterAuthServer {
     )
 
     // this is replayable, and should be fixed but making it not fixed
-    const response = new RotateAuthenticationKeyResponse(
+    const response = new RotateDeviceResponse(
       {},
       await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
@@ -233,14 +272,14 @@ export class BetterAuthServer {
 
   // authentication
 
-  async startAuthentication(message: string): Promise<string> {
-    const request = StartAuthenticationRequest.parse(message)
+  async requestSession(message: string): Promise<string> {
+    const request = RequestSessionRequest.parse(message)
 
     const nonce = await this.args.store.authentication.nonce.generate(
       request.payload.request.authentication.identity
     )
 
-    const response = new StartAuthenticationResponse(
+    const response = new RequestSessionResponse(
       {
         authentication: {
           nonce: nonce,
@@ -255,8 +294,8 @@ export class BetterAuthServer {
     return await response.serialize()
   }
 
-  async finishAuthentication<T>(message: string, attributes: T): Promise<string> {
-    const request = FinishAuthenticationRequest.parse(message)
+  async createSession<T>(message: string, attributes: T): Promise<string> {
+    const request = CreateSessionRequest.parse(message)
     const identity = await this.args.store.authentication.nonce.validate(
       request.payload.request.authentication.nonce
     )
@@ -292,7 +331,7 @@ export class BetterAuthServer {
     await accessToken.sign(this.args.crypto.keyPair.access)
     const token = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
-    const response = new FinishAuthenticationResponse(
+    const response = new CreateSessionResponse(
       {
         access: {
           token: token,
@@ -309,8 +348,8 @@ export class BetterAuthServer {
 
   // refresh
 
-  async refreshAccessToken<T>(message: string): Promise<string> {
-    const request = RefreshAccessTokenRequest.parse(message)
+  async refreshSession<T>(message: string): Promise<string> {
+    const request = RefreshSessionRequest.parse(message)
     await request.verify(this.args.crypto.verifier, request.payload.request.access.publicKey)
 
     const tokenString = request.payload.request.access.token
@@ -354,51 +393,12 @@ export class BetterAuthServer {
     await accessToken.sign(this.args.crypto.keyPair.access)
     const serializedToken = await accessToken.serializeToken(this.args.encoding.tokenEncoder)
 
-    const response = new RefreshAccessTokenResponse(
+    const response = new RefreshSessionResponse(
       {
         access: {
           token: serializedToken,
         },
       },
-      await this.args.crypto.keyPair.response.identity(),
-      request.payload.access.nonce
-    )
-
-    await response.sign(this.args.crypto.keyPair.response)
-
-    return await response.serialize()
-  }
-
-  async recoverAccount(message: string): Promise<string> {
-    const request = RecoverAccountRequest.parse(message)
-    await request.verify(
-      this.args.crypto.verifier,
-      request.payload.request.authentication.recoveryKey
-    )
-
-    const hash = await this.args.crypto.hasher.sum(
-      request.payload.request.authentication.recoveryKey
-    )
-    await this.args.store.recovery.hash.rotate(
-      request.payload.request.authentication.identity,
-      hash,
-      request.payload.request.authentication.recoveryHash
-    )
-
-    await this.args.store.authentication.key.revokeDevices(
-      request.payload.request.authentication.identity
-    )
-
-    await this.args.store.authentication.key.register(
-      request.payload.request.authentication.identity,
-      request.payload.request.authentication.device,
-      request.payload.request.authentication.publicKey,
-      request.payload.request.authentication.rotationHash,
-      true
-    )
-
-    const response = new RecoverAccountResponse(
-      {},
       await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )

@@ -11,23 +11,23 @@ import {
 } from '../interfaces'
 import {
   AccessRequest,
-  CreationRequest,
-  CreationResponse,
-  FinishAuthenticationRequest,
-  FinishAuthenticationResponse,
+  CreateAccountRequest,
+  CreateAccountResponse,
+  CreateSessionRequest,
+  CreateSessionResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
   RecoverAccountRequest,
   RecoverAccountResponse,
-  RefreshAccessTokenRequest,
-  RefreshAccessTokenResponse,
-  RotateAuthenticationKeyRequest,
-  RotateAuthenticationKeyResponse,
+  RefreshSessionRequest,
+  RefreshSessionResponse,
+  RequestSessionRequest,
+  RequestSessionResponse,
+  RotateDeviceRequest,
+  RotateDeviceResponse,
   ScannableResponse,
   SignableMessage,
-  StartAuthenticationRequest,
-  StartAuthenticationResponse,
   UnlinkDeviceRequest,
   UnlinkDeviceResponse,
 } from '../messages'
@@ -85,7 +85,7 @@ export class BetterAuthClient {
 
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new CreationRequest(
+    const request = new CreateAccountRequest(
       {
         authentication: {
           device: device,
@@ -102,7 +102,45 @@ export class BetterAuthClient {
     const message = await request.serialize()
     const reply = await this.args.io.network.sendRequest(this.args.paths.account.create, message)
 
-    const response = CreationResponse.parse(reply)
+    const response = CreateAccountResponse.parse(reply)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
+
+    await this.args.store.identifier.identity.store(identity)
+    await this.args.store.identifier.device.store(device)
+  }
+
+  async recoverAccount(
+    identity: string,
+    recoveryKey: ISigningKey,
+    recoveryHash: string
+  ): Promise<void> {
+    const [, publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
+    const device = await this.args.crypto.hasher.sum(publicKey)
+    const nonce = await this.args.crypto.noncer.generate128()
+
+    const request = new RecoverAccountRequest(
+      {
+        authentication: {
+          device: device,
+          identity: identity,
+          publicKey: publicKey,
+          recoveryHash: recoveryHash,
+          recoveryKey: await recoveryKey.public(),
+          rotationHash: rotationHash,
+        },
+      },
+      nonce
+    )
+
+    await request.sign(recoveryKey)
+    const message = await request.serialize()
+    const reply = await this.args.io.network.sendRequest(this.args.paths.account.recover, message)
+
+    const response = RecoverAccountResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
@@ -156,7 +194,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.link, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.device.link, message)
 
     const response = LinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
@@ -194,7 +232,7 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.unlink, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.device.unlink, message)
 
     const response = UnlinkDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
@@ -204,11 +242,11 @@ export class BetterAuthClient {
     }
   }
 
-  async rotateAuthenticationKey(): Promise<void> {
+  async rotateDevice(): Promise<void> {
     const [publicKey, rotationHash] = await this.args.store.key.authentication.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new RotateAuthenticationKeyRequest(
+    const request = new RotateDeviceRequest(
       {
         authentication: {
           device: await this.args.store.identifier.device.get(),
@@ -222,12 +260,9 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.authentication.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(
-      this.args.paths.rotate.authentication,
-      message
-    )
+    const reply = await this.args.io.network.sendRequest(this.args.paths.device.rotate, message)
 
-    const response = RotateAuthenticationKeyResponse.parse(reply)
+    const response = RotateDeviceResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
@@ -235,10 +270,10 @@ export class BetterAuthClient {
     }
   }
 
-  async authenticate(): Promise<void> {
+  async createSession(): Promise<void> {
     const startNonce = await this.args.crypto.noncer.generate128()
 
-    const startRequest = new StartAuthenticationRequest({
+    const startRequest = new RequestSessionRequest({
       access: {
         nonce: startNonce,
       },
@@ -251,11 +286,11 @@ export class BetterAuthClient {
 
     const startMessage = await startRequest.serialize()
     const startReply = await this.args.io.network.sendRequest(
-      this.args.paths.authenticate.start,
+      this.args.paths.session.request,
       startMessage
     )
 
-    const startResponse = StartAuthenticationResponse.parse(startReply)
+    const startResponse = RequestSessionResponse.parse(startReply)
     await this.verifyResponse(startResponse, startResponse.payload.access.serverIdentity)
 
     if (startResponse.payload.access.nonce !== startNonce) {
@@ -265,7 +300,7 @@ export class BetterAuthClient {
     const [, currentKey, nextKeyHash] = await this.args.store.key.access.initialize()
     const finishNonce = await this.args.crypto.noncer.generate128()
 
-    const finishRequest = new FinishAuthenticationRequest(
+    const finishRequest = new CreateSessionRequest(
       {
         access: {
           publicKey: currentKey,
@@ -282,11 +317,11 @@ export class BetterAuthClient {
     await finishRequest.sign(await this.args.store.key.authentication.signer())
     const finishMessage = await finishRequest.serialize()
     const finishReply = await this.args.io.network.sendRequest(
-      this.args.paths.authenticate.finish,
+      this.args.paths.session.create,
       finishMessage
     )
 
-    const finishResponse = FinishAuthenticationResponse.parse(finishReply)
+    const finishResponse = CreateSessionResponse.parse(finishReply)
     await this.verifyResponse(finishResponse, finishResponse.payload.access.serverIdentity)
 
     if (finishResponse.payload.access.nonce !== finishNonce) {
@@ -296,11 +331,11 @@ export class BetterAuthClient {
     await this.args.store.token.access.store(finishResponse.payload.response.access.token)
   }
 
-  async refreshAccessToken(): Promise<void> {
+  async refreshSession(): Promise<void> {
     const [publicKey, rotationHash] = await this.args.store.key.access.rotate()
     const nonce = await this.args.crypto.noncer.generate128()
 
-    const request = new RefreshAccessTokenRequest(
+    const request = new RefreshSessionRequest(
       {
         access: {
           publicKey: publicKey,
@@ -313,9 +348,9 @@ export class BetterAuthClient {
 
     await request.sign(await this.args.store.key.access.signer())
     const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.access, message)
+    const reply = await this.args.io.network.sendRequest(this.args.paths.session.refresh, message)
 
-    const response = RefreshAccessTokenResponse.parse(reply)
+    const response = RefreshSessionResponse.parse(reply)
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
@@ -323,44 +358,6 @@ export class BetterAuthClient {
     }
 
     await this.args.store.token.access.store(response.payload.response.access.token)
-  }
-
-  async recoverAccount(
-    identity: string,
-    recoveryKey: ISigningKey,
-    recoveryHash: string
-  ): Promise<void> {
-    const [, publicKey, rotationHash] = await this.args.store.key.authentication.initialize()
-    const device = await this.args.crypto.hasher.sum(publicKey)
-    const nonce = await this.args.crypto.noncer.generate128()
-
-    const request = new RecoverAccountRequest(
-      {
-        authentication: {
-          device: device,
-          identity: identity,
-          publicKey: publicKey,
-          recoveryHash: recoveryHash,
-          recoveryKey: await recoveryKey.public(),
-          rotationHash: rotationHash,
-        },
-      },
-      nonce
-    )
-
-    await request.sign(recoveryKey)
-    const message = await request.serialize()
-    const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.recover, message)
-
-    const response = RecoverAccountResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.serverIdentity)
-
-    if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
-    }
-
-    await this.args.store.identifier.identity.store(identity)
-    await this.args.store.identifier.device.store(device)
   }
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {

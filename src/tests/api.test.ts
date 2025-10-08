@@ -34,17 +34,17 @@ const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
+    recover: '/account/recover',
   },
-  authenticate: {
-    start: '/authenticate/start',
-    finish: '/authenticate/finish',
+  session: {
+    request: '/session/request',
+    create: '/session/create',
+    refresh: '/session/refresh',
   },
-  rotate: {
-    authentication: '/rotate/authentication',
-    access: '/rotate/access',
-    link: '/register/link',
-    unlink: '/rotate/unlink',
-    recover: '/register/recover',
+  device: {
+    rotate: '/device/rotate',
+    link: '/device/link',
+    unlink: '/device/unlink',
   },
 }
 
@@ -107,19 +107,19 @@ class MockNetworkServer implements INetwork {
     switch (path) {
       case this.paths.account.create:
         return await this.betterAuthServer.createAccount(message)
-      case this.paths.rotate.recover:
+      case this.paths.account.recover:
         return await this.betterAuthServer.recoverAccount(message)
-      case this.paths.rotate.link:
+      case this.paths.device.link:
         return await this.betterAuthServer.linkDevice(message)
-      case this.paths.rotate.authentication:
-        return await this.betterAuthServer.rotateAuthenticationKey(message)
-      case this.paths.authenticate.start:
-        return await this.betterAuthServer.startAuthentication(message)
-      case this.paths.authenticate.finish:
-        return await this.betterAuthServer.finishAuthentication(message, this.attributes)
-      case this.paths.rotate.access:
-        return await this.betterAuthServer.refreshAccessToken<IMockAccessAttributes>(message)
-      case this.paths.rotate.unlink:
+      case this.paths.device.rotate:
+        return await this.betterAuthServer.rotateDevice(message)
+      case this.paths.session.request:
+        return await this.betterAuthServer.requestSession(message)
+      case this.paths.session.create:
+        return await this.betterAuthServer.createSession(message, this.attributes)
+      case this.paths.session.refresh:
+        return await this.betterAuthServer.refreshSession<IMockAccessAttributes>(message)
+      case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
         ;[accessIdentity, attributes] = await this.accessVerifier.verify<
@@ -194,12 +194,12 @@ async function executeFlow(
   eccVerifier: IVerifier,
   responseVerificationKeyStore: IVerificationKeyStore
 ) {
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.authenticate()
-  await betterAuthClient.refreshAccessToken()
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.refreshAccessToken()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.createSession()
+  await betterAuthClient.refreshSession()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.refreshSession()
 
   await testAccess(betterAuthClient, eccVerifier, responseVerificationKeyStore)
 }
@@ -774,7 +774,7 @@ describe('api', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     try {
-      await betterAuthClient.authenticate()
+      await betterAuthClient.createSession()
       const token = await accessTokenStore.get()
       const signature = token.substring(0, 88)
       const bytes = Base64.decode(signature)
@@ -829,7 +829,7 @@ describe('api', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     try {
-      await betterAuthClient.authenticate()
+      await betterAuthClient.createSession()
       const message = {
         foo: 'bar',
         bar: 'foo',

@@ -38,17 +38,17 @@ class Secp256r1VerificationKey implements IVerificationKey {
 const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
+    recover: '/account/recover',
   },
-  authenticate: {
-    start: '/authenticate/start',
-    finish: '/authenticate/finish',
+  session: {
+    request: '/session/request',
+    create: '/session/create',
+    refresh: '/session/refresh',
   },
-  rotate: {
-    authentication: '/rotate/authentication',
-    access: '/rotate/access',
-    link: '/rotate/link',
-    unlink: '/rotate/unlink',
-    recover: '/rotate/recover',
+  device: {
+    rotate: '/device/rotate',
+    link: '/device/link',
+    unlink: '/device/unlink',
   },
 }
 
@@ -96,9 +96,9 @@ async function executeFlow(
   eccVerifier: IVerifier,
   responseVerificationKey: IVerificationKey
 ) {
-  await betterAuthClient.rotateAuthenticationKey()
-  await betterAuthClient.authenticate()
-  await betterAuthClient.refreshAccessToken()
+  await betterAuthClient.rotateDevice()
+  await betterAuthClient.createSession()
+  await betterAuthClient.refreshSession()
 
   await testAccess(betterAuthClient, eccVerifier, responseVerificationKey)
 }
@@ -407,7 +407,7 @@ describe('integration', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     try {
-      await betterAuthClient.authenticate()
+      await betterAuthClient.createSession()
       const message = {
         foo: 'bar',
         bar: 'foo',

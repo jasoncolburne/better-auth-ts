@@ -90,3 +90,26 @@ export class UnlinkDeviceResponse extends ServerResponse<IUnlinkDeviceResponse> 
     return ServerResponse._parse(message, UnlinkDeviceResponse)
   }
 }
+
+interface IRotateDeviceRequest {
+  authentication: {
+    device: string
+    identity: string
+    publicKey: string
+    rotationHash: string
+  }
+}
+
+export class RotateDeviceRequest extends ClientRequest<IRotateDeviceRequest> {
+  static parse(message: string): RotateDeviceRequest {
+    return ClientRequest._parse(message, RotateDeviceRequest)
+  }
+}
+
+interface IRotateDeviceResponse {}
+
+export class RotateDeviceResponse extends ServerResponse<IRotateDeviceResponse> {
+  static parse(message: string): RotateDeviceResponse {
+    return ServerResponse._parse(message, RotateDeviceResponse)
+  }
+}
