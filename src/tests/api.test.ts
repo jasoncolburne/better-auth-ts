@@ -29,6 +29,7 @@ import {
 } from './implementation'
 import { AccessRequest, AccessToken, ServerResponse } from '../messages'
 import { randomInt } from 'crypto'
+import { ClientRequest } from '../messages/request'
 
 const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
@@ -101,7 +102,7 @@ class MockNetworkServer implements INetwork {
   }
 
   async _sendRequest(path: string, message: string): Promise<string> {
-    let request: FakeResponse
+    let request: FakeRequest
     let token: AccessToken<MockAccessAttributes>
 
     switch (path) {
@@ -122,7 +123,7 @@ class MockNetworkServer implements INetwork {
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
-        ;[request, token] = await this.accessVerifier.verify<FakeResponse, MockAccessAttributes>(
+        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
           message
         )
 
@@ -148,7 +149,7 @@ class MockNetworkServer implements INetwork {
 
         return await this.respondToAccessRequest(message)
       case '/bad/nonce':
-        ;[request, token] = await this.accessVerifier.verify<FakeResponse, MockAccessAttributes>(
+        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
           message
         )
 
@@ -188,6 +189,8 @@ interface IFakeResponse {
   wasFoo: string
   wasBar: string
 }
+
+class FakeRequest extends ClientRequest<IFakeRequest> {}
 
 class FakeResponse extends ServerResponse<IFakeResponse> {
   static parse(message: string): FakeResponse {
