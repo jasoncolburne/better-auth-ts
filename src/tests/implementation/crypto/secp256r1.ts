@@ -4,8 +4,6 @@ import { TextEncoder } from 'util'
 import { Base64 } from '../encoding/base64'
 
 export class Secp256r1Verifier implements IVerifier {
-  signatureLength: number = 88
-
   async verify(message: string, signature: string, publicKey: string): Promise<void> {
     const params: webcrypto.EcKeyImportParams = {
       name: 'ECDSA',
@@ -47,6 +45,10 @@ export class Secp256r1 implements ISigningKey {
 
   constructor() {
     this._verifier = new Secp256r1Verifier()
+  }
+
+  async identity(): Promise<string> {
+    return await this.public()
   }
 
   async generate() {

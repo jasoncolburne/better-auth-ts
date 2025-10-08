@@ -7,7 +7,7 @@ import {
   INoncer,
   ISigningKey,
   ITimestamper,
-  IVerificationKey,
+  IVerificationKeyStore,
 } from '../interfaces'
 import {
   AccessRequest,
@@ -38,9 +38,6 @@ export class BetterAuthClient {
       crypto: {
         hasher: IHasher
         noncer: INoncer
-        publicKey: {
-          response: IVerificationKey
-        }
       }
       encoding: {
         timestamper: ITimestamper
@@ -57,6 +54,7 @@ export class BetterAuthClient {
         key: {
           access: IClientRotatingKeyStore
           authentication: IClientRotatingKeyStore
+          response: IVerificationKeyStore
         }
         token: {
           access: IClientValueStore
@@ -73,17 +71,11 @@ export class BetterAuthClient {
     return await this.args.store.identifier.device.get()
   }
 
-  private async verifyResponse(response: SignableMessage, publicKeyHash: string): Promise<void> {
-    const publicKey = await this.args.crypto.publicKey.response.public()
-    const hash = await this.args.crypto.hasher.sum(publicKey)
+  private async verifyResponse(response: SignableMessage, serverIdentity: string): Promise<void> {
+    const publicKey = await this.args.store.key.response.get(serverIdentity)
+    const verifier = publicKey.verifier()
 
-    if (hash !== publicKeyHash) {
-      throw 'hash mismatch'
-    }
-
-    const verifier = this.args.crypto.publicKey.response.verifier()
-
-    await response.verify(verifier, publicKey)
+    await response.verify(verifier, await publicKey.public())
   }
 
   async createAccount(recoveryHash: string): Promise<void> {
@@ -111,7 +103,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(this.args.paths.account.create, message)
 
     const response = CreationResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -167,7 +159,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.link, message)
 
     const response = LinkDeviceResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -205,7 +197,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.unlink, message)
 
     const response = UnlinkDeviceResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -236,7 +228,7 @@ export class BetterAuthClient {
     )
 
     const response = RotateAuthenticationKeyResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -264,7 +256,7 @@ export class BetterAuthClient {
     )
 
     const startResponse = StartAuthenticationResponse.parse(startReply)
-    await this.verifyResponse(startResponse, startResponse.payload.access.responseKeyHash)
+    await this.verifyResponse(startResponse, startResponse.payload.access.serverIdentity)
 
     if (startResponse.payload.access.nonce !== startNonce) {
       throw 'incorrect nonce'
@@ -295,7 +287,7 @@ export class BetterAuthClient {
     )
 
     const finishResponse = FinishAuthenticationResponse.parse(finishReply)
-    await this.verifyResponse(finishResponse, finishResponse.payload.access.responseKeyHash)
+    await this.verifyResponse(finishResponse, finishResponse.payload.access.serverIdentity)
 
     if (finishResponse.payload.access.nonce !== finishNonce) {
       throw 'incorrect nonce'
@@ -324,7 +316,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.access, message)
 
     const response = RefreshAccessTokenResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'
@@ -361,7 +353,7 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(this.args.paths.rotate.recover, message)
 
     const response = RecoverAccountResponse.parse(reply)
-    await this.verifyResponse(response, response.payload.access.responseKeyHash)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
       throw 'incorrect nonce'

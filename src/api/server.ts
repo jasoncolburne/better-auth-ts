@@ -9,7 +9,7 @@ import {
   ISigningKey,
   ITimestamper,
   ITokenEncoder,
-  IVerificationKey,
+  IVerificationKeyStore,
   IVerifier,
 } from '../interfaces'
 import {
@@ -70,12 +70,6 @@ export class BetterAuthServer {
     }
   ) {}
 
-  // we fetch this every time since the keypair implementation may rotate behind the scenes
-  private async responseKeyHash(): Promise<string> {
-    const responsePublicKey = await this.args.crypto.keyPair.response.public()
-    return await this.args.crypto.hasher.sum(responsePublicKey)
-  }
-
   // account creation
 
   async createAccount(message: string): Promise<string> {
@@ -117,7 +111,7 @@ export class BetterAuthServer {
 
     const response = new CreationResponse(
       {},
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -168,7 +162,7 @@ export class BetterAuthServer {
 
     const response = new LinkDeviceResponse(
       {},
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -199,7 +193,7 @@ export class BetterAuthServer {
 
     const response = new UnlinkDeviceResponse(
       {},
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -228,7 +222,7 @@ export class BetterAuthServer {
     // this is replayable, and should be fixed but making it not fixed
     const response = new RotateAuthenticationKeyResponse(
       {},
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -252,7 +246,7 @@ export class BetterAuthServer {
           nonce: nonce,
         },
       },
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -285,6 +279,7 @@ export class BetterAuthServer {
     const refreshExpiry = this.args.encoding.timestamper.format(evenLater)
 
     const accessToken = new AccessToken<T>(
+      await this.args.crypto.keyPair.access.identity(),
       identity,
       request.payload.request.access.publicKey,
       request.payload.request.access.rotationHash,
@@ -303,7 +298,7 @@ export class BetterAuthServer {
           token: token,
         },
       },
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -319,11 +314,7 @@ export class BetterAuthServer {
     await request.verify(this.args.crypto.verifier, request.payload.request.access.publicKey)
 
     const tokenString = request.payload.request.access.token
-    const token = await AccessToken.parse<T>(
-      tokenString,
-      this.args.crypto.keyPair.access.verifier().signatureLength,
-      this.args.encoding.tokenEncoder
-    )
+    const token = await AccessToken.parse<T>(tokenString, this.args.encoding.tokenEncoder)
     await token.verifyToken(
       this.args.crypto.verifier,
       await this.args.crypto.keyPair.access.public(),
@@ -350,6 +341,7 @@ export class BetterAuthServer {
     const expiry = this.args.encoding.timestamper.format(later)
 
     const accessToken = new AccessToken(
+      await this.args.crypto.keyPair.access.identity(),
       token.identity,
       request.payload.request.access.publicKey,
       request.payload.request.access.rotationHash,
@@ -368,7 +360,7 @@ export class BetterAuthServer {
           token: serializedToken,
         },
       },
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -407,7 +399,7 @@ export class BetterAuthServer {
 
     const response = new RecoverAccountResponse(
       {},
-      await this.responseKeyHash(),
+      await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce
     )
 
@@ -421,9 +413,6 @@ export class AccessVerifier {
   constructor(
     private readonly args: {
       crypto: {
-        publicKey: {
-          access: IVerificationKey
-        }
         verifier: IVerifier
       }
       encoding: {
@@ -433,6 +422,7 @@ export class AccessVerifier {
       store: {
         access: {
           nonce: IServerTimeLockStore
+          key: IVerificationKeyStore
         }
       }
     }
@@ -440,11 +430,11 @@ export class AccessVerifier {
 
   async verify<T, U>(message: string): Promise<[string, U]> {
     const request = AccessRequest.parse<T>(message)
+
     return await request._verify<U>(
       this.args.store.access.nonce,
       this.args.crypto.verifier,
-      this.args.crypto.publicKey.access.verifier(),
-      await this.args.crypto.publicKey.access.public(),
+      this.args.store.access.key,
       this.args.encoding.tokenEncoder,
       this.args.encoding.timestamper
     )

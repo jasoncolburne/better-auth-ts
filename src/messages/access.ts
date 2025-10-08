@@ -1,7 +1,14 @@
-import { IServerTimeLockStore, ITimestamper, ITokenEncoder, IVerifier } from '../interfaces'
+import {
+  IServerTimeLockStore,
+  ITimestamper,
+  ITokenEncoder,
+  IVerificationKeyStore,
+  IVerifier,
+} from '../interfaces'
 import { SignableMessage } from './message'
 
 export interface IAccessToken<T> {
+  serverIdentity: string
   identity: string
   publicKey: string
   rotationHash: string
@@ -13,6 +20,7 @@ export interface IAccessToken<T> {
 
 export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
   constructor(
+    public serverIdentity: string,
     public identity: string,
     public publicKey: string,
     public rotationHash: string,
@@ -24,11 +32,9 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     super()
   }
 
-  static async parse<T>(
-    message: string,
-    publicKeyLength: number,
-    tokenEncoder: ITokenEncoder
-  ): Promise<AccessToken<T>> {
+  static async parse<T>(message: string, tokenEncoder: ITokenEncoder): Promise<AccessToken<T>> {
+    const publicKeyLength = await tokenEncoder.signatureLength(message)
+
     const signature = message.substring(0, publicKeyLength)
     let rest = message.substring(publicKeyLength)
 
@@ -36,6 +42,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
     const json = JSON.parse(tokenString) as IAccessToken<T>
     const token = new AccessToken<T>(
+      json.serverIdentity,
       json.identity,
       json.publicKey,
       json.rotationHash,
@@ -52,6 +59,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
   composePayload(): string {
     return JSON.stringify({
+      serverIdentity: this.serverIdentity,
       identity: this.identity,
       publicKey: this.publicKey,
       rotationHash: this.rotationHash,
@@ -121,18 +129,15 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   async _verify<T>(
     nonceStore: IServerTimeLockStore,
     verifier: IVerifier,
-    tokenVerifier: IVerifier,
-    serverAccessPublicKey: string,
+    accessKeyStore: IVerificationKeyStore,
     tokenEncoder: ITokenEncoder,
     timestamper: ITimestamper
   ): Promise<[string, T]> {
-    const accessToken = await AccessToken.parse<T>(
-      this.payload.access.token,
-      tokenVerifier.signatureLength,
-      tokenEncoder
-    )
+    const accessToken = await AccessToken.parse<T>(this.payload.access.token, tokenEncoder)
 
-    await accessToken.verifyToken(tokenVerifier, serverAccessPublicKey, timestamper)
+    const accessKey = await accessKeyStore.get(accessToken.serverIdentity)
+
+    await accessToken.verifyToken(accessKey.verifier(), await accessKey.public(), timestamper)
     await super.verify(verifier, accessToken.publicKey)
 
     const now = timestamper.now()

@@ -7,6 +7,7 @@ export interface ITimestamper {
 export interface ITokenEncoder {
   encode(object: string): Promise<string>
   decode(rawToken: string): Promise<string>
+  signatureLength(token: string): Promise<number>
 }
 
 export interface IIdentityVerifier {

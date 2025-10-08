@@ -1,4 +1,4 @@
-import { ISigningKey } from './crypto'
+import { ISigningKey, IVerificationKey } from './crypto'
 
 // client
 
@@ -22,6 +22,10 @@ export interface IClientRotatingKeyStore {
 
   // returns: effectively, a handle to a signing key
   signer(): Promise<ISigningKey>
+}
+
+export interface IVerificationKeyStore {
+  get(identity: string): Promise<IVerificationKey>
 }
 
 // server

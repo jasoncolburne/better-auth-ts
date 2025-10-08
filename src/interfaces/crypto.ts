@@ -8,8 +8,6 @@ export interface INoncer {
 }
 
 export interface IVerifier {
-  signatureLength: number
-
   // this is typically just a verification algorithm
   //
   // throw exceptions when verification fails
@@ -30,6 +28,9 @@ export interface IVerificationKey {
 }
 
 export interface ISigningKey extends IVerificationKey {
+  // fetches the identifier of the signing entity
+  identity(): Promise<string>
+
   // signs with the key it represents (could be backed by an HSM for instance)
   sign(message: string): Promise<string>
 }
