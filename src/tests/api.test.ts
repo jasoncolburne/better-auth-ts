@@ -31,7 +31,7 @@ import { AccessRequest, AccessToken, ServerResponse } from '../messages'
 import { randomInt } from 'crypto'
 import { ClientRequest } from '../messages/request'
 
-const DEBUG_LOGGING = true
+const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
