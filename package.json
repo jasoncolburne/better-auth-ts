@@ -19,6 +19,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "server": "jiti src/examples/server.ts",
     "test": "vitest run src/tests/api.test.ts src/tests/token.test.ts",
     "test:run": "vitest run --reporter=verbose src/tests/api.test.ts src/tests/token.test.ts",
     "test:watch": "vitest --watch src/tests/api.test.ts src/tests/token.test.ts",

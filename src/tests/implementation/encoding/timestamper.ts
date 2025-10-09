@@ -7,6 +7,12 @@ export class Rfc3339Nano implements ITimestamper {
   }
 
   parse(when: string | Date): Date {
+    if (typeof when === 'string') {
+      // Truncate nanoseconds to milliseconds for JavaScript Date compatibility
+      // Match timestamps with 9 or more fractional digits before Z
+      when = when.replace(/\.(\d{3})\d+Z/, '.$1Z')
+    }
+
     return new Date(when)
   }
 
