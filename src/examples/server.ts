@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import http from 'http'
 import { AccessVerifier, BetterAuthServer } from '../api'
 import { AccessRequest, ServerResponse } from '../messages'
