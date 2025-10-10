@@ -88,12 +88,13 @@ export class BetterAuthServer {
       request.payload.request.authentication.recoveryHash
     )
 
-    const deviceHash = await this.args.crypto.hasher.sum(
-      request.payload.request.authentication.publicKey
+    const device = await this.args.crypto.hasher.sum(
+      request.payload.request.authentication.publicKey +
+        request.payload.request.authentication.rotationHash
     )
 
-    if (deviceHash !== request.payload.request.authentication.device) {
-      throw 'malformed device'
+    if (device !== request.payload.request.authentication.device) {
+      throw 'bad device derivation'
     }
 
     await this.args.store.recovery.hash.register(
@@ -126,6 +127,15 @@ export class BetterAuthServer {
       this.args.crypto.verifier,
       request.payload.request.authentication.recoveryKey
     )
+
+    const device = await this.args.crypto.hasher.sum(
+      request.payload.request.authentication.publicKey +
+        request.payload.request.authentication.rotationHash
+    )
+
+    if (device !== request.payload.request.authentication.device) {
+      throw 'bad device derivation'
+    }
 
     const hash = await this.args.crypto.hasher.sum(
       request.payload.request.authentication.recoveryKey
@@ -182,6 +192,15 @@ export class BetterAuthServer {
       request.payload.request.authentication.identity
     ) {
       throw 'mismatched identities'
+    }
+
+    const device = await this.args.crypto.hasher.sum(
+      linkContainer.payload.authentication.publicKey +
+        linkContainer.payload.authentication.rotationHash
+    )
+
+    if (device !== linkContainer.payload.authentication.device) {
+      throw 'bad device derivation'
     }
 
     await this.args.store.authentication.key.rotate(
