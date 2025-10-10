@@ -2,6 +2,7 @@ export interface IAuthenticationPaths {
   account: {
     create: string
     recover: string
+    delete: string
   }
   session: {
     request: string

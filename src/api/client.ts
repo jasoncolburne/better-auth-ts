@@ -15,6 +15,8 @@ import {
   CreateAccountResponse,
   CreateSessionRequest,
   CreateSessionResponse,
+  DeleteAccountRequest,
+  DeleteAccountResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
@@ -111,6 +113,36 @@ export class BetterAuthClient {
 
     await this.args.store.identifier.identity.store(identity)
     await this.args.store.identifier.device.store(device)
+  }
+
+  async deleteAccount(): Promise<void> {
+    const nonce = await this.args.crypto.noncer.generate128()
+    const [signingKey, rotationHash] = await this.args.store.key.authentication.next()
+
+    const request = new DeleteAccountRequest(
+      {
+        authentication: {
+          device: await this.args.store.identifier.device.get(),
+          identity: await this.args.store.identifier.identity.get(),
+          publicKey: await signingKey.public(),
+          rotationHash: rotationHash,
+        },
+      },
+      nonce
+    )
+
+    await request.sign(signingKey)
+    const message = await request.serialize()
+    const reply = await this.args.io.network.sendRequest(this.args.paths.account.delete, message)
+
+    const response = DeleteAccountResponse.parse(reply)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
+
+    await this.args.store.key.authentication.rotate()
   }
 
   async recoverAccount(

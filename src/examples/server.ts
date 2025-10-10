@@ -146,6 +146,10 @@ class Server {
     return this.wrapResponse(body, async message => this.ba.recoverAccount(message))
   }
 
+  async delete(body: string): Promise<string> {
+    return this.wrapResponse(body, async message => this.ba.deleteAccount(message))
+  }
+
   async link(body: string): Promise<string> {
     return this.wrapResponse(body, async message => this.ba.linkDevice(message))
   }
@@ -233,6 +237,9 @@ async function main(): Promise<void> {
               break
             case '/account/recover':
               response = await server.recover(body)
+              break
+            case '/account/delete':
+              response = await server.delete(body)
               break
             case '/session/request':
               response = await server.startAuthentication(body)

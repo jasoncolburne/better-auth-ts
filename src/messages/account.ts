@@ -25,6 +25,29 @@ export class CreateAccountResponse extends ServerResponse<ICreateAccountResponse
   }
 }
 
+export interface IDeleteAccountRequest {
+  authentication: {
+    device: string
+    identity: string
+    publicKey: string
+    rotationHash: string
+  }
+}
+
+export class DeleteAccountRequest extends ClientRequest<IDeleteAccountRequest> {
+  static parse(message: string): DeleteAccountRequest {
+    return ClientRequest._parse(message, DeleteAccountRequest)
+  }
+}
+
+interface IDeleteAccountResponse {}
+
+export class DeleteAccountResponse extends ServerResponse<IDeleteAccountResponse> {
+  static parse(message: string): DeleteAccountResponse {
+    return ServerResponse._parse(message, DeleteAccountResponse)
+  }
+}
+
 interface IRecoverAccountRequest {
   authentication: {
     device: string

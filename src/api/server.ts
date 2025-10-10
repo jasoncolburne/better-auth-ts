@@ -19,6 +19,8 @@ import {
   CreateAccountResponse,
   CreateSessionRequest,
   CreateSessionResponse,
+  DeleteAccountRequest,
+  DeleteAccountResponse,
   LinkContainer,
   LinkDeviceRequest,
   LinkDeviceResponse,
@@ -111,6 +113,35 @@ export class BetterAuthServer {
     )
 
     const response = new CreateAccountResponse(
+      {},
+      await this.args.crypto.keyPair.response.identity(),
+      request.payload.access.nonce
+    )
+
+    await response.sign(this.args.crypto.keyPair.response)
+
+    return await response.serialize()
+  }
+
+  async deleteAccount(message: string): Promise<string> {
+    const request = DeleteAccountRequest.parse(message)
+    await request.verify(
+      this.args.crypto.verifier,
+      request.payload.request.authentication.publicKey
+    )
+
+    await this.args.store.authentication.key.rotate(
+      request.payload.request.authentication.identity,
+      request.payload.request.authentication.device,
+      request.payload.request.authentication.publicKey,
+      request.payload.request.authentication.rotationHash
+    )
+
+    await this.args.store.authentication.key.deleteIdentity(
+      request.payload.request.authentication.identity
+    )
+
+    const response = new DeleteAccountResponse(
       {},
       await this.args.crypto.keyPair.response.identity(),
       request.payload.access.nonce

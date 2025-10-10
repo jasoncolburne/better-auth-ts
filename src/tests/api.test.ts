@@ -36,6 +36,7 @@ const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
     recover: '/account/recover',
+    delete: '/account/delete',
   },
   session: {
     request: '/session/request',
@@ -110,6 +111,8 @@ class MockNetworkServer implements INetwork {
         return await this.betterAuthServer.createAccount(message)
       case this.paths.account.recover:
         return await this.betterAuthServer.recoverAccount(message)
+      case this.paths.account.delete:
+        return await this.betterAuthServer.deleteAccount(message)
       case this.paths.device.link:
         return await this.betterAuthServer.linkDevice(message)
       case this.paths.device.rotate:
@@ -433,6 +436,7 @@ describe('api', () => {
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
     await executeFlow(betterAuthClient, eccVerifier, responseKeyStore)
+    await betterAuthClient.deleteAccount()
   })
 
   it('recovers from loss', async () => {
