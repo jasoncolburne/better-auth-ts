@@ -81,6 +81,9 @@ export interface IServerAuthenticationKeyStore {
 
   // revokes access for all devices
   revokeDevices(identity: string): Promise<void>
+
+  // deletes all devices and the record of identity
+  deleteIdentity(identity: string): Promise<void>
 }
 
 export interface IServerRecoveryHashStore {

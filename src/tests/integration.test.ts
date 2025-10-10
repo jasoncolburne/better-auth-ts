@@ -39,6 +39,7 @@ const authenticationPaths: IAuthenticationPaths = {
   account: {
     create: '/account/create',
     recover: '/account/recover',
+    delete: '/account/delete',
   },
   session: {
     request: '/session/request',
@@ -173,6 +174,7 @@ describe('integration', () => {
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
     await executeFlow(betterAuthClient, eccVerifier, responseVerificationKey)
+    await betterAuthClient.deleteAccount()
   })
 
   it('recovers from loss', async () => {
