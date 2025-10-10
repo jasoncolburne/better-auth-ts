@@ -303,14 +303,14 @@ export class BetterAuthClient {
       throw 'incorrect nonce'
     }
 
-    const [, currentKey, nextKeyHash] = await this.args.store.key.access.initialize()
+    const [, publicKey, rotationHash] = await this.args.store.key.access.initialize()
     const finishNonce = await this.args.crypto.noncer.generate128()
 
     const finishRequest = new CreateSessionRequest(
       {
         access: {
-          publicKey: currentKey,
-          rotationHash: nextKeyHash,
+          publicKey: publicKey,
+          rotationHash: rotationHash,
         },
         authentication: {
           device: await this.args.store.identifier.device.get(),
