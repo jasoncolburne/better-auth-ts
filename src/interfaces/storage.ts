@@ -14,11 +14,21 @@ export interface IClientRotatingKeyStore {
   // returns: [identity, publicKey, rotationHash]
   initialize(extraData?: string): Promise<[string, string, string]>
 
+  // returns: [key, rotationHash]
+  //
+  // this should return the _next_ signing key and a hash of the subsequent key
+  // if no subsequent key exists yet, it should first be generated
+  //
+  // this facilitates a failed network request during a rotation operation
+  next(): Promise<[ISigningKey, string]>
+
   // throw an exception if:
-  // - no keys exist
+  // - next() has not been called since the last call to initialize() or rotate()
+  //
+  // this is the commit operation of next()
   //
   // returns: [publicKey, rotationHash]
-  rotate(): Promise<[string, string]>
+  rotate(): Promise<void>
 
   // returns: effectively, a handle to a signing key
   signer(): Promise<ISigningKey>

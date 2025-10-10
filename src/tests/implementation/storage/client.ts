@@ -8,8 +8,9 @@ import { Hasher } from '../crypto/hash'
 import { Secp256r1 } from '../crypto/secp256r1'
 
 export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
-  private current?: ISigningKey
-  private next?: ISigningKey
+  private currentKey?: ISigningKey
+  private nextKey?: ISigningKey
+  private futureKey?: ISigningKey
   private readonly hasher: IHasher
 
   constructor() {
@@ -23,8 +24,8 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     await current.generate()
     await next.generate()
 
-    this.current = current
-    this.next = next
+    this.currentKey = current
+    this.nextKey = next
 
     let suffix = ''
     if (typeof extraData !== 'undefined') {
@@ -38,28 +39,42 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
     return [identity, publicKey, rotationHash]
   }
 
-  async rotate(): Promise<[string, string]> {
-    if (typeof this.next === 'undefined') {
+  async next(): Promise<[ISigningKey, string]> {
+    if (typeof this.nextKey === 'undefined') {
       throw 'call initialize() first'
     }
 
-    const next = new Secp256r1()
-    await next.generate()
+    if (typeof this.futureKey === 'undefined') {
+      const key = new Secp256r1()
+      await key.generate()
+      this.futureKey = key
+    }
 
-    this.current = this.next
-    this.next = next
+    const rotationHash = await this.hasher.sum(await this.futureKey!.public())
 
-    const rotationHash = await this.hasher.sum(await next.public())
+    return [this.nextKey!, rotationHash]
+  }
 
-    return [await this.current.public(), rotationHash]
+  async rotate(): Promise<void> {
+    if (typeof this.nextKey === 'undefined') {
+      throw 'call initialize() first'
+    }
+
+    if (typeof this.futureKey === 'undefined') {
+      throw 'call next() first'
+    }
+
+    this.currentKey = this.nextKey
+    this.nextKey = this.futureKey
+    this.futureKey = undefined
   }
 
   async signer(): Promise<ISigningKey> {
-    if (typeof this.current === 'undefined') {
+    if (typeof this.currentKey === 'undefined') {
       throw 'call initialize() first'
     }
 
-    return this.current
+    return this.currentKey
   }
 }
 
