@@ -39,9 +39,6 @@
   ],
   "author": "Jason Colburne",
   "license": "MIT",
-  "dependencies": {
-    "pako": "^2.1.0"
-  },
   "devDependencies": {
     "@noble/hashes": "^2.0.0",
     "@types/node": "^24.5.2",
@@ -53,6 +50,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "jiti": "^2.5.1",
+    "pako": "^2.1.0",
     "prettier": "^3.6.2",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
