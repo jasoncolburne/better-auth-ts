@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import http from 'http'
-import { AccessVerifier, BetterAuthServer } from '../api'
-import { AccessRequest, ServerResponse } from '../messages'
+import { AccessVerifier, BetterAuthServer } from '../src/api'
+import { AccessRequest, ServerResponse } from '../src/messages'
 import {
   Hasher,
   IdentityVerifier,
@@ -15,7 +15,7 @@ import {
   ServerTimeLockStore,
   TokenEncoder,
   VerificationKeyStore,
-} from '../tests/implementation'
+} from '../src/tests/implementation'
 
 interface MockTokenAttributes {
   permissionsByRole: Record<string, string[]>
