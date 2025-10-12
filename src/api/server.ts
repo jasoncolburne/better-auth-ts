@@ -480,7 +480,7 @@ export class AccessVerifier {
     }
   ) {}
 
-  async verify<T, U>(message: string): Promise<[T, AccessToken<U>]> {
+  async verify<T, U>(message: string): Promise<[T, AccessToken<U>, string]> {
     const request = AccessRequest.parse<T>(message)
 
     return [
@@ -492,6 +492,7 @@ export class AccessVerifier {
         this.args.encoding.tokenEncoder,
         this.args.encoding.timestamper
       ),
+      request.payload.access.nonce,
     ]
   }
 }

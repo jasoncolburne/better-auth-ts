@@ -105,6 +105,7 @@ class MockNetworkServer implements INetwork {
   async _sendRequest(path: string, message: string): Promise<string> {
     let request: FakeRequest
     let token: AccessToken<MockAccessAttributes>
+    let nonce: string
 
     switch (path) {
       case this.paths.account.create:
@@ -126,9 +127,10 @@ class MockNetworkServer implements INetwork {
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
       case '/foo/bar':
-        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
-          message
-        )
+        ;[request, token, nonce] = await this.accessVerifier.verify<
+          FakeRequest,
+          MockAccessAttributes
+        >(message)
 
         if (typeof request === 'undefined') {
           throw 'null identity'
@@ -146,15 +148,24 @@ class MockNetworkServer implements INetwork {
           throw 'unexpected identity length'
         }
 
+        if (!nonce.startsWith('0A')) {
+          throw 'unexpected nonce format'
+        }
+
+        if (nonce.length !== 24) {
+          throw 'unexpected nonce length'
+        }
+
         if (JSON.stringify(token.attributes) !== JSON.stringify(this.attributes)) {
           throw 'attributes do not match'
         }
 
         return await this.respondToAccessRequest(message)
       case '/bad/nonce':
-        ;[request, token] = await this.accessVerifier.verify<FakeRequest, MockAccessAttributes>(
-          message
-        )
+        ;[request, token, nonce] = await this.accessVerifier.verify<
+          FakeRequest,
+          MockAccessAttributes
+        >(message)
 
         if (typeof request === 'undefined') {
           throw 'null response'
@@ -170,6 +181,14 @@ class MockNetworkServer implements INetwork {
 
         if (token.identity.length !== 44) {
           throw 'unexpected identity length'
+        }
+
+        if (!nonce.startsWith('0A')) {
+          throw 'unexpected nonce format'
+        }
+
+        if (nonce.length !== 24) {
+          throw 'unexpected nonce length'
         }
 
         if (JSON.stringify(token.attributes) !== JSON.stringify(this.attributes)) {
