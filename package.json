@@ -26,6 +26,7 @@
     "test:watch": "vitest --watch src/tests/api.test.ts src/tests/token.test.ts",
     "test:coverage": "vitest run --coverage src/tests/api.test.ts src/tests/token.test.ts",
     "test:integration": "vitest run src/tests/integration.test.ts",
+    "test:k8s": "vitest run src/tests/k8s.test.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
