@@ -1,5 +1,5 @@
-import { IHasher, IIdentityVerifier } from '../../../interfaces'
-import { Hasher } from '../crypto'
+import { IHasher, IIdentityVerifier } from '../../../interfaces/index.js'
+import { Hasher } from '../crypto/index.js'
 
 export class IdentityVerifier implements IIdentityVerifier {
   hasher: IHasher

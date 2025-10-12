@@ -11,7 +11,7 @@ import {
   ITokenEncoder,
   IVerificationKeyStore,
   IVerifier,
-} from '../interfaces'
+} from '../interfaces/index.js'
 import {
   AccessRequest,
   AccessToken,
@@ -34,7 +34,7 @@ import {
   RotateDeviceResponse,
   UnlinkDeviceRequest,
   UnlinkDeviceResponse,
-} from '../messages'
+} from '../messages/index.js'
 
 export class BetterAuthServer {
   constructor(

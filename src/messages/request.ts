@@ -1,4 +1,4 @@
-import { SignableMessage } from './message'
+import { SignableMessage } from './message.js'
 
 interface IClientAccess {
   nonce: string

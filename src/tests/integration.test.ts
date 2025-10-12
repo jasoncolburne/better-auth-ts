@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { BetterAuthClient } from '../api'
-import { IAuthenticationPaths, INetwork, IVerificationKey, IVerifier } from '../interfaces'
+import { BetterAuthClient } from '../api/index.js'
+import { IAuthenticationPaths, INetwork, IVerificationKey, IVerifier } from '../interfaces/index.js'
 import {
   ClientRotatingKeyStore,
   ClientValueStore,
@@ -10,8 +10,8 @@ import {
   Secp256r1,
   Secp256r1Verifier,
   VerificationKeyStore,
-} from './implementation'
-import { ServerResponse } from '../messages'
+} from './implementation/index.js'
+import { ServerResponse } from '../messages/index.js'
 
 const DEBUG_LOGGING = false
 

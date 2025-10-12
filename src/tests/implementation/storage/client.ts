@@ -3,9 +3,9 @@ import {
   IClientValueStore,
   IHasher,
   ISigningKey,
-} from '../../../interfaces'
-import { Hasher } from '../crypto/hash'
-import { Secp256r1 } from '../crypto/secp256r1'
+} from '../../../interfaces/index.js'
+import { Hasher } from '../crypto/hash.js'
+import { Secp256r1 } from '../crypto/secp256r1.js'
 
 export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
   private currentKey?: ISigningKey

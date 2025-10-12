@@ -1,6 +1,6 @@
-import { SerializableMessage } from './message'
-import { ClientRequest } from './request'
-import { ServerResponse } from './response'
+import { SerializableMessage } from './message.js'
+import { ClientRequest } from './request.js'
+import { ServerResponse } from './response.js'
 
 interface IRequestSessionRequest {
   payload: {

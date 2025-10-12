@@ -4,8 +4,8 @@ import {
   ITokenEncoder,
   IVerificationKeyStore,
   IVerifier,
-} from '../interfaces'
-import { SignableMessage } from './message'
+} from '../interfaces/index.js'
+import { SignableMessage } from './message.js'
 
 export interface IAccessToken<T> {
   serverIdentity: string

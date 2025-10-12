@@ -1,4 +1,4 @@
-import { ISigningKey, IVerificationKey } from './crypto'
+import { ISigningKey, IVerificationKey } from './crypto.js'
 
 // client
 

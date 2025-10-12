@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest'
-import { Secp256r1, TokenEncoder } from './implementation'
-import { AccessToken } from '../messages'
+import { Secp256r1, TokenEncoder } from './implementation/index.js'
+import { AccessToken } from '../messages/index.js'
 
 interface IMockAccessAttributes {
   permissionsByRole: object

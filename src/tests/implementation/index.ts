@@ -1,3 +1,3 @@
-export * from './crypto'
-export * from './encoding'
-export * from './storage'
+export * from './crypto/index.js'
+export * from './encoding/index.js'
+export * from './storage/index.js'

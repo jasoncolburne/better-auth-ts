@@ -1,6 +1,6 @@
 import Pako from 'pako'
-import { ITokenEncoder } from '../../../interfaces'
-import { Base64 } from './base64'
+import { ITokenEncoder } from '../../../interfaces/index.js'
+import { Base64 } from './base64.js'
 import { TextDecoder, TextEncoder } from 'util'
 
 export class TokenEncoder implements ITokenEncoder {
