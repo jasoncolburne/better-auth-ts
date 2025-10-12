@@ -8,7 +8,7 @@ import {
   ISigningKey,
   ITimestamper,
   IVerificationKeyStore,
-} from '../interfaces'
+} from '../interfaces/index.js'
 import {
   AccessRequest,
   CreateAccountRequest,
@@ -32,7 +32,7 @@ import {
   SignableMessage,
   UnlinkDeviceRequest,
   UnlinkDeviceResponse,
-} from '../messages'
+} from '../messages/index.js'
 
 export class BetterAuthClient {
   constructor(

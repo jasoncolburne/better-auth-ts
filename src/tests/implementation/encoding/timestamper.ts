@@ -1,4 +1,4 @@
-import { ITimestamper } from '../../../interfaces'
+import { ITimestamper } from '../../../interfaces/index.js'
 
 export class Rfc3339Nano implements ITimestamper {
   format(when: Date): string {

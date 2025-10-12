@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api'
+import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api/index.js'
 import {
   IAuthenticationPaths,
   IClientValueStore,
@@ -9,7 +9,7 @@ import {
   ISigningKey,
   IVerificationKeyStore,
   IVerifier,
-} from '../interfaces'
+} from '../interfaces/index.js'
 import {
   Base64,
   ClientRotatingKeyStore,
@@ -26,10 +26,9 @@ import {
   ServerTimeLockStore,
   TokenEncoder,
   VerificationKeyStore,
-} from './implementation'
-import { AccessRequest, AccessToken, ServerResponse } from '../messages'
+} from './implementation/index.js'
+import { AccessRequest, AccessToken, ClientRequest, ServerResponse } from '../messages/index.js'
 import { randomInt } from 'crypto'
-import { ClientRequest } from '../messages/request'
 
 const DEBUG_LOGGING = false
 const authenticationPaths: IAuthenticationPaths = {

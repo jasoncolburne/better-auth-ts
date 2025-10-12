@@ -1,6 +1,6 @@
-import { INoncer } from '../../../interfaces'
-import { Base64 } from '../encoding/base64'
-import { getEntropy } from './entropy'
+import { INoncer } from '../../../interfaces/index.js'
+import { Base64 } from '../encoding/base64.js'
+import { getEntropy } from './entropy.js'
 
 export class Noncer implements INoncer {
   async generate128(): Promise<string> {

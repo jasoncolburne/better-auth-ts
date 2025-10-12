@@ -1,5 +1,5 @@
-import { ClientRequest } from './request'
-import { ServerResponse } from './response'
+import { ClientRequest } from './request.js'
+import { ServerResponse } from './response.js'
 
 export interface ICreateAccountRequest {
   authentication: {

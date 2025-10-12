@@ -1,6 +1,6 @@
-import { SignableMessage } from './message'
-import { ClientRequest } from './request'
-import { ServerResponse } from './response'
+import { SignableMessage } from './message.js'
+import { ClientRequest } from './request.js'
+import { ServerResponse } from './response.js'
 
 interface ILinkContainer {
   payload: {

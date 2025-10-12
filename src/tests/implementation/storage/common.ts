@@ -1,4 +1,4 @@
-import { IVerificationKey, IVerificationKeyStore } from '../../../interfaces'
+import { IVerificationKey, IVerificationKeyStore } from '../../../interfaces/index.js'
 
 export class VerificationKeyStore implements IVerificationKeyStore {
   private readonly keysByIdentity: Map<string, IVerificationKey>
