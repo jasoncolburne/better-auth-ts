@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import http from 'http'
 import { AccessVerifier, BetterAuthServer } from '../src/api'
-import { AccessRequest, ServerResponse } from '../src/messages'
+import { ServerResponse } from '../src/messages'
 import {
   Hasher,
   IdentityVerifier,
@@ -185,18 +185,19 @@ class Server {
   }
 
   private async respondToAccessRequest(message: string, badNonce: boolean): Promise<string> {
-    await this.av.verify<MockRequestPayload, MockTokenAttributes>(message)
-
-    const request = AccessRequest.parse<MockRequestPayload>(message)
+    const [request, _token, requestNonce] = await this.av.verify<
+      MockRequestPayload,
+      MockTokenAttributes
+    >(message)
 
     const serverIdentity = await this.serverResponseKey.identity()
 
-    const nonce = badNonce ? '0A0123456789' : request.payload.access.nonce
+    const nonce = badNonce ? '0A0123456789' : requestNonce
 
     const response = new ServerResponse<MockResponsePayload>(
       {
-        wasFoo: request.payload.request.foo,
-        wasBar: request.payload.request.bar,
+        wasFoo: request.foo,
+        wasBar: request.bar,
       },
       serverIdentity,
       nonce
