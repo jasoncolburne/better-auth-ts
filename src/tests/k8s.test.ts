@@ -67,8 +67,15 @@ class Network implements INetwork {
 
     let subdomain = 'auth'
 
-    if (path === '/foo/bar') {
-      subdomain = 'app'
+    if (path.endsWith('/foo/bar')) {
+      const parts = path.split(':')
+
+      if (parts.length !== 2) {
+        throw 'unprefixed request path'
+      }
+
+      subdomain = parts[0]
+      path = parts[1]
     }
 
     // eslint-disable-next-line no-undef
@@ -114,19 +121,30 @@ async function executeFlow(
   await betterAuthClient.createSession()
   await betterAuthClient.refreshSession()
 
-  await testAccess(betterAuthClient, eccVerifier, responseVerificationKeyStore)
+  const servers = ['app-py', 'app-rb', 'app-rs', 'app-ts']
+
+  const promises = servers.map(server => {
+    return testAccess(betterAuthClient, eccVerifier, responseVerificationKeyStore, server)
+  })
+
+  await Promise.all(promises)
 }
 
 async function testAccess(
   betterAuthClient: BetterAuthClient,
   eccVerifier: IVerifier,
-  responseVerificationKeyStore: IVerificationKeyStore
+  responseVerificationKeyStore: IVerificationKeyStore,
+  server: string
 ): Promise<void> {
   const message = {
     foo: 'bar',
     bar: 'foo',
   }
-  const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>('/foo/bar', message)
+
+  const reply = await betterAuthClient.makeAccessRequest<IFakeRequest>(
+    `${server}:/foo/bar`,
+    message
+  )
   const response = FakeResponse.parse(reply)
 
   await response.verify(
