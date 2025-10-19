@@ -492,6 +492,10 @@ export class BetterAuthServer {
 
     return await response.serialize()
   }
+
+  async getResponsePublicKey(): Promise<string> {
+    return await this.args.crypto.keyPair.response.public()
+  }
 }
 
 export class AccessVerifier {
