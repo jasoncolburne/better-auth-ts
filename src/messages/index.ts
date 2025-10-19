@@ -1,6 +1,7 @@
 export * from './account.js'
 export * from './device.js'
 export * from './session.js'
+export * from './recovery.js'
 export * from './access.js'
 export * from './message.js'
 export * from './request.js'

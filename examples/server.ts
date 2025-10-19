@@ -180,6 +180,10 @@ class Server {
     return this.wrapResponse(body, async message => this.ba.refreshSession(message))
   }
 
+  async changeRecoveryKey(body: string): Promise<string> {
+    return this.wrapResponse(body, async message => this.ba.changeRecoveryKey(message))
+  }
+
   async responseKey(body: string): Promise<string> {
     return this.wrapResponse(body, async () => this.serverResponseKey.public())
   }
@@ -259,6 +263,9 @@ async function main(): Promise<void> {
               break
             case '/device/unlink':
               response = await server.unlink(body)
+              break
+            case '/recovery/change':
+              response = await server.changeRecoveryKey(body)
               break
             case '/key/response':
               response = await server.responseKey(body)

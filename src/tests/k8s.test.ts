@@ -57,6 +57,9 @@ const authenticationPaths: IAuthenticationPaths = {
     link: '/device/link',
     unlink: '/device/unlink',
   },
+  recovery: {
+    change: '/recovery/change',
+  },
 }
 
 class Network implements INetwork {
@@ -294,11 +297,15 @@ describe('integration', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     const identity = await betterAuthClient.identity()
+    const newRecoverySigner = new Secp256r1()
     const nextRecoverySigner = new Secp256r1()
+    await newRecoverySigner.generate()
     await nextRecoverySigner.generate()
+    const newRecoveryHash = await hasher.sum(await newRecoverySigner.public())
     const nextRecoveryHash = await hasher.sum(await nextRecoverySigner.public())
 
-    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner, nextRecoveryHash)
+    await betterAuthClient.changeRecoveryKey(newRecoveryHash)
+    await recoveredBetterAuthClient.recoverAccount(identity, newRecoverySigner, nextRecoveryHash)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseVerificationKeyStore)
   })
 

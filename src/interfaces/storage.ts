@@ -93,6 +93,10 @@ export interface IServerRecoveryHashStore {
   // - not found
   // - hash does not match
   rotate(identity: string, oldHash: string, newHash: string): Promise<void>
+
+  // this is for forcefully changing the hash if the user loses access to the original
+  // it should throw an exception if the identity is not found
+  change(identity: string, keyHash: string): Promise<void>
 }
 
 export interface IServerTimeLockStore {

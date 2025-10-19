@@ -146,6 +146,16 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
 
     this.dataByIdentity.set(identity, newHash)
   }
+
+  async change(identity: string, keyHash: string): Promise<void> {
+    const stored = this.dataByIdentity.get(identity)
+
+    if (typeof stored === 'undefined') {
+      throw 'not found'
+    }
+
+    this.dataByIdentity.set(identity, keyHash)
+  }
 }
 
 export class ServerAuthenticationNonceStore implements IServerAuthenticationNonceStore {

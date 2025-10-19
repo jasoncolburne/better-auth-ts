@@ -14,4 +14,7 @@ export interface IAuthenticationPaths {
     link: string
     unlink: string
   }
+  recovery: {
+    change: string
+  }
 }

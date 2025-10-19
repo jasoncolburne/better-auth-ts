@@ -11,6 +11,8 @@ import {
 } from '../interfaces/index.js'
 import {
   AccessRequest,
+  ChangeRecoveryKeyRequest,
+  ChangeRecoveryKeyResponse,
   CreateAccountRequest,
   CreateAccountResponse,
   CreateSessionRequest,
@@ -397,6 +399,37 @@ export class BetterAuthClient {
 
     await this.args.store.token.access.store(response.payload.response.access.token)
     await this.args.store.key.access.rotate()
+  }
+
+  async changeRecoveryKey(recoveryHash: string): Promise<void> {
+    const [signingKey, rotationHash] = await this.args.store.key.authentication.next()
+    const nonce = await this.args.crypto.noncer.generate128()
+
+    const request = new ChangeRecoveryKeyRequest(
+      {
+        authentication: {
+          device: await this.args.store.identifier.device.get(),
+          identity: await this.args.store.identifier.identity.get(),
+          publicKey: await signingKey.public(),
+          recoveryHash: recoveryHash,
+          rotationHash: rotationHash,
+        },
+      },
+      nonce
+    )
+
+    await request.sign(signingKey)
+    const message = await request.serialize()
+    const reply = await this.args.io.network.sendRequest(this.args.paths.recovery.change, message)
+
+    const response = ChangeRecoveryKeyResponse.parse(reply)
+    await this.verifyResponse(response, response.payload.access.serverIdentity)
+
+    if (response.payload.access.nonce !== nonce) {
+      throw 'incorrect nonce'
+    }
+
+    await this.args.store.key.authentication.rotate()
   }
 
   async makeAccessRequest<T>(path: string, request: T): Promise<string> {
