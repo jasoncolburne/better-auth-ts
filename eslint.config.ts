@@ -7,7 +7,7 @@ import prettierConfig from 'eslint-config-prettier'
 export default [
   // Base configuration for all files
   js.configs.recommended,
-  
+
   // TypeScript files configuration
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -33,7 +33,7 @@ export default [
     rules: {
       // Prettier integration
       'prettier/prettier': 'error',
-      
+
       // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': ['error'],
       '@typescript-eslint/explicit-function-return-type': 'error',
@@ -45,7 +45,7 @@ export default [
       '@typescript-eslint/no-var-requires': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',
-      
+
       // Security-focused rules for auth library
       'no-console': 'warn',
       'no-debugger': 'error',
@@ -54,18 +54,18 @@ export default [
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
-      
+
       // Code quality
       'no-unused-vars': 'off',
       'prefer-const': 'off', // Let TypeScript handle this
       'no-var': 'error',
       'sort-imports': ['error', { ignoreDeclarationSort: true }],
-      
+
       // Disable conflicting rules with Prettier
       ...prettierConfig.rules,
     },
   },
-  
+
   // Test files configuration
   {
     files: ['**/*.test.ts', '**/*.spec.ts', 'src/tests/**/*.ts'],
@@ -76,7 +76,14 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
-  
+  {
+    // Apply browser-specific rules/env only to Workerd implementation tests
+    files: ['src/tests/implementation/**/*.ts'],
+    env: {
+      browser: true,
+    },
+  },
+
   // Ignore patterns
   {
     ignores: [
