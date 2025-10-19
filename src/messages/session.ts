@@ -2,6 +2,7 @@ import { SerializableMessage } from './message.js'
 import { ClientRequest } from './request.js'
 import { ServerResponse } from './response.js'
 
+// this request is unsigned, and differs from the others as a result
 interface IRequestSessionRequest {
   payload: {
     access: {

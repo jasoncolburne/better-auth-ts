@@ -47,6 +47,9 @@ const authenticationPaths: IAuthenticationPaths = {
     link: '/device/link',
     unlink: '/device/unlink',
   },
+  recovery: {
+    change: '/recovery/change',
+  },
 }
 
 interface IMockAccessAttributes {
@@ -125,6 +128,8 @@ class MockNetworkServer implements INetwork {
         return await this.betterAuthServer.refreshSession<MockAccessAttributes>(message)
       case this.paths.device.unlink:
         return await this.betterAuthServer.unlinkDevice(message)
+      case this.paths.recovery.change:
+        return await this.betterAuthServer.changeRecoveryKey(message)
       case '/foo/bar':
         ;[request, token, nonce] = await this.accessVerifier.verify<
           FakeRequest,
@@ -526,11 +531,15 @@ describe('api', () => {
     await betterAuthClient.createAccount(recoveryHash)
 
     const identity = await betterAuthClient.identity()
+    const newRecoverySigner = new Secp256r1()
     const nextRecoverySigner = new Secp256r1()
+    await newRecoverySigner.generate()
     await nextRecoverySigner.generate()
+    const newRecoveryHash = await hasher.sum(await newRecoverySigner.public())
     const nextRecoveryHash = await hasher.sum(await nextRecoverySigner.public())
 
-    await recoveredBetterAuthClient.recoverAccount(identity, recoverySigner, nextRecoveryHash)
+    await betterAuthClient.changeRecoveryKey(newRecoveryHash)
+    await recoveredBetterAuthClient.recoverAccount(identity, newRecoverySigner, nextRecoveryHash)
     await executeFlow(recoveredBetterAuthClient, eccVerifier, responseKeyStore)
   })
 
@@ -804,17 +813,17 @@ describe('api', () => {
     const recoveryHash = await hasher.sum(await recoverySigner.public())
     await betterAuthClient.createAccount(recoveryHash)
 
-    try {
-      await betterAuthClient.createSession()
-      const token = await accessTokenStore.get()
-      const signature = token.substring(0, 88)
-      const bytes = Base64.decode(signature)
-      const index = randomInt(64)
-      bytes[2 + index] ^= 0xff
-      const tamperedToken = Base64.encode(bytes) + token.substring(88)
-      await accessTokenStore.store(tamperedToken)
-      await testAccess(betterAuthClient, eccVerifier, responseKeyStore)
+    await betterAuthClient.createSession()
+    const token = await accessTokenStore.get()
+    const signature = token.substring(0, 88)
+    const bytes = Base64.decode(signature)
+    const index = randomInt(64)
+    bytes[2 + index] ^= 0xff
+    const tamperedToken = Base64.encode(bytes) + token.substring(88)
+    await accessTokenStore.store(tamperedToken)
 
+    try {
+      await testAccess(betterAuthClient, eccVerifier, responseKeyStore)
       throw 'expected a failure'
     } catch (e: unknown) {
       expect(e).toBe('invalid signature')
