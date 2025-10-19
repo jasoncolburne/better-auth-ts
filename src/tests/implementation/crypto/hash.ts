@@ -1,13 +1,12 @@
-import { IHasher } from '../../../interfaces/index.js'
-import { TextEncoder } from 'util'
-import { Blake3 } from './blake3.js'
-import { Base64 } from '../encoding/base64.js'
+import { IHasher } from '../../../interfaces'
+import { Base64 } from '../encoding/base64'
 
 export class Hasher implements IHasher {
   async sum(message: string): Promise<string> {
     const encoder = new TextEncoder()
     const bytes = encoder.encode(message)
-    const hash = await Blake3.sum256(bytes)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
+    const hash = new Uint8Array(hashBuffer)
     const padded = new Uint8Array([0, ...hash])
     const base64 = Base64.encode(padded)
 

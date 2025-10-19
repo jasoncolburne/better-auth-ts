@@ -1,32 +1,30 @@
-import { ISigningKey, IVerifier } from '../../../interfaces/index.js'
-import { webcrypto } from 'crypto'
-import { TextEncoder } from 'util'
-import { Base64 } from '../encoding/base64.js'
+import { ISigningKey, IVerifier } from '../../../interfaces'
+import { Base64 } from '../encoding/base64'
 
 export class Secp256r1Verifier implements IVerifier {
   async verify(message: string, signature: string, publicKey: string): Promise<void> {
-    const params: webcrypto.EcKeyImportParams = {
+    const params: EcKeyImportParams = {
       name: 'ECDSA',
       namedCurve: 'P-256',
     }
 
     const publicKeyBytes = Base64.decode(publicKey).subarray(3)
-    const publicCryptoKey = await webcrypto.subtle.importKey('raw', publicKeyBytes, params, true, [
+    const publicCryptoKey = await crypto.subtle.importKey('raw', publicKeyBytes, params, true, [
       'verify',
     ])
 
     const signatureBytes = Base64.decode(signature).subarray(2)
 
     const encoder = new TextEncoder()
-    const messageBytes = encoder.encode(message)
+    const messageBytes = encoder.encode(message) as BufferSource
 
-    const verifyParams: webcrypto.EcdsaParams = {
+    const verifyParams: EcdsaParams = {
       name: 'ECDSA',
       hash: 'SHA-256',
     }
 
     if (
-      !(await webcrypto.subtle.verify(verifyParams, publicCryptoKey, signatureBytes, messageBytes))
+      !(await crypto.subtle.verify(verifyParams, publicCryptoKey, signatureBytes, messageBytes))
     ) {
       throw 'invalid signature'
     }
@@ -34,13 +32,13 @@ export class Secp256r1Verifier implements IVerifier {
 }
 
 function isCryptoKeyPair(
-  key: webcrypto.CryptoKey | webcrypto.CryptoKeyPair
-): key is webcrypto.CryptoKeyPair {
+  key: CryptoKey | CryptoKeyPair
+): key is CryptoKeyPair {
   return 'privateKey' in key && 'publicKey' in key
 }
 
 export class Secp256r1 implements ISigningKey {
-  keyPair?: webcrypto.CryptoKeyPair
+  keyPair?: CryptoKeyPair
   private readonly _verifier: Secp256r1Verifier
 
   constructor() {
@@ -52,12 +50,12 @@ export class Secp256r1 implements ISigningKey {
   }
 
   async generate() {
-    const params: webcrypto.EcKeyGenParams = {
+    const params: EcKeyGenParams = {
       name: 'ECDSA',
       namedCurve: 'P-256',
     }
 
-    const keyPair = await webcrypto.subtle.generateKey(params, true, ['sign', 'verify'])
+    const keyPair = await crypto.subtle.generateKey(params, true, ['sign', 'verify'])
 
     if (!isCryptoKeyPair(keyPair)) {
       throw 'unexpected key generated'
@@ -67,15 +65,15 @@ export class Secp256r1 implements ISigningKey {
   }
 
   async sign(message: string): Promise<string> {
-    const params: webcrypto.EcdsaParams = {
+    const params: EcdsaParams = {
       name: 'ECDSA',
       hash: 'SHA-256',
     }
 
     const encoder = new TextEncoder()
-    const bytes = encoder.encode(message)
+    const bytes = encoder.encode(message) as BufferSource
 
-    const signature = await webcrypto.subtle.sign(params, this.keyPair!.privateKey, bytes)
+    const signature = await crypto.subtle.sign(params, this.keyPair!.privateKey, bytes)
     const signatureBytes = new Uint8Array(signature)
     const padded = new Uint8Array([0, 0, ...signatureBytes])
     const base64 = Base64.encode(padded)
@@ -88,7 +86,7 @@ export class Secp256r1 implements ISigningKey {
       throw 'keypair not generated'
     }
 
-    const raw = await webcrypto.subtle.exportKey('raw', this.keyPair!.publicKey)
+    const raw = await crypto.subtle.exportKey('raw', this.keyPair!.publicKey)
     const uncompressed = new Uint8Array(raw)
     const compressed = this.compressPublicKey(uncompressed)
 
