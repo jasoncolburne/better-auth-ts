@@ -1,5 +1,5 @@
-import { ITokenEncoder } from '../../../interfaces'
-import { Base64 } from './base64'
+import { ITokenEncoder } from '../../../interfaces/index.js'
+import { Base64 } from './base64.js'
 
 export class TokenEncoder implements ITokenEncoder {
   async signatureLength(token: string): Promise<number> {
@@ -18,7 +18,6 @@ export class TokenEncoder implements ITokenEncoder {
     const encoder = new TextEncoder()
     const tokenBytes = encoder.encode(object)
 
-    // Use CompressionStream for gzip compression
     const cs = new CompressionStream('gzip')
     const compressedStream = new Blob([tokenBytes]).stream().pipeThrough(cs)
     const compressedBuffer = await new Response(compressedStream).arrayBuffer()
@@ -35,12 +34,10 @@ export class TokenEncoder implements ITokenEncoder {
     }
 
     const compressedToken = Base64.decode(token)
-    // Use DecompressionStream for gzip decompression
     const ds = new DecompressionStream('gzip')
     const decompressedStream = new Blob([compressedToken]).stream().pipeThrough(ds)
     const decompressedBuffer = await new Response(decompressedStream).arrayBuffer()
     const objectBytes = new Uint8Array(decompressedBuffer)
-
     const decoder = new TextDecoder('utf-8')
     const objectString = decoder.decode(objectBytes)
     return objectString

@@ -1,5 +1,5 @@
-import { ISigningKey, IVerifier } from '../../../interfaces'
-import { Base64 } from '../encoding/base64'
+import { ISigningKey, IVerifier } from '../../../interfaces/index.js'
+import { Base64 } from '../encoding/base64.js'
 
 export class Secp256r1Verifier implements IVerifier {
   async verify(message: string, signature: string, publicKey: string): Promise<void> {
