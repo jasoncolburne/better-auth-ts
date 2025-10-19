@@ -9,7 +9,7 @@ const config :Workerd.Config = (
 
 const betterAuthWorker :Workerd.Worker = (
   modules = [
-    (name = "server", esModule = embed "dist/test-server.js"),
+    (name = "server", esModule = embed "dist/worker.js"),
   ],
   compatibilityDate = "2023-02-28"
 );
