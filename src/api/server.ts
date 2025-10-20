@@ -407,10 +407,9 @@ export class BetterAuthServer {
 
     const tokenString = request.payload.request.access.token
     const token = await AccessToken.parse<T>(tokenString, this.args.encoding.tokenEncoder)
-    await token.verifyToken(
+    await token.verifySignature(
       this.args.crypto.verifier,
-      await this.args.crypto.keyPair.access.public(),
-      this.args.encoding.timestamper
+      await this.args.crypto.keyPair.access.public()
     )
 
     const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)
