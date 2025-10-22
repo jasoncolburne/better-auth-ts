@@ -296,6 +296,12 @@ async function createServer(args: IServerArgs): Promise<BetterAuthServer> {
     args.expiry?.authenticationChallengeLifetimeInSeconds ?? 60
   )
 
+  const accessVerificationKeyStore = new VerificationKeyStore()
+  await accessVerificationKeyStore.add(
+    await args.keys.accessSigner.identity(),
+    args.keys.accessSigner
+  )
+
   const betterAuthServer = new BetterAuthServer({
     crypto: {
       hasher: hasher,
@@ -317,6 +323,7 @@ async function createServer(args: IServerArgs): Promise<BetterAuthServer> {
     },
     store: {
       access: {
+        verificationKey: accessVerificationKeyStore,
         // the lock time is the refresh lifetime in seconds
         keyHash: accessKeyHashStore,
       },

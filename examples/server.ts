@@ -61,6 +61,11 @@ class Server {
     this.serverResponseKey = new Secp256r1()
     const serverAccessKey = new Secp256r1()
 
+    const accessKeyStore = new VerificationKeyStore()
+    // We'll add the server access key after initialization
+    this.accessKeyStore = accessKeyStore
+    this.serverAccessKey = serverAccessKey
+
     this.ba = new BetterAuthServer({
       crypto: {
         hasher: hasher,
@@ -82,6 +87,7 @@ class Server {
       },
       store: {
         access: {
+          verificationKey: accessKeyStore,
           keyHash: accessKeyHashStore,
         },
         authentication: {
@@ -93,11 +99,6 @@ class Server {
         },
       },
     })
-
-    const accessKeyStore = new VerificationKeyStore()
-    // We'll add the server access key after initialization
-    this.accessKeyStore = accessKeyStore
-    this.serverAccessKey = serverAccessKey
 
     this.av = new AccessVerifier({
       crypto: {
