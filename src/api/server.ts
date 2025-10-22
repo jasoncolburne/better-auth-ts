@@ -61,6 +61,7 @@ export class BetterAuthServer {
       }
       store: {
         access: {
+          verificationKey: IVerificationKeyStore
           keyHash: IServerTimeLockStore
         }
         authentication: {
@@ -407,10 +408,11 @@ export class BetterAuthServer {
 
     const tokenString = request.payload.request.access.token
     const token = await AccessToken.parse<T>(tokenString, this.args.encoding.tokenEncoder)
-    await token.verifySignature(
-      this.args.crypto.verifier,
-      await this.args.crypto.keyPair.access.public()
+
+    const accessVerificationKey = await this.args.store.access.verificationKey.get(
+      token.serverIdentity
     )
+    await token.verifySignature(this.args.crypto.verifier, await accessVerificationKey.public())
 
     const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)
     if (hash !== token.rotationHash) {
