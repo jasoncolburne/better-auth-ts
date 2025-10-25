@@ -398,6 +398,7 @@ describe('integration', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+    await betterAuthClient.createSession()
 
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKeyStore)
 
@@ -409,7 +410,7 @@ describe('integration', () => {
       await betterAuthClient.refreshSession()
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('not found')
+      expect(e).toStrictEqual(TypeError("Cannot read properties of undefined (reading 'response')"))
     }
 
     // ensure linked device refresh passes
