@@ -398,6 +398,7 @@ describe('integration', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+    await betterAuthClient.createSession()
 
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKeyStore)
 
