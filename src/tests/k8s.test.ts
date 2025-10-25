@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { BetterAuthClient } from '../api/index.js'
 import {
   IAuthenticationPaths,
@@ -403,5 +403,16 @@ describe('integration', () => {
 
     // unlink the original device
     await linkedBetterAuthClient.unlinkDevice(await betterAuthClient.device())
+
+    // ensure refresh fails
+    try {
+      await betterAuthClient.refreshSession()
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toBe('not found')
+    }
+
+    // ensure linked device refresh passes
+    await linkedBetterAuthClient.refreshSession()
   })
 })

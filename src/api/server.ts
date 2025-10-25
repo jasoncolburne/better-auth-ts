@@ -419,6 +419,8 @@ export class BetterAuthServer {
       throw 'hash mismatch'
     }
 
+    await this.args.store.authentication.key.ensureActive(token.identity, token.device)
+
     const now = this.args.encoding.timestamper.now()
     const refreshExpiry = this.args.encoding.timestamper.parse(token.refreshExpiry)
 
