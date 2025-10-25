@@ -84,6 +84,10 @@ export interface IServerAuthenticationKeyStore {
 
   // deletes all devices and the record of identity
   deleteIdentity(identity: string): Promise<void>
+
+  // ensures a device is active
+  // throw if identity is deleted or device is revoked
+  ensureActive(identity: string, device: string): Promise<void>
 }
 
 export interface IServerRecoveryHashStore {
