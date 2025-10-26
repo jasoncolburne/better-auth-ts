@@ -358,11 +358,22 @@ describe('integration', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
-
+    await betterAuthClient.createSession()
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKey)
 
     // unlink the original device
     await linkedBetterAuthClient.unlinkDevice(await betterAuthClient.device())
+
+    // ensure refresh fails
+    try {
+      await betterAuthClient.refreshSession()
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toStrictEqual(TypeError("Cannot read properties of undefined (reading 'response')"))
+    }
+
+    // ensure linked device refresh passes
+    await linkedBetterAuthClient.refreshSession()
   })
 
   it('detects mismatched access nonce', async () => {

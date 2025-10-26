@@ -296,6 +296,12 @@ async function createServer(args: IServerArgs): Promise<BetterAuthServer> {
     args.expiry?.authenticationChallengeLifetimeInSeconds ?? 60
   )
 
+  const accessVerificationKeyStore = new VerificationKeyStore()
+  await accessVerificationKeyStore.add(
+    await args.keys.accessSigner.identity(),
+    args.keys.accessSigner
+  )
+
   const betterAuthServer = new BetterAuthServer({
     crypto: {
       hasher: hasher,
@@ -317,6 +323,7 @@ async function createServer(args: IServerArgs): Promise<BetterAuthServer> {
     },
     store: {
       access: {
+        verificationKey: accessVerificationKeyStore,
         // the lock time is the refresh lifetime in seconds
         keyHash: accessKeyHashStore,
       },
@@ -720,6 +727,110 @@ describe('api', () => {
       throw 'expected a failure'
     } catch (e: unknown) {
       expect(e).toBe('refresh has expired')
+    }
+  })
+
+  it('rejects refresh for revoked device', async () => {
+    const eccVerifier = new Secp256r1Verifier()
+    const hasher = new Hasher()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+
+    const responseKeyStore = new VerificationKeyStore()
+    await responseKeyStore.add(await responseSigner.identity(), responseSigner)
+
+    const betterAuthClient = await createClient({
+      server: {
+        expiry: {
+          refreshLifetimeInHours: 12,
+        },
+        keys: {
+          accessSigner: accessSigner,
+          responseSigner: responseSigner,
+        },
+      },
+      verifier: {
+        expiry: {
+          accessWindowInSeconds: 30,
+        },
+        keys: {
+          // this would typically not be a signing key pair
+          //  instead, a verification key (the interface contract) is required
+          accessSigner: accessSigner,
+        },
+      },
+    })
+
+    const recoverySigner = new Secp256r1()
+    await recoverySigner.generate()
+
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    await betterAuthClient.createAccount(recoveryHash)
+
+    await executeFlow(betterAuthClient, eccVerifier, responseKeyStore)
+    await betterAuthClient.unlinkDevice(await betterAuthClient.device())
+
+    try {
+      await betterAuthClient.refreshSession()
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toBe('not found')
+    }
+  })
+
+  it('rejects refresh for deleted account', async () => {
+    const eccVerifier = new Secp256r1Verifier()
+    const hasher = new Hasher()
+
+    const accessSigner = new Secp256r1()
+    const responseSigner = new Secp256r1()
+
+    await accessSigner.generate()
+    await responseSigner.generate()
+
+    const responseKeyStore = new VerificationKeyStore()
+    await responseKeyStore.add(await responseSigner.identity(), responseSigner)
+
+    const betterAuthClient = await createClient({
+      server: {
+        expiry: {
+          refreshLifetimeInHours: 12,
+        },
+        keys: {
+          accessSigner: accessSigner,
+          responseSigner: responseSigner,
+        },
+      },
+      verifier: {
+        expiry: {
+          accessWindowInSeconds: 30,
+        },
+        keys: {
+          // this would typically not be a signing key pair
+          //  instead, a verification key (the interface contract) is required
+          accessSigner: accessSigner,
+        },
+      },
+    })
+
+    const recoverySigner = new Secp256r1()
+    await recoverySigner.generate()
+
+    const recoveryHash = await hasher.sum(await recoverySigner.public())
+    await betterAuthClient.createAccount(recoveryHash)
+
+    await executeFlow(betterAuthClient, eccVerifier, responseKeyStore)
+    await betterAuthClient.deleteAccount()
+
+    try {
+      await betterAuthClient.refreshSession()
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toBe('not found')
     }
   })
 

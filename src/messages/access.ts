@@ -83,12 +83,16 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     return this.signature + token
   }
 
-  async verifyToken(
+  async verifySignature(verifier: IVerifier, publicKey: string): Promise<void> {
+    await super.verify(verifier, publicKey)
+  }
+
+  async verifyTokenForAccess(
     verifier: IVerifier,
     publicKey: string,
     timestamper: ITimestamper
   ): Promise<void> {
-    await super.verify(verifier, publicKey)
+    await this.verifySignature(verifier, publicKey)
 
     const now = timestamper.now()
     const issuedAt = timestamper.parse(this.issuedAt)
@@ -141,7 +145,11 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
 
     const accessKey = await accessKeyStore.get(accessToken.serverIdentity)
 
-    await accessToken.verifyToken(accessKey.verifier(), await accessKey.public(), timestamper)
+    await accessToken.verifyTokenForAccess(
+      accessKey.verifier(),
+      await accessKey.public(),
+      timestamper
+    )
     await super.verify(verifier, accessToken.publicKey)
 
     const now = timestamper.now()

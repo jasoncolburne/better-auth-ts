@@ -114,6 +114,18 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
 
     this.identities.delete(identity)
   }
+
+  async ensureActive(identity: string, device: string): Promise<void> {
+    const hasIdentity = this.identities.has(identity)
+    if (!hasIdentity) {
+      throw 'not found'
+    }
+
+    const deviceActive = this.dataByToken.has(identity + device)
+    if (!deviceActive) {
+      throw 'not found'
+    }
+  }
 }
 
 export class ServerRecoveryHashStore implements IServerRecoveryHashStore {

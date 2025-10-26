@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { BetterAuthClient } from '../api/index.js'
 import {
   IAuthenticationPaths,
@@ -175,9 +175,13 @@ describe('integration', () => {
     // eslint-disable-next-line no-undef
     const responseKeysResponse = await fetch('http://keys.better-auth.local/keys')
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
-    const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
+    const responseKeys = new Map<string, { body: { payload: { publicKey: string } } }>(
+      Object.entries(responseKeysObject)
+    )
 
-    responseKeys.forEach(async (publicKey, identity) => {
+    responseKeys.forEach(async (hsmAuthorization, identity) => {
+      // HSM authorization is already parsed as an object, extract public key
+      const publicKey = hsmAuthorization.body.payload.publicKey
       const responseVerificationKey = new Secp256r1VerificationKey(publicKey)
       await responseVerificationKeyStore.add(identity, responseVerificationKey)
     })
@@ -230,9 +234,13 @@ describe('integration', () => {
     // eslint-disable-next-line no-undef
     const responseKeysResponse = await fetch('http://keys.better-auth.local/keys')
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
-    const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
+    const responseKeys = new Map<string, { body: { payload: { publicKey: string } } }>(
+      Object.entries(responseKeysObject)
+    )
 
-    responseKeys.forEach(async (publicKey, identity) => {
+    responseKeys.forEach(async (hsmAuthorization, identity) => {
+      // HSM authorization is already parsed as an object, extract public key
+      const publicKey = hsmAuthorization.body.payload.publicKey
       const responseVerificationKey = new Secp256r1VerificationKey(publicKey)
       await responseVerificationKeyStore.add(identity, responseVerificationKey)
     })
@@ -323,9 +331,13 @@ describe('integration', () => {
     // eslint-disable-next-line no-undef
     const responseKeysResponse = await fetch('http://keys.better-auth.local/keys')
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
-    const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
+    const responseKeys = new Map<string, { body: { payload: { publicKey: string } } }>(
+      Object.entries(responseKeysObject)
+    )
 
-    responseKeys.forEach(async (publicKey, identity) => {
+    responseKeys.forEach(async (hsmAuthorization, identity) => {
+      // HSM authorization is already parsed as an object, extract public key
+      const publicKey = hsmAuthorization.body.payload.publicKey
       const responseVerificationKey = new Secp256r1VerificationKey(publicKey)
       await responseVerificationKeyStore.add(identity, responseVerificationKey)
     })
@@ -398,10 +410,22 @@ describe('integration', () => {
 
     // submit an endorsed link container with existing device
     await betterAuthClient.linkDevice(linkContainer)
+    await betterAuthClient.createSession()
 
     await executeFlow(linkedBetterAuthClient, eccVerifier, responseVerificationKeyStore)
 
     // unlink the original device
     await linkedBetterAuthClient.unlinkDevice(await betterAuthClient.device())
+
+    // ensure refresh fails
+    try {
+      await betterAuthClient.refreshSession()
+      throw 'expected a failure'
+    } catch (e: unknown) {
+      expect(e).toStrictEqual(TypeError("Cannot read properties of undefined (reading 'response')"))
+    }
+
+    // ensure linked device refresh passes
+    await linkedBetterAuthClient.refreshSession()
   })
 })
