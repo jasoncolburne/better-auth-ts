@@ -177,7 +177,9 @@ describe('integration', () => {
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
     const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
 
-    responseKeys.forEach(async (publicKey, identity) => {
+    responseKeys.forEach(async (hsmAuthorization, identity) => {
+      // HSM authorization is already parsed as an object, extract public key
+      const publicKey = hsmAuthorization.body.payload.publicKey
       const responseVerificationKey = new Secp256r1VerificationKey(publicKey)
       await responseVerificationKeyStore.add(identity, responseVerificationKey)
     })
@@ -232,7 +234,9 @@ describe('integration', () => {
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
     const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
 
-    responseKeys.forEach(async (publicKey, identity) => {
+    responseKeys.forEach(async (hsmAuthorization, identity) => {
+      // HSM authorization is already parsed as an object, extract public key
+      const publicKey = hsmAuthorization.body.payload.publicKey
       const responseVerificationKey = new Secp256r1VerificationKey(publicKey)
       await responseVerificationKeyStore.add(identity, responseVerificationKey)
     })
@@ -325,7 +329,9 @@ describe('integration', () => {
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
     const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
 
-    responseKeys.forEach(async (publicKey, identity) => {
+    responseKeys.forEach(async (hsmAuthorization, identity) => {
+      // HSM authorization is already parsed as an object, extract public key
+      const publicKey = hsmAuthorization.body.payload.publicKey
       const responseVerificationKey = new Secp256r1VerificationKey(publicKey)
       await responseVerificationKeyStore.add(identity, responseVerificationKey)
     })
