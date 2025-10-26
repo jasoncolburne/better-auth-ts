@@ -74,7 +74,7 @@ class WorkerServer {
       encoding,
       expiry: config,
       store: {
-        access: { keyHash: accessKeyHash },
+        access: { verificationKey: this.accessKeyStore, keyHash: accessKeyHash },
         authentication: { key: authenticationKey, nonce: authenticationNonce },
         recovery: { hash: recoveryHash },
       },
@@ -134,7 +134,7 @@ class WorkerServer {
       '/device/unlink': body => this.wrapResponse(body, m => this.ba.unlinkDevice(m)),
       '/device/rotate': body => this.wrapResponse(body, m => this.ba.rotateDevice(m)),
       '/recovery/change': body => this.wrapResponse(body, m => this.ba.changeRecoveryKey(m)),
-      '/key/response': body => this.wrapResponse(body, async () => this.serverResponseKey.public()),
+      '/key/response': body => this.wrapResponse(body, () => this.serverResponseKey.public()),
       '/foo/bar': body => this.wrapResponse(body, m => this.respondToAccessRequest(m, false)),
       '/bad/nonce': body => this.wrapResponse(body, m => this.respondToAccessRequest(m, true)),
     };
