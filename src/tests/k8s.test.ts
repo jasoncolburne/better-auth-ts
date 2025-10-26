@@ -175,7 +175,9 @@ describe('integration', () => {
     // eslint-disable-next-line no-undef
     const responseKeysResponse = await fetch('http://keys.better-auth.local/keys')
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
-    const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
+    const responseKeys = new Map<string, { body: { payload: { publicKey: string } } }>(
+      Object.entries(responseKeysObject)
+    )
 
     responseKeys.forEach(async (hsmAuthorization, identity) => {
       // HSM authorization is already parsed as an object, extract public key
@@ -232,7 +234,9 @@ describe('integration', () => {
     // eslint-disable-next-line no-undef
     const responseKeysResponse = await fetch('http://keys.better-auth.local/keys')
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
-    const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
+    const responseKeys = new Map<string, { body: { payload: { publicKey: string } } }>(
+      Object.entries(responseKeysObject)
+    )
 
     responseKeys.forEach(async (hsmAuthorization, identity) => {
       // HSM authorization is already parsed as an object, extract public key
@@ -327,7 +331,9 @@ describe('integration', () => {
     // eslint-disable-next-line no-undef
     const responseKeysResponse = await fetch('http://keys.better-auth.local/keys')
     const responseKeysObject = JSON.parse(await responseKeysResponse.text())
-    const responseKeys = new Map<string, string>(Object.entries(responseKeysObject))
+    const responseKeys = new Map<string, { body: { payload: { publicKey: string } } }>(
+      Object.entries(responseKeysObject)
+    )
 
     responseKeys.forEach(async (hsmAuthorization, identity) => {
       // HSM authorization is already parsed as an object, extract public key
