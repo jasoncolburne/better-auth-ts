@@ -1,7 +1,6 @@
 import { IHasher } from '../../../interfaces/index.js'
-import { TextEncoder } from 'util'
-import { Blake3 } from './blake3.js'
 import { Base64 } from '../encoding/base64.js'
+import { Blake3 } from './blake3.js'
 
 export class Hasher implements IHasher {
   async sum(message: string): Promise<string> {
