@@ -1,3 +1,4 @@
+export * from './blake3.js'
 export * from './hash.js'
 export * from './entropy.js'
 export * from './nonce.js'
