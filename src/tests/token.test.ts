@@ -1,6 +1,7 @@
 import { describe, it } from 'vitest'
 import { Secp256r1, TokenEncoder } from './implementation/index.js'
 import { AccessToken } from '../messages/index.js'
+import { InvalidTokenError } from '../errors.js'
 
 interface IMockAccessAttributes {
   permissionsByRole: object
@@ -39,35 +40,35 @@ describe('tokens', () => {
     const token = await AccessToken.parse<MockAccessAttributes>(tokenString, tokenEncoder)
 
     if (token.serverIdentity !== '1AAIAvcJ4T1tP--dTcdLAw6dYi0r0VOD_CsYe8Cxkf7ydxWE') {
-      throw 'bad server identity'
+      throw new InvalidTokenError('bad server identity')
     }
 
     if (token.device !== 'EEw6PIErsDAOl-F2Bme7Zb0hjIaWOCwUjAUugHbK-l9a') {
-      throw 'bad device'
+      throw new InvalidTokenError('bad device')
     }
 
     if (token.identity !== 'EOomshl9rfHJu4HviTTg7mFiL_skvdF501ZpY4d3bHIP') {
-      throw 'bad identity'
+      throw new InvalidTokenError('bad identity')
     }
 
     if (token.publicKey !== '1AAIAzbb5-Rj4VWEDZQO5mwGG7rDLN6xi51IdYV1on5Pb_bu') {
-      throw 'bad public key'
+      throw new InvalidTokenError('bad public key')
     }
 
     if (token.rotationHash !== 'EFF-rA76Ym9ojDY0tubiXVjR-ARvKN7JHrkWNmnzfghO') {
-      throw 'bad rotation hash'
+      throw new InvalidTokenError('bad rotation hash')
     }
 
     if (token.issuedAt !== '2025-10-08T12:59:41.855000000Z') {
-      throw 'bad issued at'
+      throw new InvalidTokenError('bad issued at')
     }
 
     if (token.expiry !== '2025-10-08T13:14:41.855000000Z') {
-      throw 'bad expiry'
+      throw new InvalidTokenError('bad expiry')
     }
 
     if (token.refreshExpiry !== '2025-10-09T00:59:41.855000000Z') {
-      throw 'bad refresh expiry'
+      throw new InvalidTokenError('bad refresh expiry')
     }
 
     if (
@@ -76,7 +77,7 @@ describe('tokens', () => {
         admin: ['read', 'write'],
       })
     ) {
-      throw 'bad attributes'
+      throw new InvalidTokenError('bad attributes')
     }
   })
 })

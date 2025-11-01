@@ -13,6 +13,12 @@ import {
   IVerifier,
 } from '../interfaces/index.js'
 import {
+  ExpiredTokenError,
+  InvalidDeviceError,
+  InvalidHashError,
+  MismatchedIdentitiesError,
+} from '../errors.js'
+import {
   AccessRequest,
   AccessToken,
   ChangeRecoveryKeyRequest,
@@ -99,7 +105,7 @@ export class BetterAuthServer {
     )
 
     if (device !== request.payload.request.authentication.device) {
-      throw 'bad device derivation'
+      throw new InvalidDeviceError(request.payload.request.authentication.device, device)
     }
 
     await this.args.store.recovery.hash.register(
@@ -168,7 +174,7 @@ export class BetterAuthServer {
     )
 
     if (device !== request.payload.request.authentication.device) {
-      throw 'bad device derivation'
+      throw new InvalidDeviceError(request.payload.request.authentication.device, device)
     }
 
     const hash = await this.args.crypto.hasher.sum(
@@ -225,7 +231,10 @@ export class BetterAuthServer {
       linkContainer.payload.authentication.identity !==
       request.payload.request.authentication.identity
     ) {
-      throw 'mismatched identities'
+      throw new MismatchedIdentitiesError(
+        linkContainer.payload.authentication.identity,
+        request.payload.request.authentication.identity
+      )
     }
 
     const device = await this.args.crypto.hasher.sum(
@@ -416,7 +425,7 @@ export class BetterAuthServer {
 
     const hash = await this.args.crypto.hasher.sum(request.payload.request.access.publicKey)
     if (hash !== token.rotationHash) {
-      throw 'hash mismatch'
+      throw new InvalidHashError(token.rotationHash, hash, 'rotation')
     }
 
     await this.args.store.authentication.key.ensureActive(token.identity, token.device)
@@ -425,7 +434,11 @@ export class BetterAuthServer {
     const refreshExpiry = this.args.encoding.timestamper.parse(token.refreshExpiry)
 
     if (now > refreshExpiry) {
-      throw 'refresh has expired'
+      throw new ExpiredTokenError(
+        token.refreshExpiry,
+        this.args.encoding.timestamper.format(now),
+        'refresh'
+      )
     }
 
     await this.args.store.access.keyHash.reserve(hash)

@@ -6,6 +6,13 @@ import {
   IVerifier,
 } from '../interfaces/index.js'
 import { SignableMessage } from './message.js'
+import {
+  ExpiredTokenError,
+  FutureRequestError,
+  FutureTokenError,
+  InvalidMessageError,
+  StaleRequestError,
+} from '../errors.js'
 
 export interface IAccessToken<T> {
   serverIdentity: string
@@ -76,7 +83,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
   async serializeToken(tokenEncoder: ITokenEncoder): Promise<string> {
     if (typeof this.signature === 'undefined') {
-      throw 'missing signature'
+      throw new InvalidMessageError('signature', 'signature is missing')
     }
 
     const token = await tokenEncoder.encode(this.composePayload())
@@ -99,11 +106,15 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
     const expiry = timestamper.parse(this.expiry)
 
     if (now < issuedAt) {
-      throw 'token from future'
+      throw new FutureTokenError(
+        this.issuedAt,
+        timestamper.format(now),
+        issuedAt.getTime() - now.getTime()
+      )
     }
 
     if (now > expiry) {
-      throw 'token expired'
+      throw new ExpiredTokenError(this.expiry, timestamper.format(now), 'access')
     }
   }
 }
@@ -158,11 +169,19 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
     expiry.setSeconds(expiry.getSeconds() + nonceStore.lifetimeInSeconds)
 
     if (now > expiry) {
-      throw 'stale request'
+      throw new StaleRequestError(
+        this.payload.access.timestamp,
+        timestamper.format(now),
+        nonceStore.lifetimeInSeconds
+      )
     }
 
     if (now < accessTime) {
-      throw 'request from future'
+      throw new FutureRequestError(
+        this.payload.access.timestamp,
+        timestamper.format(now),
+        accessTime.getTime() - now.getTime()
+      )
     }
 
     await nonceStore.reserve(this.payload.access.nonce)

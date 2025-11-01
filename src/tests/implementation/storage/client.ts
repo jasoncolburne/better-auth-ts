@@ -4,6 +4,7 @@ import {
   IHasher,
   ISigningKey,
 } from '../../../interfaces/index.js'
+import { InvalidStateTransitionError, NotFoundError } from '../../../errors.js'
 import { Hasher } from '../crypto/hash.js'
 import { Secp256r1 } from '../crypto/secp256r1.js'
 
@@ -41,7 +42,7 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
 
   async next(): Promise<[ISigningKey, string]> {
     if (typeof this.nextKey === 'undefined') {
-      throw 'call initialize() first'
+      throw new InvalidStateTransitionError('signer', 'must call initialize() first')
     }
 
     if (typeof this.futureKey === 'undefined') {
@@ -57,11 +58,11 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
 
   async rotate(): Promise<void> {
     if (typeof this.nextKey === 'undefined') {
-      throw 'call initialize() first'
+      throw new InvalidStateTransitionError('signer', 'must call initialize() first')
     }
 
     if (typeof this.futureKey === 'undefined') {
-      throw 'call next() first'
+      throw new InvalidStateTransitionError('rotate', 'must call next() first')
     }
 
     this.currentKey = this.nextKey
@@ -71,7 +72,7 @@ export class ClientRotatingKeyStore implements IClientRotatingKeyStore {
 
   async signer(): Promise<ISigningKey> {
     if (typeof this.currentKey === 'undefined') {
-      throw 'call initialize() first'
+      throw new InvalidStateTransitionError('signer', 'must call initialize() first')
     }
 
     return this.currentKey
@@ -87,7 +88,7 @@ export class ClientValueStore implements IClientValueStore {
 
   async get(): Promise<string> {
     if (typeof this.value === 'undefined') {
-      throw 'nothing to get'
+      throw new NotFoundError('value')
     }
 
     return this.value

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BetterAuthClient } from '../api/index.js'
+import { InvalidMessageError, ProtocolError } from '../errors.js'
 import {
   IAuthenticationPaths,
   INetwork,
@@ -74,7 +75,7 @@ class Network implements INetwork {
       const parts = path.split(':')
 
       if (parts.length !== 2) {
-        throw 'unprefixed request path'
+        throw new ProtocolError(undefined, 'unprefixed request path')
       }
 
       subdomain = parts[0]
@@ -156,7 +157,7 @@ async function testAccess(
   )
 
   if (response.payload.response.wasFoo !== 'bar' || response.payload.response.wasBar !== 'foo') {
-    throw 'invalid data returned'
+    throw new InvalidMessageError('response', 'invalid data returned')
   }
 }
 

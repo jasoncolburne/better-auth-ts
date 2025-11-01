@@ -9,6 +9,7 @@ import {
   ITimestamper,
   IVerificationKeyStore,
 } from '../interfaces/index.js'
+import { IncorrectNonceError } from '../errors.js'
 import {
   AccessRequest,
   ChangeRecoveryKeyRequest,
@@ -110,7 +111,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.identifier.identity.store(identity)
@@ -141,7 +142,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.key.authentication.rotate()
@@ -178,7 +179,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.identifier.identity.store(identity)
@@ -234,7 +235,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.key.authentication.rotate()
@@ -274,7 +275,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.key.authentication.rotate()
@@ -304,7 +305,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.key.authentication.rotate()
@@ -394,7 +395,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.token.access.store(response.payload.response.access.token)
@@ -426,7 +427,7 @@ export class BetterAuthClient {
     await this.verifyResponse(response, response.payload.access.serverIdentity)
 
     if (response.payload.access.nonce !== nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(nonce, response.payload.access.nonce)
     }
 
     await this.args.store.key.authentication.rotate()
@@ -447,7 +448,10 @@ export class BetterAuthClient {
     const reply = await this.args.io.network.sendRequest(path, message)
     const response = ScannableResponse.parse(reply)
     if (response.payload.access.nonce !== accessRequest.payload.access.nonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(
+        accessRequest.payload.access.nonce,
+        response.payload.access.nonce
+      )
     }
 
     return reply
