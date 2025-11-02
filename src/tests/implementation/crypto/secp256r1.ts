@@ -1,5 +1,5 @@
 import { ISigningKey, IVerifier } from '../../../interfaces/index.js'
-import { SignatureVerificationError, InvalidMessageError } from '../../../errors.js'
+import { InvalidMessageError } from '../../../errors.js'
 import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
 import { Base64 } from '../encoding/base64.js'
@@ -29,7 +29,7 @@ export class Secp256r1Verifier implements IVerifier {
     if (
       !(await webcrypto.subtle.verify(verifyParams, publicCryptoKey, signatureBytes, messageBytes))
     ) {
-      throw new SignatureVerificationError(publicKey.substring(0, 16) + '...', message.substring(0, 32) + '...')
+      throw new Error('Signature verification failed')
     }
   }
 }

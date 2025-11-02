@@ -6,15 +6,7 @@ import {
   IServerRecoveryHashStore,
   IServerTimeLockStore,
 } from '../../../interfaces/index.js'
-import {
-  DuplicateIdentityError,
-  NotFoundError,
-  AlreadyExistsError,
-  InvalidForwardSecretError,
-  RecoveryHashMismatchError,
-  ExpiredNonceError,
-  ValueReservedError,
-} from '../../../errors.js'
+// Using vanilla errors for test implementations
 import { Noncer } from '../crypto/nonce.js'
 import { Hasher } from '../crypto/hash.js'
 
@@ -39,17 +31,17 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     const hasIdentity = this.identities.has(identity)
 
     if (!existingIdentity && hasIdentity) {
-      throw new DuplicateIdentityError(identity)
+      throw new Error('Identity already exists')
     }
 
     if (existingIdentity && !hasIdentity) {
-      throw new NotFoundError('identity', identity)
+      throw new Error('Resource not found')
     }
 
     const bundle = this.dataByToken.get(identity + device)
 
     if (typeof bundle !== 'undefined') {
-      throw new AlreadyExistsError('device', device)
+      throw new Error('Already exists')
     }
 
     this.identities.add(identity)
@@ -65,13 +57,13 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     const bundle = this.dataByToken.get(identity + device)
 
     if (typeof bundle === 'undefined') {
-      throw new NotFoundError('device', identity + '/' + device)
+      throw new Error('Resource not found')
     }
 
     const cesrHash = await this.hasher.sum(publicKey)
 
     if (bundle[1] !== cesrHash) {
-      throw new InvalidForwardSecretError(rotationHash, bundle[1])
+      throw new Error('Invalid forward secret')
     }
 
     this.dataByToken.set(identity + device, [publicKey, rotationHash])
@@ -81,7 +73,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
     const bundle = this.dataByToken.get(identity + device)
 
     if (typeof bundle === 'undefined') {
-      throw new NotFoundError('device', identity + '/' + device)
+      throw new Error('Resource not found')
     }
 
     return bundle[0]
@@ -90,7 +82,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   async revokeDevice(identity: string, device: string): Promise<void> {
     const hasIdentity = this.identities.has(identity)
     if (!hasIdentity) {
-      throw new NotFoundError('device', identity + '/' + device)
+      throw new Error('Resource not found')
     }
 
     this.dataByToken.delete(identity + device)
@@ -99,7 +91,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   async revokeDevices(identity: string): Promise<void> {
     const hasIdentity = this.identities.has(identity)
     if (!hasIdentity) {
-      throw new NotFoundError('identity', identity)
+      throw new Error('Resource not found')
     }
 
     this.dataByToken.forEach((_value, key): void => {
@@ -112,7 +104,7 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   async deleteIdentity(identity: string): Promise<void> {
     const hasIdentity = this.identities.has(identity)
     if (!hasIdentity) {
-      throw new NotFoundError('identity', identity)
+      throw new Error('Resource not found')
     }
 
     this.dataByToken.forEach((_value, key): void => {
@@ -127,12 +119,12 @@ export class ServerAuthenticationKeyStore implements IServerAuthenticationKeySto
   async ensureActive(identity: string, device: string): Promise<void> {
     const hasIdentity = this.identities.has(identity)
     if (!hasIdentity) {
-      throw new NotFoundError('identity', identity)
+      throw new Error('Resource not found')
     }
 
     const deviceActive = this.dataByToken.has(identity + device)
     if (!deviceActive) {
-      throw new NotFoundError('device', identity + '/' + device)
+      throw new Error('Resource not found')
     }
   }
 }
@@ -148,7 +140,7 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
     const stored = this.dataByIdentity.get(identity)
 
     if (typeof stored !== 'undefined') {
-      throw new AlreadyExistsError('recovery-hash', identity)
+      throw new Error('Already exists')
     }
 
     this.dataByIdentity.set(identity, hash)
@@ -158,11 +150,11 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
     const stored = this.dataByIdentity.get(identity)
 
     if (typeof stored === 'undefined') {
-      throw new NotFoundError('recovery-hash', identity)
+      throw new Error('Resource not found')
     }
 
     if (stored !== oldHash) {
-      throw new RecoveryHashMismatchError(oldHash, stored)
+      throw new Error('Recovery hash mismatch')
     }
 
     this.dataByIdentity.set(identity, newHash)
@@ -172,7 +164,7 @@ export class ServerRecoveryHashStore implements IServerRecoveryHashStore {
     const stored = this.dataByIdentity.get(identity)
 
     if (typeof stored === 'undefined') {
-      throw new NotFoundError('recovery-hash', identity)
+      throw new Error('Resource not found')
     }
 
     this.dataByIdentity.set(identity, keyHash)
@@ -206,13 +198,13 @@ export class ServerAuthenticationNonceStore implements IServerAuthenticationNonc
     const expiration = this.nonceExpirations.get(nonce)
 
     if (typeof identity === 'undefined' || typeof expiration === 'undefined') {
-      throw new NotFoundError('nonce', nonce.substring(0, 16) + '...')
+      throw new Error('Resource not found')
     }
 
     const now = new Date()
 
     if (now > expiration) {
-      throw new ExpiredNonceError()
+      throw new Error('Nonce expired')
     }
 
     return identity
@@ -232,7 +224,7 @@ export class ServerTimeLockStore implements IServerTimeLockStore {
     if (typeof validAt !== 'undefined') {
       const now = new Date()
       if (now < validAt) {
-        throw new ValueReservedError(value, validAt.toISOString())
+        throw new Error('Value reserved')
       }
     }
 

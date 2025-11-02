@@ -1,17 +1,16 @@
 import Pako from 'pako'
 import { ITokenEncoder } from '../../../interfaces/index.js'
-import { InvalidTokenError } from '../../../errors.js'
 import { Base64 } from './base64.js'
 import { TextDecoder, TextEncoder } from 'util'
 
 export class TokenEncoder implements ITokenEncoder {
   async signatureLength(token: string): Promise<number> {
     if (token.length < 2) {
-      throw new InvalidTokenError('token too short')
+      throw new Error('token too short')
     }
 
     if (!token.startsWith('0I')) {
-      throw new InvalidTokenError('incorrect token format, expected to start with 0I')
+      throw new Error('incorrect token format, expected to start with 0I')
     }
 
     return 88
