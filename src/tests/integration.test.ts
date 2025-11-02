@@ -7,7 +7,7 @@ import {
   ClientValueStore,
   Hasher,
   Noncer,
-  Rfc3339Nano,
+  Rfc3339,
   Secp256r1,
   Secp256r1Verifier,
   VerificationKeyStore,
@@ -153,7 +153,7 @@ describe('integration', () => {
         noncer: noncer,
       },
       encoding: {
-        timestamper: new Rfc3339Nano(),
+        timestamper: new Rfc3339(),
       },
       io: {
         network: network,
@@ -206,7 +206,7 @@ describe('integration', () => {
         noncer: noncer,
       },
       encoding: {
-        timestamper: new Rfc3339Nano(),
+        timestamper: new Rfc3339(),
       },
       io: {
         network: network,
@@ -234,7 +234,7 @@ describe('integration', () => {
         noncer: new Noncer(),
       },
       encoding: {
-        timestamper: new Rfc3339Nano(),
+        timestamper: new Rfc3339(),
       },
       io: {
         network: network,
@@ -297,7 +297,7 @@ describe('integration', () => {
         noncer: noncer,
       },
       encoding: {
-        timestamper: new Rfc3339Nano(),
+        timestamper: new Rfc3339(),
       },
       io: {
         network: network,
@@ -325,7 +325,7 @@ describe('integration', () => {
         noncer: new Noncer(),
       },
       encoding: {
-        timestamper: new Rfc3339Nano(),
+        timestamper: new Rfc3339(),
       },
       io: {
         network: network,
@@ -402,7 +402,7 @@ describe('integration', () => {
         noncer: noncer,
       },
       encoding: {
-        timestamper: new Rfc3339Nano(),
+        timestamper: new Rfc3339(),
       },
       io: {
         network: network,

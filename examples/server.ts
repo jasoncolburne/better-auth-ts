@@ -6,7 +6,7 @@ import {
   Hasher,
   IdentityVerifier,
   Noncer,
-  Rfc3339Nano,
+  Rfc3339,
   Secp256r1,
   Secp256r1Verifier,
   ServerAuthenticationKeyStore,
@@ -55,7 +55,7 @@ class Server {
     const recoveryHashStore = new ServerRecoveryHashStore()
 
     const identityVerifier = new IdentityVerifier()
-    const timestamper = new Rfc3339Nano()
+    const timestamper = new Rfc3339()
     const tokenEncoder = new TokenEncoder()
 
     this.serverResponseKey = new Secp256r1()
