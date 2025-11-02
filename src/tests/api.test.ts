@@ -18,7 +18,7 @@ import {
   Hasher,
   IdentityVerifier,
   Noncer,
-  Rfc3339Nano,
+  Rfc3339,
   Secp256r1,
   Secp256r1Verifier,
   ServerAuthenticationKeyStore,
@@ -315,7 +315,7 @@ async function createServer(args: IServerArgs): Promise<BetterAuthServer> {
     },
     encoding: {
       identityVerifier: new IdentityVerifier(),
-      timestamper: new Rfc3339Nano(),
+      timestamper: new Rfc3339(),
       tokenEncoder: new TokenEncoder(),
     },
     expiry: {
@@ -356,7 +356,7 @@ async function createVerifier(args: IVerifierArgs): Promise<AccessVerifier> {
     },
     encoding: {
       tokenEncoder: new TokenEncoder(),
-      timestamper: new Rfc3339Nano(),
+      timestamper: new Rfc3339(),
     },
     store: {
       access: {
@@ -405,7 +405,7 @@ async function createClient(args: {
       noncer: noncer,
     },
     encoding: {
-      timestamper: new Rfc3339Nano(),
+      timestamper: new Rfc3339(),
     },
     io: {
       network: mockNetworkServer,
