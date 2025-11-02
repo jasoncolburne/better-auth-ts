@@ -6,11 +6,11 @@ import { TextDecoder, TextEncoder } from 'util'
 export class TokenEncoder implements ITokenEncoder {
   async signatureLength(token: string): Promise<number> {
     if (token.length < 2) {
-      throw 'token too short'
+      throw new Error('token too short')
     }
 
     if (!token.startsWith('0I')) {
-      throw 'incorrect token format'
+      throw new Error('incorrect token format, expected to start with 0I')
     }
 
     return 88

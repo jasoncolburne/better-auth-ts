@@ -1,4 +1,5 @@
 import { IVerificationKey, IVerificationKeyStore } from '../../../interfaces/index.js'
+// Using vanilla errors for test implementations from '../../../errors.js'
 
 export class VerificationKeyStore implements IVerificationKeyStore {
   private readonly keysByIdentity: Map<string, IVerificationKey>
@@ -15,7 +16,7 @@ export class VerificationKeyStore implements IVerificationKeyStore {
     const key = this.keysByIdentity.get(identity)
 
     if (typeof key === 'undefined') {
-      throw 'not found'
+      throw new Error('Verification key not found')
     }
 
     return key

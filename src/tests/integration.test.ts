@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BetterAuthClient } from '../api/index.js'
+import { IncorrectNonceError, InvalidMessageError } from '../errors.js'
 import { IAuthenticationPaths, INetwork, IVerificationKey, IVerifier } from '../interfaces/index.js'
 import {
   ClientRotatingKeyStore,
@@ -122,7 +123,7 @@ async function testAccess(
   await response.verify(eccVerifier, await responseVerificationKey.public())
 
   if (response.payload.response.wasFoo !== 'bar' || response.payload.response.wasBar !== 'foo') {
-    throw 'invalid data returned'
+    throw new InvalidMessageError('response', 'invalid data returned')
   }
 }
 
@@ -436,7 +437,7 @@ describe('integration', () => {
 
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('incorrect nonce')
+      expect(e).toBeInstanceOf(IncorrectNonceError)
     }
   })
 })

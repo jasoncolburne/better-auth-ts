@@ -1,4 +1,5 @@
 import { IHasher, IIdentityVerifier } from '../../../interfaces/index.js'
+import { InvalidIdentityError } from '../../../errors.js'
 import { Hasher } from '../crypto/index.js'
 
 export class IdentityVerifier implements IIdentityVerifier {
@@ -21,7 +22,7 @@ export class IdentityVerifier implements IIdentityVerifier {
 
     const identityHash = await this.hasher.sum(publicKey + rotationHash + suffix)
     if (identityHash !== identity) {
-      throw 'could not verify identity'
+      throw new InvalidIdentityError(identity, `hash(${publicKey.substring(0, 8)}... + ${rotationHash.substring(0, 8)}... + ${suffix}) = ${identityHash.substring(0, 16)}...`)
     }
   }
 }

@@ -1,4 +1,5 @@
 import { ISigningKey, IVerifier } from '../interfaces/index.js'
+import { InvalidMessageError } from '../errors.js'
 
 interface Signable {
   composePayload(): string
@@ -18,7 +19,7 @@ export abstract class SignableMessage extends SerializableMessage implements Sig
 
   composePayload(): string {
     if (typeof this.payload === 'undefined') {
-      throw 'payload not defined'
+      throw new InvalidMessageError('payload', 'payload is undefined')
     }
 
     return JSON.stringify(this.payload)
@@ -26,7 +27,7 @@ export abstract class SignableMessage extends SerializableMessage implements Sig
 
   async serialize(): Promise<string> {
     if (this.signature === undefined) {
-      throw 'null signature'
+      throw new InvalidMessageError('signature', 'signature is null or undefined')
     }
 
     return `{"payload":${this.composePayload()},"signature":"${this.signature}"}`
@@ -38,7 +39,7 @@ export abstract class SignableMessage extends SerializableMessage implements Sig
 
   async verify(verifier: IVerifier, publicKey: string): Promise<void> {
     if (this.signature === undefined) {
-      throw 'null signature'
+      throw new InvalidMessageError('signature', 'signature is null or undefined')
     }
 
     await verifier.verify(this.composePayload(), this.signature, publicKey)

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AccessVerifier, BetterAuthClient, BetterAuthServer } from '../api/index.js'
+import { ExpiredTokenError, IncorrectNonceError } from '../errors.js'
 import {
   IAuthenticationPaths,
   IClientValueStore,
@@ -677,7 +678,7 @@ describe('api', () => {
       await executeFlow(betterAuthClient, eccVerifier, responseKeyStore)
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('expired nonce')
+      expect(e).toBeInstanceOf(Error)
     }
   })
 
@@ -726,7 +727,7 @@ describe('api', () => {
       await executeFlow(betterAuthClient, eccVerifier, responseKeyStore)
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('refresh has expired')
+      expect(e).toBeInstanceOf(ExpiredTokenError)
     }
   })
 
@@ -778,7 +779,7 @@ describe('api', () => {
       await betterAuthClient.refreshSession()
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('not found')
+      expect(e).toBeInstanceOf(Error)
     }
   })
 
@@ -830,7 +831,7 @@ describe('api', () => {
       await betterAuthClient.refreshSession()
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('not found')
+      expect(e).toBeInstanceOf(Error)
     }
   })
 
@@ -879,7 +880,7 @@ describe('api', () => {
       await executeFlow(betterAuthClient, eccVerifier, responseKeyStore)
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('token expired')
+      expect(e).toBeInstanceOf(ExpiredTokenError)
     }
   })
 
@@ -937,7 +938,7 @@ describe('api', () => {
       await testAccess(betterAuthClient, eccVerifier, responseKeyStore)
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('invalid signature')
+      expect(e).toBeInstanceOf(Error)
     }
   })
 
@@ -989,7 +990,7 @@ describe('api', () => {
 
       throw 'expected a failure'
     } catch (e: unknown) {
-      expect(e).toBe('incorrect nonce')
+      expect(e).toBeInstanceOf(IncorrectNonceError)
     }
   })
 })

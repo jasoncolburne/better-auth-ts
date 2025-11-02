@@ -1,4 +1,5 @@
 import { ISigningKey, IVerifier } from '../../../interfaces/index.js'
+import { InvalidMessageError } from '../../../errors.js'
 import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
 import { Base64 } from '../encoding/base64.js'
@@ -28,7 +29,7 @@ export class Secp256r1Verifier implements IVerifier {
     if (
       !(await webcrypto.subtle.verify(verifyParams, publicCryptoKey, signatureBytes, messageBytes))
     ) {
-      throw 'invalid signature'
+      throw new Error('Signature verification failed')
     }
   }
 }
@@ -60,7 +61,7 @@ export class Secp256r1 implements ISigningKey {
     const keyPair = await webcrypto.subtle.generateKey(params, true, ['sign', 'verify'])
 
     if (!isCryptoKeyPair(keyPair)) {
-      throw 'unexpected key generated'
+      throw new InvalidMessageError('keyPair', 'unexpected key type generated')
     }
 
     this.keyPair = keyPair
@@ -85,7 +86,7 @@ export class Secp256r1 implements ISigningKey {
 
   async public(): Promise<string> {
     if (typeof this.keyPair === 'undefined') {
-      throw 'keypair not generated'
+      throw new InvalidMessageError('keyPair', 'keypair not generated')
     }
 
     const raw = await webcrypto.subtle.exportKey('raw', this.keyPair!.publicKey)
@@ -108,11 +109,11 @@ export class Secp256r1 implements ISigningKey {
 
   private compressPublicKey(uncompressedKey: Uint8Array): Uint8Array {
     if (uncompressedKey.length !== 65) {
-      throw 'invalid length'
+      throw new InvalidMessageError('publicKey', `invalid length: ${uncompressedKey.length}, expected 65`)
     }
 
     if (uncompressedKey[0] !== 0x04) {
-      throw 'invalid byte header'
+      throw new InvalidMessageError('publicKey', `invalid byte header: ${uncompressedKey[0]}, expected 0x04`)
     }
 
     const x = uncompressedKey.slice(1, 33)
