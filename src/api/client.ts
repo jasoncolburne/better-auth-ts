@@ -335,7 +335,7 @@ export class BetterAuthClient {
     await this.verifyResponse(startResponse, startResponse.payload.access.serverIdentity)
 
     if (startResponse.payload.access.nonce !== startNonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(startNonce, startResponse.payload.access.nonce)
     }
 
     const [, publicKey, rotationHash] = await this.args.store.key.access.initialize()
@@ -366,7 +366,7 @@ export class BetterAuthClient {
     await this.verifyResponse(finishResponse, finishResponse.payload.access.serverIdentity)
 
     if (finishResponse.payload.access.nonce !== finishNonce) {
-      throw 'incorrect nonce'
+      throw new IncorrectNonceError(finishNonce, finishResponse.payload.access.nonce)
     }
 
     await this.args.store.token.access.store(finishResponse.payload.response.access.token)
