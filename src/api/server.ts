@@ -243,7 +243,7 @@ export class BetterAuthServer {
     )
 
     if (device !== linkContainer.payload.authentication.device) {
-      throw 'bad device derivation'
+      throw new InvalidDeviceError(linkContainer.payload.authentication.device, device)
     }
 
     await this.args.store.authentication.key.rotate(
