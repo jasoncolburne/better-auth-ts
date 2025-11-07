@@ -1,0 +1,11 @@
+# Node/TypeScript
+node_modules
+dist
+build
+.turbo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
