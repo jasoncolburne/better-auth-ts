@@ -1,6 +1,7 @@
 import { SignableMessage } from './message.js'
 import { ClientRequest } from './request.js'
 import { ServerResponse } from './response.js'
+import { safeJsonParse } from '../utils/parse.js'
 
 interface ILinkContainer {
   payload: {
@@ -33,7 +34,7 @@ export class LinkContainer extends SignableMessage implements ILinkContainer {
   }
 
   static parse(message: string): LinkContainer {
-    const json = JSON.parse(message) as LinkContainer
+    const json = safeJsonParse<ILinkContainer>(message, 'LinkContainer')
     const result = new LinkContainer(json.payload)
     result.signature = json.signature
 

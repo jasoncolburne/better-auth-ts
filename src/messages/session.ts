@@ -1,6 +1,7 @@
 import { SerializableMessage } from './message.js'
 import { ClientRequest } from './request.js'
 import { ServerResponse } from './response.js'
+import { safeJsonParse } from '../utils/parse.js'
 
 // this request is unsigned, and differs from the others as a result
 interface IRequestSessionRequest {
@@ -39,7 +40,7 @@ export class RequestSessionRequest extends SerializableMessage implements IReque
   }
 
   static parse(message: string): RequestSessionRequest {
-    const json = JSON.parse(message) as RequestSessionRequest
+    const json = safeJsonParse<IRequestSessionRequest>(message, 'RequestSessionRequest')
     return new RequestSessionRequest(json.payload)
   }
 }

@@ -1,4 +1,5 @@
 import { SignableMessage } from './message.js'
+import { safeJsonParse } from '../utils/parse.js'
 
 interface IServerAccess {
   nonce: string
@@ -36,7 +37,7 @@ export class ServerResponse<T> extends SignableMessage implements IServerRespons
     message: string,
     constructor: new (response: T, publicKeyHash: string, nonce: string) => U
   ): ServerResponse<T> {
-    const json = JSON.parse(message) as IServerResponse<T>
+    const json = safeJsonParse<IServerResponse<T>>(message, 'ServerResponse')
     const result = new constructor(
       json.payload.response,
       json.payload.access.serverIdentity,
