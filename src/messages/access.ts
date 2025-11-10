@@ -13,6 +13,7 @@ import {
   InvalidMessageError,
   StaleRequestError,
 } from '../errors.js'
+import { safeJsonParse } from '../utils/parse.js'
 
 export interface IAccessToken<T> {
   serverIdentity: string
@@ -49,7 +50,7 @@ export class AccessToken<T> extends SignableMessage implements IAccessToken<T> {
 
     const tokenString = await tokenEncoder.decode(rest)
 
-    const json = JSON.parse(tokenString) as IAccessToken<T>
+    const json = safeJsonParse<IAccessToken<T>>(tokenString, 'AccessToken')
     const token = new AccessToken<T>(
       json.serverIdentity,
       json.device,
@@ -190,7 +191,7 @@ export class AccessRequest<T> extends SignableMessage implements IAccessRequest<
   }
 
   static parse<T>(message: string): AccessRequest<T> {
-    const json = JSON.parse(message) as AccessRequest<T>
+    const json = safeJsonParse<IAccessRequest<T>>(message, 'AccessRequest')
     const result = new AccessRequest<T>(json.payload)
     result.signature = json.signature
 

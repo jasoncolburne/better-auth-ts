@@ -1,4 +1,5 @@
 import { SignableMessage } from './message.js'
+import { safeJsonParse } from '../utils/parse.js'
 
 interface IClientAccess {
   nonce: string
@@ -34,7 +35,7 @@ export class ClientRequest<T> extends SignableMessage implements IClientRequest<
     message: string,
     constructor: new (request: T, nonce: string) => U
   ): ClientRequest<T> {
-    const json = JSON.parse(message) as IClientRequest<T>
+    const json = safeJsonParse<IClientRequest<T>>(message, 'ClientRequest')
     const result = new constructor(json.payload.request, json.payload.access.nonce)
     result.signature = json.signature
 
